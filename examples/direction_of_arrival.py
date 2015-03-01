@@ -5,6 +5,21 @@ import browserinterface
 import algorithms as rt
 
 """
+This script runs real-time direction of arrival
+finding algorithms. Possible algorithms can be selected here:
+"""
+
+""" Select algorithm """
+doa_algo = 'SRPPHAT'
+doa_algo = 'FRI'
+doa_algo = 'MUSIC'
+doa_algo_config = dict(
+        MUSIC=dict(vrange=[0.2, 0.6]),
+        SRPPHAT=dict(vrange=[0.1, 0.4]),
+        FRI=dict(vrange=[0., 1.]),
+        )
+
+"""
 Number of snapshots for DOA will be: ~2*buffer_size/nfft
 """
 buffer_size = 1024
@@ -47,8 +62,11 @@ use_bin = False
 """Check for LED Ring"""
 try:
     import matplotlib.cm as cm
-    led_ring = rt.neopixels.NeoPixels(usb_port=led_ring_address,
-        colormap=cm.afmhot)
+    led_ring = rt.neopixels.NeoPixels(
+            usb_port=led_ring_address,
+            colormap=cm.afmhot, 
+            vrange=doa_algo_config[doa_algo]['vrange']
+            )
     print("LED ring ready to use!")
 except:
     print("No LED ring available...")
@@ -66,9 +84,14 @@ def init(buffer_frames, rate, channels, volume):
             'n_grid': num_angles
             }
 
-    # doa = rt.doa.SRP(**doa_args)
-    doa = rt.doa.MUSIC(**doa_args)
     # doa = rt.doa.FRIDA(max_four=2, signal_type='visibility', G_iter=1, **doa_args)
+    if doa_algo == 'SRPPHAT':
+        doa = rt.doa.SRP(**doa_args)
+    elif doa_algo == 'MUSIC':
+        doa = rt.doa.MUSIC(**doa_args)
+    elif doa_algo == 'FRI':
+        doa = rt.doa.FRIDA(max_four=2, signal_type='visibility', G_iter=1, **doa_args)
+
 
 """Callback"""
 def apply_doa(audio):
@@ -102,7 +125,7 @@ def apply_doa(audio):
 
     # send to lights if available
     if led_ring:
-        led_ring.lightify(vals=doa.grid.values[::-1], realtime=True)
+        led_ring.lightify(vals=doa.grid.values, realtime=True)
 
 """Interface features"""
 browserinterface.register_when_new_config(init)
