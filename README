@@ -1,0 +1,22 @@
+## For the C on the board
+
+Required:
+- libwebsock (https://github.com/payden/libwebsock)
+- Jansson (http://www.digip.org/jansson/)
+
+Build:
+gcc -o alsa-record-example -lasound alsa-record-example.c
+gcc -g -O2 -o client-control client-control.c -lwebsock -ljansso
+gcc -g -O2 -o client client.c -lwebsock
+
+Launch:
+./alsa-record-example
+export LD_LIBRARY_PATH=/usr/local/lib
+./client
+./client-control
+
+
+## For the Python on the computer
+Required:
+- ws4py (https://ws4py.readthedocs.io/en/latest/)
+

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Semester project</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
+    <link rel="stylesheet" href="client.css">
+  </head>
+  <body>
+    <div class="container-fluid">
+      <!-- <br />
+      <h2 class="text-xs-center">
+        Microphones control interface
+      </h2>
+      <br /> -->
+      <div class="row">
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-header">
+              Status
+            </div>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">
+                <span class="tag tag-default tag-pill pull-xs-right tag-danger" id="info-status-code">Disconnected</span>
+                Code server
+              </li>
+              <li class="list-group-item">
+                <span class="tag tag-default tag-pill pull-xs-right tag-danger" id="info-status-audio">Disconnected</span>
+                Audio stream
+              </li>
+              <li class="list-group-item">
+                <span class="tag tag-default tag-pill pull-xs-right tag-danger" id="info-status-control">Disconnected</span>
+                Control stream
+              </li>
+              <li class="list-group-item">
+                <span class="tag tag-default tag-pill pull-xs-right" id="info-rate">-</span>
+                Rate
+              </li>
+              <li class="list-group-item">
+                <span class="tag tag-default tag-pill pull-xs-right" id="info-channels">-</span>
+                Channels
+              </li>
+              <li class="list-group-item">
+                <span class="tag tag-default tag-pill pull-xs-right" id="info-frames">-</span>
+                Buffer frames
+              </li>
+              <li class="list-group-item">
+                <span class="tag tag-default tag-pill pull-xs-right" id="info-volume">-</span>
+                Volume
+              </li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              Change configuration
+            </div>
+            <div class="card-block">
+              <div class="form-group row">
+                <label class="col-xs-5 col-form-label">Rate</label>
+                <div class="col-xs-7">
+                  <select class="form-control" id="config-rate">
+                    <option value="22050">22,050 Hz</option>
+                    <option value="44100">44,100 Hz</option>
+                    <option value="88200">88,200 Hz</option>
+                    <option value="176400">176,400 Hz</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-xs-5 col-form-label">Channels</label>
+                <div class="col-xs-7">
+                  <select class="form-control" id="config-channels">
+                    <option value="2">2</option>
+                    <option value="4">4</option>
+                    <option value="6">6</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-xs-5 col-form-label">Buffer frames</label>
+                <div class="col-xs-7">
+                  <input type="number" min="1" step=="1" class="form-control" value="3000" id="config-buffer">
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-xs-5 col-form-label">Volume</label>
+                <div class="col-xs-7">
+                  <input type="range" min="0" step=="100" class="form-control" value="50" id="config-volume">
+                </div>
+              </div>
+              <div class="form-group row">
+                <div class="col-xs-12">
+                  <input type="button" class="btn btn-primary btn-block" value="Submit" id="config-change">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-9" id="main-stream">
+          <div class="card">
+            <div class="card-header">
+              Editor
+            </div>
+            <div class="card-main" style="padding: 20px; border-bottom: 1px solid lightgray;">
+              <div class="btn-group" role="group" aria-label="Basic example">
+                <button type="button" class="btn btn-secondary" id="btn-code-execute">Exécuter</button>
+                <button type="button" class="btn btn-secondary" id="btn-code-stop">Arrêter</button>
+              </div>
+            </div>
+<div class="card-main" id="editor">#!/usr/local/bin/python
+#!/usr/local/bin/python
+#!/usr/local/bin/python
+
+from ws4py.client.threadedclient import WebSocketClient
+from wsgiref.simple_server import make_server
+from ws4py.websocket import WebSocket
+from ws4py.server.wsgirefserver import WSGIServer, WebSocketWSGIRequestHandler
+from ws4py.server.wsgiutils import WebSocketWSGIApplication
+from threading import Thread
+import os
+import json
+import sys
+
+rate = -1
+channels = -1
+buffer_frames = -1
+volume = -1
+
+def handleData(buffer):
+    print "Buffer", len(buffer)
+    i = 0
+    for v in buffer:
+        buffer[i] = v/10
+        i += 1
+
+    sendAudio(buffer)
+
+class StreamClient(WebSocketClient):
+    # def opened(self):
+    #     def data_provider():
+    #         for i in range(1, 200, 25):
+    #             yield "#" * i
+    #
+    #     self.send(data_provider())
+    #
+    #     for i in range(0, 200, 25):
+    #         print i
+    #         self.send("*" * i)
+    #
+    # def closed(self, code, reason=None):
+    #     print "Closed down", code, reason
+
+    def received_message(self, m):
+        if not m.is_binary:
+            print m
+            global rate
+            global channels
+            global buffer_frames
+            global volume
+            m = json.loads(m.data)
+            rate = m['rate']
+            channels = m['channels']
+            buffer_frames = m['buffer_frames']
+            volume = m['volume']
+        else:
+            data = bytearray()
+            data.extend(m.data)
+            handleData(data)
+
+def sendAudio(buffer):
+    if client != -1:
+        try:
+            client.send(buffer, True)
+            print "send11"
+        except socket.error, e:
+            print "autre erreur11"
+        except IOError, e:
+            print "exception11"
+
+client = -1
+
+class WSServer(WebSocket):
+    def opened(self):
+        global client
+        client = self
+
+    def close(self, code, reason):
+        global client
+        global server
+        global ws
+        sys.stderr.write("1.1\n")
+        client = -1
+        os._exit(1)
+        # print "ok"
+        # # server.server_close()
+        # print "la"
+        # thread.interrupt_main()
+        # print "cool"
+
+def startServer(port):
+    global server
+    server = make_server('', port, server_class=WSGIServer,
+                         handler_class=WebSocketWSGIRequestHandler,
+                         app=WebSocketWSGIApplication(handler_cls=WSServer))
+    server.initialize_websockets_manager()
+    server.serve_forever()
+
+try:
+    global ws
+    ws = StreamClient('ws://192.168.1.151:8081/', protocols=['http-only', 'chat'])
+    ws.connect()
+
+    serverThread = Thread(target = startServer, args = (9001, ))
+    serverThread.start()
+    ws.run_forever()
+    serverThread.join()
+except KeyboardInterrupt:
+    sys.stderr.write("1.2\n")
+    # ws.close()
+
+</div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              Output analyse
+            </div>
+            <div class="card-main">
+              <ul>
+                <li>Input: <a id="input-btn-play">Play</a> <a id="input-btn-stop">Stop</a></li>
+                <li>Output: <a id="output-btn-play">Play</a> <a id="output-btn-stop">Stop</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              Console
+            </div>
+            <div class="card-main">
+              <pre><code id="console"></code></pre>
+            </div>
+          </div>
+          <div id="alerts">
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+    <script src="node_modules/ace-builds/src/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="node_modules/ace-builds/src/mode-python.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript">
+      var editor = ace.edit("editor");
+      var PythonMode = ace.require("ace/mode/python").Mode;
+      editor.session.setMode(new PythonMode());
+      var s2 = new WebSocket("ws://192.168.1.151:8082");
+      var s = new WebSocket("ws://192.168.1.151:8081");
+      var codeServer = new WebSocket("ws://127.0.0.1:9000");
+      var inputStream;
+      var outputHandle;
+      $('#input-btn-stop').click(function() {
+        if (inputStream) {
+          inputStream.destroyAudio();
+        }
+      });
+      $('#input-btn-play').click(function() {
+        if (inputStream) {
+          inputStream.destroyAudio();
+        }
+        inputStream = new sourceAudio(audioCt, config);
+      });
+      $('#output-btn-stop').click(function() {
+        outputHandle.stopAudio();
+      });
+      $('#output-btn-play').click(function() {
+        outputHandle.playAudio();
+      });
+
+      var codeNb = 0;
+      $('#btn-code-execute').click(function() {
+        $('#console').html('');
+        codeNb = 0;
+        codeServer.send(editor.getValue());
+      });
+      $('#btn-code-stop').click(function() {
+        codeServer.send("STOP");
+      });
+      codeServer.onmessage = function(e) {
+        codeNb++;
+        if (codeNb == 1 && typeof e.data == "string") {
+          var execInfos = JSON.parse(e.data);
+          setTimeout(function() {
+            outputHandle = new handleOutput(execInfos.port);
+          }, 3000);
+          return;
+        }
+        var end = $('#console').scrollTop() == ($('#console')[0].scrollHeight - $('#console').height());
+        $('#console').html($('#console').html() + e.data);
+        if (end) {
+          $('#console').scrollTop(($('#console')[0].scrollHeight - $('#console').height()));
+        }
+      };
+      codeServer.onopen = function() {
+        $('#info-status-code').text('Connected');
+        $('#info-status-code').addClass('tag-success');
+        $('#info-status-code').removeClass('tag-danger');
+      };
+      codeServer.onclose = function() {
+        $('#info-status-code').text('Disconnected');
+        $('#info-status-code').addClass('tag-danger');
+        $('#info-status-code').removeClass('tag-success');
+      };
+      var b;
+      s.onopen = function(e) {
+        $('#alerts').prepend('<div class="alert alert-success" role="alert"><strong>Connected</strong> Now connected to the audio stream</div>');
+        $('#info-status-audio').text('Connected');
+        $('#info-status-audio').addClass('tag-success');
+        $('#info-status-audio').removeClass('tag-danger');
+      };
+      s2.onopen = function(e) {
+        $('#alerts').prepend('<div class="alert alert-success" role="alert"><strong>Connected</strong> Now connected to the control stream</div>');
+        $('#info-status-control').text('Connected');
+        $('#info-status-control').addClass('tag-success');
+        $('#info-status-control').removeClass('tag-danger');
+      };
+      s.onerror = function(e) {
+        $('#alerts').prepend('<div class="alert alert-danger" role="alert"><strong>Error</strong> Impossible to connect to the audio websocket</div>');
+      }
+      s2.onerror = function(e) {
+        $('#alerts').prepend('<div class="alert alert-danger" role="alert"><strong>Error</strong> Impossible to connect to the control websocket</div>');
+      }
+      s.onclose = function(e) {
+        $('#alerts').prepend('<div class="alert alert-danger" role="alert"><strong>Error</strong> Disconnected from the audio websocket</div>');
+        $('#info-status-audio').text('Disconnected');
+        $('#info-status-audio').addClass('tag-danger');
+        $('#info-status-audio').removeClass('tag-success');
+      }
+      s2.onclose = function(e) {
+        $('#alerts').prepend('<div class="alert alert-danger" role="alert"><strong>Error</strong> Disconnected from the control websocket</div>');
+        $('#info-status-control').text('Disconnected');
+        $('#info-status-control').addClass('tag-danger');
+        $('#info-status-control').removeClass('tag-success');
+      }
+      s.onmessage = function(e) {
+        if (typeof e.data == "string") { // configuration
+          var conf = JSON.parse(e.data);
+          config = conf;
+          console.log("Config received:", config);
+          displayConfig();
+          if (inputStream) {
+            inputStream.destroyAudio();
+          }
+          inputStream = new sourceAudio(audioCt, conf);
+          return;
+        }
+        b = e;
+        // console.log(e.data);
+        inputStream.loadData(e.data);
+      }
+      $('#config-change').click(function() {
+        var newConfig = {
+          rate: parseInt($('#config-rate').val()),
+          buffer_frames: parseInt($('#config-buffer').val()),
+          channels: parseInt($('#config-channels').val()),
+          volume: parseInt($('#config-volume').val())
+        };
+        console.log("Send new config", newConfig);
+        $('#alerts').prepend('<div class="alert alert-info" role="alert"><strong>Configuration sent</strong> New configuration sent: ' + JSON.stringify(newConfig) + '</div>');
+        s2.send(JSON.stringify(newConfig));
+      });
+      // s.onopen = function (e) {
+      //   s.send("Hello, first message");
+      // }
+
+      function displayConfig() {
+        $('#config-rate').val(config.rate);
+        $('#config-channels').val(config.channels);
+        $('#config-buffer').val(config.buffer_frames);
+        $('#config-volume').val(config.volume);
+        $('#alerts').prepend('<div class="alert alert-warning" role="alert"><strong>Configuration change</strong> New configuration received: ' + JSON.stringify(config) + '</div>');
+        $('#info-rate').text(config.rate);
+        $('#info-channels').text(config.channels);
+        $('#info-frames').text(config.buffer_frames);
+        $('#info-volume').text(config.volume);
+      }
+
+      var audioCt = new AudioContext;
+
+      var config;
+
+      function handleOutput(port) {
+        var ws = new WebSocket("ws://127.0.0.1:" + port);
+
+        var outputStream;
+        ws.onmessage = function(e) {
+          if (typeof e.data != "string") { // we have binary data
+            if (!outputStream) {
+              outputStream = new sourceAudio(audioCt, config);
+            }
+            outputStream.loadData(e.data);
+          }
+        };
+
+        function stopAudio() {
+          if (outputStream) {
+            outputStream.destroyAudio();
+          }
+        }
+        function playAudio() {
+          outputStream = new sourceAudio(audioCt, config);
+        }
+        function close() {
+          stopAudio();
+          ws.close();
+        }
+
+        return {
+          stopAudio: stopAudio,
+          playAudio: playAudio,
+          close: close
+        };
+      }
+
+      function sourceAudio(audioCtx, config) {
+        var audioData, channelData, audioPos, source, buffer_size;
+        buffer_size = 2 * config.rate; // we want two seconds
+        audioData = audioCtx.createBuffer(config.channels, buffer_size, config.rate); // channels - size of the buffer - frameRate
+        channelData = [];
+        for (var i = 0; i < config.channels; i++) {
+          channelData[i] = audioData.getChannelData(i);
+        }
+        audioPos = 0;
+        source = audioCtx.createBufferSource();
+        source.loop = true;
+        source.buffer = audioData;
+        source.connect(audioCtx.destination);
+        setTimeout(function () {
+          console.log("start");
+          source.start();
+        }, 3000);
+
+        function loadData(data) {
+          var fileReader = new FileReader();
+          fileReader.onload = function() {
+            var data = new Int16Array(this.result);
+            // console.log(data[0], data[100], data[1000], data[5000]);
+            // console.log(data.length);
+            // console.log(data);
+            for (var i = 0; i < data.length; i++) {
+              var channel = i % config.channels;
+              channelData[channel][audioPos] = data[i]/256/128; // 16 bits audio => we must move it between -1 and 1
+              if (channel == (config.channels - 1)) {
+                audioPos = (audioPos + 1) % (buffer_size);
+              }
+            }
+          };
+          fileReader.readAsArrayBuffer(data);
+        }
+
+        function destroyAudio() {
+          if (source !== undefined) {
+            source.stop();
+          }
+        }
+
+        return {
+          loadData: loadData,
+          destroyAudio: destroyAudio,
+          source: source
+        };
+      }
+    </script>
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/js/bootstrap.min.js" integrity="sha384-BLiI7JTZm+JWlgKa0M0kGRpJbF2J8q+qreVrKBC47e3K6BW78kGLrCkeRX6I9RoK" crossorigin="anonymous"></script>
+  </body>
+</html>
