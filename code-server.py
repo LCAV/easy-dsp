@@ -88,6 +88,10 @@ class EchoWebSocketMaison(WebSocket):
             # print self.scriptThread.terminate()
             # print self.__popen.kill()
 
+    def closed(self, code, reason=None):
+        if not self.q_popen.empty():
+            self.q_popen.get().kill()
+
 server = make_server('', 9000, server_class=WSGIServer,
                      handler_class=WebSocketWSGIRequestHandler,
                      app=WebSocketWSGIApplication(handler_cls=EchoWebSocketMaison))

@@ -14,22 +14,29 @@ import socket
 import json
 
 r_messages = Queue()
+r_id = 0
+
+class DataHandler():
+    def __init__(self, id):
+        self.id = id
+
+    def sendData(self, data):
+        r_messages.put(json.dumps({'dataHandler': self.id, 'data': data}))
 
 # name: name of the graph
-# id: choose a uniq alphanumeric identifier for this chart
-# rendrer: type of the graph: 'area', 'line', 'bar', 'scatterplot'
-# xName: name of x composant
-# yName: name of y composant
-# seriesNames: names of the series, orders: ['serie 1', 'serie 2', 'serie 3']
-def createChart(name, id, renderer, xName, yName, seriesNames):
-    r_messages.put(json.dumps({'newChart': name, 'id': id, 'renderer': renderer, 'xName': xName, 'yName': yName, 'seriesNames': seriesNames}))
+# type: type of the graphs: 'base:graph:area', 'base:graph:line', 'base:graph:bar', 'base:graph:scatterplot'
+# parameters: parameters of the graph. Typically: {xName: "name of the x axis", seriesNames: ["serie 1", "serie 2", "serie 3"] }
+# returns: a Graph object
+def addHandler(name, type, parameters):
+    global r_id
+    r_id = r_id + 1
+    r_messages.put(json.dumps({'addHandler': name, 'id': r_id, 'type': type, 'parameters': parameters}))
+    return DataHandler(r_id)
 
 rate = -1
 channels = -1
 buffer_frames = -1
 volume = -1
-
-#####INSERT: Here insert code
 
 class StreamClient(WebSocketClient):
     # def opened(self):
@@ -120,16 +127,13 @@ def startServer(port):
     server.initialize_websockets_manager()
     server.serve_forever()
 
-try:
-    global ws
-    serverThread = Thread(target = startServer, args = (9001, ))
-    serverThread.start()
+serverThread = Thread(target = startServer, args = (9001, ))
+serverThread.start()
 
-    ws = StreamClient('ws://192.168.7.2:8081/', protocols=['http-only', 'chat'])
-    ws.connect()
+#####INSERT: Here insert code
 
-    ws.run_forever()
-    serverThread.join()
-except KeyboardInterrupt:
-    sys.stderr.write("1.2\n")
-    # ws.close()
+ws = StreamClient('ws://192.168.7.2:8081/', protocols=['http-only', 'chat'])
+ws.connect()
+
+ws.run_forever()
+serverThread.join()
