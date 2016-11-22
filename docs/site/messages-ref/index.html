@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Messages reference - Beaglebone Board Web Interface</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Messages reference";
+    var mkdocs_page_input_path = "messages-ref.md";
+    var mkdocs_page_url = "/messages-ref/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Beaglebone Board Web Interface</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Home</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../getting-started/">Getting started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../structure/">Structure</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Messages reference</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#intro">Intro</a></li>
+                
+                    <li><a class="toctree-l4" href="#main-daemon">Main Daemon</a></li>
+                
+                    <li><a class="toctree-l4" href="#wsaudio-client">WSAudio &gt; Client</a></li>
+                
+                    <li><a class="toctree-l4" href="#wsconfig-webapp">WSConfig &lt; Webapp</a></li>
+                
+                    <li><a class="toctree-l4" href="#python-daemon-webapp">Python Daemon &lt;&gt; Webapp</a></li>
+                
+                    <li><a class="toctree-l4" href="#final-programpy-webapp">final-program.py &gt; Webapp</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../data-handlers/">Data Handlers</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Beaglebone Board Web Interface</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Messages reference</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="intro">Intro</h1>
+<p>Here you will find the different messages that can be exchanged between the different parts, inside the UNIX Sockets or the WebSockets.
+The titles are always server &lt;&gt; client.</p>
+<h2 id="main-daemon">Main Daemon</h2>
+<h3 id="main-daemon-wsaudio">Main Daemon &gt; WSAudio</h3>
+<p>This connection is only one-way: the main daemon sends messages to WSAudio.</p>
+<h4 id="connection">Connection</h4>
+<ul>
+<li>Socket Type: UNIX Socket;</li>
+<li>File: <code>/tmp/micros-audio.socket</code>;</li>
+<li>Transport protocol: TCP.</li>
+</ul>
+<h4 id="messages">Messages</h4>
+<ul>
+<li>Audio configuration: this message allows WSAudio to know the audio configuration choosed, so especially it can allocate the right buffer size.<ul>
+<li>Length in <strong>bytes</strong>: <code>4*sizeof(int)</code>;</li>
+<li>Payload: four integer: <code>{buffer_frames}{rate}{channels}{volume}</code>:<ul>
+<li><code>buffer_frames</code>: number of audio frames in one buffer;</li>
+<li><code>rate</code>: audio rate (in bits/second);</li>
+<li><code>channels</code>: number of channels;</li>
+<li><code>volume</code>: ALSA volume of all microphones, between 0 and 100.</li>
+</ul>
+</li>
+<li>So the size of the audio buffer is <code>buffer_size = buffer_frames*channels*sizeof(SND_PCM_FORMAT_S16_LE) / 8</code> in <strong>bytes</strong> (for now, one audio frame is encoded with a 16-bits little-endian integer).</li>
+</ul>
+</li>
+<li>Audio buffer: this message contains new audio data.<ul>
+<li>Length: the previous computed <code>buffer_size</code>;</li>
+<li>Payload: <code>buffer_frames*channels</code> 16-bits little-endian integer, in the following order (for example with 2 channels):<ol>
+<li>frames[0].channels[0];</li>
+<li>frames[0].channels[1];</li>
+<li>frames[1].channels[0];</li>
+<li>frames[1].channels[1];</li>
+<li>frames[2].channels[0];</li>
+<li>frames[2].channels[1];</li>
+<li>...</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<p>To differentiate the two messages types, WSAudio only uses the length of the message.
+If it's four integers then it is a configuration information, else it is audio data.</p>
+<h3 id="main-daemon-wsconfig">Main Daemon &lt; WSConfig</h3>
+<p>This connection is only one-way: WSConfig sends messages to the main daemon.</p>
+<h4 id="connection_1">Connection</h4>
+<ul>
+<li>Socket Type: UNIX Socket;</li>
+<li>File: <code>/tmp/micros-config.socket</code>;</li>
+<li>Transport protocol: TCP.</li>
+</ul>
+<h4 id="messages_1">Messages</h4>
+<ul>
+<li>Audio configuration: this message allows WSConfig to send a new audio configuration to the main daemon.<ul>
+<li>Length in <strong>bytes</strong>: <code>4*sizeof(int)</code>;</li>
+<li>Payload: four integer: <code>{buffer_frames}{rate}{channels}{volume}</code>:<ul>
+<li><code>buffer_frames</code>: number of audio frames in one buffer;</li>
+<li><code>rate</code>: audio rate (in bits/second);</li>
+<li><code>channels</code>: number of channels;</li>
+<li><code>volume</code>: ALSA volume of all microphones, between 0 and 100.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="wsaudio-client">WSAudio &gt; Client</h2>
+<p>This connection is only one-way: WSAudio sends messages to the webapp or the python program.</p>
+<h4 id="connection_2">Connection</h4>
+<ul>
+<li>Protocol: WebSocket;</li>
+<li>Port: 8081.</li>
+</ul>
+<h4 id="messages_2">Messages</h4>
+<ul>
+<li>
+<p>Audio configuration: this message allows the client to know the audio configuration choosed.</p>
+<ul>
+<li>Message type: text;</li>
+<li>
+<p>Message format: JSON:</p>
+<pre><code>{
+  "buffer_frames": (integer), // the number of frames in one buffer
+  "rate": (integer), // the bitrate in bits/second
+  "channels": (integer), // the number of channels
+  "volume": (integer) // the volume of all microphones, between 0 and 100
+}
+</code></pre>
+</li>
+<li>
+<p>So the size of the audio buffer is <code>m.buffer_frames * m.channels * 16 / 8</code> in <strong>bytes</strong> (16 because a frame is encoded using a 16-bits little-endian integer), where <code>m</code> is the JSON received message.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>Audio buffer: this message contains new audio data.</p>
+<ul>
+<li>Message type: binary;</li>
+<li>Payload: <code>m.buffer_frames * m.channels</code> 16-bits little-endian integer, in the following order (for example with 2 channels):<ol>
+<li>frames[0].channels[0];</li>
+<li>frames[0].channels[1];</li>
+<li>frames[1].channels[0];</li>
+<li>frames[1].channels[1];</li>
+<li>frames[2].channels[0];</li>
+<li>frames[2].channels[1];</li>
+<li>...</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="wsconfig-webapp">WSConfig &lt; Webapp</h2>
+<p>This connection is only one-way: the webapp sends new audio configuration to WSConfig</p>
+<h4 id="connection_3">Connection</h4>
+<ul>
+<li>Protocol: WebSocket;</li>
+<li>Port: 8082.</li>
+</ul>
+<h4 id="messages_3">Messages</h4>
+<ul>
+<li>Audio configuration: this message allows the webapp to send a new audio configuration to WSConfig.<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON:<pre><code>{
+  "buffer_frames": (integer), // the number of frames in one buffer
+  "rate": (integer), // the bitrate in bits/second
+  "channels": (integer), // the number of channels
+  "volume": (integer) // the volume of all microphones, between 0 and 100
+}
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="python-daemon-webapp">Python Daemon &lt;&gt; Webapp</h2>
+<p>This conenction is two-ways: the webapp can send new python code to execute, and the daemon can send back the status of the program.</p>
+<h4 id="connection_4">Connection</h4>
+<ul>
+<li>Protocol: WebSocket;</li>
+<li>Port: 9000.</li>
+</ul>
+<h4 id="messages-webapp-python-daemon">Messages: Webapp &gt; Python Daemon</h4>
+<ul>
+<li>
+<p>Python code to execute: this message contains new python code to insert into <code>base-program.py</code> and to execute.</p>
+<ul>
+<li>Message type: text;</li>
+<li>Payload: just the python code to execute.</li>
+</ul>
+</li>
+<li>
+<p>Interruption of the running code: this messages asks the daemon to stop the current python code running (each client can only have one python program running at each time).</p>
+<ul>
+<li>Message type: text;</li>
+<li>Payload: just <code>STOP</code>.</li>
+</ul>
+</li>
+</ul>
+<h4 id="messages-python-daemon-webapp">Messages: Python Daemon &gt; Webapp</h4>
+<ul>
+<li>
+<p>Port information: this message indicates to the webapp on which port the new python program will listen for its WebSocket.</p>
+<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON: <code>{"port": (integer)}</code>.</li>
+</ul>
+</li>
+<li>
+<p>Stdout new line: this message is sent to the webapp each time the new python program outputs a line on stdout.</p>
+<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON: <code>{"line": (string)}</code>.</li>
+</ul>
+</li>
+<li>
+<p>Stderr new line: this message is sent to the webapp each time the new python program outputs a line on stderr.</p>
+<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON: <code>{"error": (string)}</code>.</li>
+</ul>
+</li>
+<li>
+<p>Line inserted: this message indicates to the webapp on which line of <code>base-program.py</code> the python code has been inserted (it is usefull to find the correspondance between an error and the original line).</p>
+<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON: <code>{"codeLine": (integer)}</code>.</li>
+</ul>
+</li>
+<li>
+<p>End of the python program: this message is sent to the webapp when the new python program exits, with the code returned.</p>
+<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON: <code>{"status": "end", "code": (integer)}</code>.</li>
+</ul>
+</li>
+</ul>
+<h2 id="final-programpy-webapp">final-program.py &gt; Webapp</h2>
+<p>This connection is one-way only: the new python program can send various outputs to the webapp.</p>
+<h4 id="connection_5">Connection</h4>
+<ul>
+<li>Protocol: WebSocket;</li>
+<li>Port: just over 9000 (choosen and specified by the python daemon).</li>
+</ul>
+<h4 id="messages_4">Messages</h4>
+<ul>
+<li>
+<p>Audio data to play: this message contains a new audio buffer. The python program can for example to something on the audio stream and outputs a new audio stream it wants the webapp to play.</p>
+<ul>
+<li>Message type: binary;</li>
+<li>Payload: for now, the configuration must be the same as the input stream: <code>input_conf.buffer_frames * input_conf.channels</code> 16-bits little-endian integer, in the following order (for example with 2 channels):<ol>
+<li>frames[0].channels[0];</li>
+<li>frames[0].channels[1];</li>
+<li>frames[1].channels[0];</li>
+<li>frames[1].channels[1];</li>
+<li>frames[2].channels[0];</li>
+<li>frames[2].channels[1];</li>
+<li>...</li>
+</ol>
+</li>
+</ul>
+</li>
+<li>
+<p>Creation of a new data handler: this message asks the webapp to create a new data handler, that will be then complete with new data.</p>
+<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON:<pre><code>{
+    "addHandler": (string), // name of the handler for display
+    "id": (integer), // id chosen to identify the handler. Must be unique
+    "type": (string), // type of handler
+    "parameters": (object) // optional parameters
+}
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>New data for a data handler: this message contains new data for an existing data handler.</p>
+<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON:<pre><code>{
+    "dataHandler": (integer), // id of the existing data handler
+    "data": (object) // data for the existing data handler
+}
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../data-handlers/" class="btn btn-neutral float-right" title="Data Handlers">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../structure/" class="btn btn-neutral" title="Structure"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+    
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../structure/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../data-handlers/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script src="../js/theme.js"></script>
+
+</body>
+</html>

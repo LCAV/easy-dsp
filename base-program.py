@@ -69,12 +69,16 @@ class StreamClient(WebSocketClient):
             data = bytearray()
             data.extend(m.data)
             ndata = []
+            current = []
             i = 0
             for i in range(len(data) / 2):
                 if data[2*i+1] <= 127:
-                    ndata.append(data[2*i] + 256*data[2*i+1])
+                    current.append(data[2*i] + 256*data[2*i+1])
                 else:
-                    ndata.append((data[2*i+1]-128)*256 + data[2*i] - 32768)
+                    current.append((data[2*i+1]-128)*256 + data[2*i] - 32768)
+                if (i % channels) == (channels-1):
+                    ndata.append(current)
+                    current = []
             handleData(ndata)
 
 def sendAudio(buffer):

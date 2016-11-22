@@ -1,0 +1,284 @@
+{
+    "docs": [
+        {
+            "location": "/", 
+            "text": "Welcome to the Beaglebone Web Interface documentation\n\n\nYou will find explanations about how to use the project (how to start, the different commands available), and how to develop on it (the global structure, the different components, their interactions and details about the C and Javascript code).", 
+            "title": "Home"
+        }, 
+        {
+            "location": "/#welcome-to-the-beaglebone-web-interface-documentation", 
+            "text": "You will find explanations about how to use the project (how to start, the different commands available), and how to develop on it (the global structure, the different components, their interactions and details about the C and Javascript code).", 
+            "title": "Welcome to the Beaglebone Web Interface documentation"
+        }, 
+        {
+            "location": "/getting-started/", 
+            "text": "Getting Started\n\n\nYou will find explanations about how to use the project (how to start, the different commands available), and how to develop on it (the global structure, the different components, their interactions and details about the C and Javascript code).\n\n\nOn the board\n\n\nPrerequisites\n\n\n\n\nlibwebsock\n;\n\n\nJansson\n.\n\n\n\n\nCompilation\n\n\n\n\ngcc -o alsa-record-example -lasound alsa-record-example.c\n\n\ngcc -g -O2 -o client-control client-control.c -lwebsock -ljansso\n\n\ngcc -g -O2 -o client client.c -lwebsock\n\n\n\n\nLaunch\n\n\nTwo possibilities: \n./demo.sh\n (recommanded) or:\n\n\n./alsa-record-example \n\nexport LD_LIBRARY_PATH=/usr/local/lib\n./client \n\n./client-control \n\n\n\n\nTo stop it, kill the three programs (or use \n./stop.sh\n).\n\n\nOn the computer\n\n\nPrerequisites\n\n\n\n\nInstall \nws4py\n;\n\n\nClone \nRickshaw\n in the directory of the \nclient.html\n file: \ngit clone https://github.com/shutterstock/rickshaw.git\n.\n\n\n\n\nConfiguration\n\n\nThe IP address of the board must be specified in two files:\n\n\n\n\nLines 8 and 9 of \njs/main.js\n;\n\n\nAt the end of \nbase-program.py\n.\n\n\n\n\nLaunch\n\n\n\n\nYou first have to laund the python daemon: \npython code-server.py\n;\n\n\nThen you just have to open the file \nclient.html\n in your browser.", 
+            "title": "Getting started"
+        }, 
+        {
+            "location": "/getting-started/#getting-started", 
+            "text": "You will find explanations about how to use the project (how to start, the different commands available), and how to develop on it (the global structure, the different components, their interactions and details about the C and Javascript code).", 
+            "title": "Getting Started"
+        }, 
+        {
+            "location": "/getting-started/#on-the-board", 
+            "text": "", 
+            "title": "On the board"
+        }, 
+        {
+            "location": "/getting-started/#prerequisites", 
+            "text": "libwebsock ;  Jansson .", 
+            "title": "Prerequisites"
+        }, 
+        {
+            "location": "/getting-started/#compilation", 
+            "text": "gcc -o alsa-record-example -lasound alsa-record-example.c  gcc -g -O2 -o client-control client-control.c -lwebsock -ljansso  gcc -g -O2 -o client client.c -lwebsock", 
+            "title": "Compilation"
+        }, 
+        {
+            "location": "/getting-started/#launch", 
+            "text": "Two possibilities:  ./demo.sh  (recommanded) or:  ./alsa-record-example  \nexport LD_LIBRARY_PATH=/usr/local/lib\n./client  \n./client-control    To stop it, kill the three programs (or use  ./stop.sh ).", 
+            "title": "Launch"
+        }, 
+        {
+            "location": "/getting-started/#on-the-computer", 
+            "text": "", 
+            "title": "On the computer"
+        }, 
+        {
+            "location": "/getting-started/#prerequisites_1", 
+            "text": "Install  ws4py ;  Clone  Rickshaw  in the directory of the  client.html  file:  git clone https://github.com/shutterstock/rickshaw.git .", 
+            "title": "Prerequisites"
+        }, 
+        {
+            "location": "/getting-started/#configuration", 
+            "text": "The IP address of the board must be specified in two files:   Lines 8 and 9 of  js/main.js ;  At the end of  base-program.py .", 
+            "title": "Configuration"
+        }, 
+        {
+            "location": "/getting-started/#launch_1", 
+            "text": "You first have to laund the python daemon:  python code-server.py ;  Then you just have to open the file  client.html  in your browser.", 
+            "title": "Launch"
+        }, 
+        {
+            "location": "/structure/", 
+            "text": "Intro\n\n\nHere is the global structure of the project, and how the different parts interact.\n\n\nOverview\n\n\nThe system is divided in three parts:\n\n\n\n\nDaemons in C running on the board;\n\n\nA Python daemon running on the client computer;\n\n\nA webapp executed on the client computer.\n\n\n\n\nThese three parts communicate using \nWebSockets\n (basically a TCP connection, that you can use easily in Javascript, in browsers).\n\n\n\n\nOn the Board\n\n\nThere are three daemons running on the board, all in C:\n\n\n\n\nThe \nmain-daemon\n is the main part of the system, and the only one interacting with the microphones through ALSA API;\n\n\nThe \nws-audio\n is a first bridge between the main daemon and a WebSocket, allowing external clients to access the audio streams;\n\n\nThe \nws-config\n is a second bridge between the main daemon and a WebSocket, allowing external clients to change the configuration of the microphones.\n\n\n\n\nThese three daemons communicate together using TCP connections over UNIX sockets.\n\n\n\n\nThe Main daemon\n\n\nThis daemon can receive in live the audio streams from the microphones using ALSA API, and can also send a new configuration using the same API.\nThen it listens on two UNIX sockets using TCP: \n/tmp/micros-audio.socket\n and \n/tmp/micros-control.socket\n.\n\n\nIt sends the audio stream to every client connected to the first socket, and can receive a new audio configuration from the second socket.\nThe idea is to provide the most basic functionnalities with this daemon, that can be extended using other programs which communicate with it using these two UNIX sockets.\n\n\nWSAudio\n\n\nThe WSAudio daemon connects to the main daemon using the UNIX socket \n/tmp/micros-audio.socket\n, so it receives the audio streams in live.\nIt also listens on the port 8081 using WebSocket.\nIt will send the audio streams it receives to every connected client as binary messages.\nIt doesn't keep in memory the frames: each time it receives new data from the main daemon, it sends it to the connected clients.\nWhen a new client arrives, it starts to receive the audio streams from this moment.\n\n\nWSConfig\n\n\nThe WSConfig daemon connects to the main daemon using the UNIX socket \n/tmp/micros-control.socket\n.\nIt also listens on the port 8082 using WebSocket.\nWhen a client sends to it a configuration (using a text message containing JSON), it reads the JSON and sends the new information (using an array of integers) to the main daemon.\nThe main daemon will then interrupt its connection with ALSA, set the new configuration it just received and start again to receive the audio stream.\n\n\nOn the client\n\n\nThere are two components on the client(s):\n\n\n\n\nA python daemon \ncode-server.py\n that listens on a WebSocket and executes the python code it receives on it;\n\n\nThe webapp \nclient.html\n, which connects to \nws-audio\n and \nws-config\n so the user can listen to the audio streams and change the configuration, and also to the local python daemon to which it can send python code written by the user.\n\n\n\n\nExecution of python code\n\n\nIn the webapp, there is an editor where the user can write some python code.\nWhen he/she clicks on \nExecute\n the code is sent to the local python daemon.\nThen the python daemon includes the code to an existing python program, \nbase-program.py\n (at the end, it replaces the line \n#####INSERT: Here insert code\n with the code from the user), and executes it.\n\n\nThis new python program will then connect to \nws-audio\n, so it will receive the audio streams in live (and executes the code from the user on it), and it will also listens on a WebSocket (on a port around 9000 specified by the python daemon, which communicated it to the webapp) to which the webapp will connect.\nSo this new python program will have the possibility to work on the audio streams and to send the output (which can be plots data or a new audio stream) directly to the webapp.\n\n\nMore precisely, the user is invited to write his/her code inside a function \nhandleData(buffer)\n which will be called everytime a new audio buffer is received from the \nws-audio\n daemon.", 
+            "title": "Structure"
+        }, 
+        {
+            "location": "/structure/#intro", 
+            "text": "Here is the global structure of the project, and how the different parts interact.", 
+            "title": "Intro"
+        }, 
+        {
+            "location": "/structure/#overview", 
+            "text": "The system is divided in three parts:   Daemons in C running on the board;  A Python daemon running on the client computer;  A webapp executed on the client computer.   These three parts communicate using  WebSockets  (basically a TCP connection, that you can use easily in Javascript, in browsers).", 
+            "title": "Overview"
+        }, 
+        {
+            "location": "/structure/#on-the-board", 
+            "text": "There are three daemons running on the board, all in C:   The  main-daemon  is the main part of the system, and the only one interacting with the microphones through ALSA API;  The  ws-audio  is a first bridge between the main daemon and a WebSocket, allowing external clients to access the audio streams;  The  ws-config  is a second bridge between the main daemon and a WebSocket, allowing external clients to change the configuration of the microphones.   These three daemons communicate together using TCP connections over UNIX sockets.", 
+            "title": "On the Board"
+        }, 
+        {
+            "location": "/structure/#the-main-daemon", 
+            "text": "This daemon can receive in live the audio streams from the microphones using ALSA API, and can also send a new configuration using the same API.\nThen it listens on two UNIX sockets using TCP:  /tmp/micros-audio.socket  and  /tmp/micros-control.socket .  It sends the audio stream to every client connected to the first socket, and can receive a new audio configuration from the second socket.\nThe idea is to provide the most basic functionnalities with this daemon, that can be extended using other programs which communicate with it using these two UNIX sockets.", 
+            "title": "The Main daemon"
+        }, 
+        {
+            "location": "/structure/#wsaudio", 
+            "text": "The WSAudio daemon connects to the main daemon using the UNIX socket  /tmp/micros-audio.socket , so it receives the audio streams in live.\nIt also listens on the port 8081 using WebSocket.\nIt will send the audio streams it receives to every connected client as binary messages.\nIt doesn't keep in memory the frames: each time it receives new data from the main daemon, it sends it to the connected clients.\nWhen a new client arrives, it starts to receive the audio streams from this moment.", 
+            "title": "WSAudio"
+        }, 
+        {
+            "location": "/structure/#wsconfig", 
+            "text": "The WSConfig daemon connects to the main daemon using the UNIX socket  /tmp/micros-control.socket .\nIt also listens on the port 8082 using WebSocket.\nWhen a client sends to it a configuration (using a text message containing JSON), it reads the JSON and sends the new information (using an array of integers) to the main daemon.\nThe main daemon will then interrupt its connection with ALSA, set the new configuration it just received and start again to receive the audio stream.", 
+            "title": "WSConfig"
+        }, 
+        {
+            "location": "/structure/#on-the-client", 
+            "text": "There are two components on the client(s):   A python daemon  code-server.py  that listens on a WebSocket and executes the python code it receives on it;  The webapp  client.html , which connects to  ws-audio  and  ws-config  so the user can listen to the audio streams and change the configuration, and also to the local python daemon to which it can send python code written by the user.", 
+            "title": "On the client"
+        }, 
+        {
+            "location": "/structure/#execution-of-python-code", 
+            "text": "In the webapp, there is an editor where the user can write some python code.\nWhen he/she clicks on  Execute  the code is sent to the local python daemon.\nThen the python daemon includes the code to an existing python program,  base-program.py  (at the end, it replaces the line  #####INSERT: Here insert code  with the code from the user), and executes it.  This new python program will then connect to  ws-audio , so it will receive the audio streams in live (and executes the code from the user on it), and it will also listens on a WebSocket (on a port around 9000 specified by the python daemon, which communicated it to the webapp) to which the webapp will connect.\nSo this new python program will have the possibility to work on the audio streams and to send the output (which can be plots data or a new audio stream) directly to the webapp.  More precisely, the user is invited to write his/her code inside a function  handleData(buffer)  which will be called everytime a new audio buffer is received from the  ws-audio  daemon.", 
+            "title": "Execution of python code"
+        }, 
+        {
+            "location": "/messages-ref/", 
+            "text": "Intro\n\n\nHere you will find the different messages that can be exchanged between the different parts, inside the UNIX Sockets or the WebSockets.\nThe titles are always server \n client.\n\n\nMain Daemon\n\n\nMain Daemon \n WSAudio\n\n\nThis connection is only one-way: the main daemon sends messages to WSAudio.\n\n\nConnection\n\n\n\n\nSocket Type: UNIX Socket;\n\n\nFile: \n/tmp/micros-audio.socket\n;\n\n\nTransport protocol: TCP.\n\n\n\n\nMessages\n\n\n\n\nAudio configuration: this message allows WSAudio to know the audio configuration choosed, so especially it can allocate the right buffer size.\n\n\nLength in \nbytes\n: \n4*sizeof(int)\n;\n\n\nPayload: four integer: \n{buffer_frames}{rate}{channels}{volume}\n:\n\n\nbuffer_frames\n: number of audio frames in one buffer;\n\n\nrate\n: audio rate (in bits/second);\n\n\nchannels\n: number of channels;\n\n\nvolume\n: ALSA volume of all microphones, between 0 and 100.\n\n\n\n\n\n\nSo the size of the audio buffer is \nbuffer_size = buffer_frames*channels*sizeof(SND_PCM_FORMAT_S16_LE) / 8\n in \nbytes\n (for now, one audio frame is encoded with a 16-bits little-endian integer).\n\n\n\n\n\n\nAudio buffer: this message contains new audio data.\n\n\nLength: the previous computed \nbuffer_size\n;\n\n\nPayload: \nbuffer_frames*channels\n 16-bits little-endian integer, in the following order (for example with 2 channels):\n\n\nframes[0].channels[0];\n\n\nframes[0].channels[1];\n\n\nframes[1].channels[0];\n\n\nframes[1].channels[1];\n\n\nframes[2].channels[0];\n\n\nframes[2].channels[1];\n\n\n...\n\n\n\n\n\n\n\n\n\n\n\n\nTo differentiate the two messages types, WSAudio only uses the length of the message.\nIf it's four integers then it is a configuration information, else it is audio data.\n\n\nMain Daemon \n WSConfig\n\n\nThis connection is only one-way: WSConfig sends messages to the main daemon.\n\n\nConnection\n\n\n\n\nSocket Type: UNIX Socket;\n\n\nFile: \n/tmp/micros-config.socket\n;\n\n\nTransport protocol: TCP.\n\n\n\n\nMessages\n\n\n\n\nAudio configuration: this message allows WSConfig to send a new audio configuration to the main daemon.\n\n\nLength in \nbytes\n: \n4*sizeof(int)\n;\n\n\nPayload: four integer: \n{buffer_frames}{rate}{channels}{volume}\n:\n\n\nbuffer_frames\n: number of audio frames in one buffer;\n\n\nrate\n: audio rate (in bits/second);\n\n\nchannels\n: number of channels;\n\n\nvolume\n: ALSA volume of all microphones, between 0 and 100.\n\n\n\n\n\n\n\n\n\n\n\n\nWSAudio \n Client\n\n\nThis connection is only one-way: WSAudio sends messages to the webapp or the python program.\n\n\nConnection\n\n\n\n\nProtocol: WebSocket;\n\n\nPort: 8081.\n\n\n\n\nMessages\n\n\n\n\n\n\nAudio configuration: this message allows the client to know the audio configuration choosed.\n\n\n\n\nMessage type: text;\n\n\n\n\nMessage format: JSON:\n\n\n{\n  \"buffer_frames\": (integer), // the number of frames in one buffer\n  \"rate\": (integer), // the bitrate in bits/second\n  \"channels\": (integer), // the number of channels\n  \"volume\": (integer) // the volume of all microphones, between 0 and 100\n}\n\n\n\n\n\n\n\nSo the size of the audio buffer is \nm.buffer_frames * m.channels * 16 / 8\n in \nbytes\n (16 because a frame is encoded using a 16-bits little-endian integer), where \nm\n is the JSON received message.\n\n\n\n\n\n\n\n\n\n\nAudio buffer: this message contains new audio data.\n\n\n\n\nMessage type: binary;\n\n\nPayload: \nm.buffer_frames * m.channels\n 16-bits little-endian integer, in the following order (for example with 2 channels):\n\n\nframes[0].channels[0];\n\n\nframes[0].channels[1];\n\n\nframes[1].channels[0];\n\n\nframes[1].channels[1];\n\n\nframes[2].channels[0];\n\n\nframes[2].channels[1];\n\n\n...\n\n\n\n\n\n\n\n\n\n\n\n\nWSConfig \n Webapp\n\n\nThis connection is only one-way: the webapp sends new audio configuration to WSConfig\n\n\nConnection\n\n\n\n\nProtocol: WebSocket;\n\n\nPort: 8082.\n\n\n\n\nMessages\n\n\n\n\nAudio configuration: this message allows the webapp to send a new audio configuration to WSConfig.\n\n\nMessage type: text;\n\n\nMessage format: JSON:\n{\n  \"buffer_frames\": (integer), // the number of frames in one buffer\n  \"rate\": (integer), // the bitrate in bits/second\n  \"channels\": (integer), // the number of channels\n  \"volume\": (integer) // the volume of all microphones, between 0 and 100\n}\n\n\n\n\n\n\n\n\n\n\n\nPython Daemon \n Webapp\n\n\nThis conenction is two-ways: the webapp can send new python code to execute, and the daemon can send back the status of the program.\n\n\nConnection\n\n\n\n\nProtocol: WebSocket;\n\n\nPort: 9000.\n\n\n\n\nMessages: Webapp \n Python Daemon\n\n\n\n\n\n\nPython code to execute: this message contains new python code to insert into \nbase-program.py\n and to execute.\n\n\n\n\nMessage type: text;\n\n\nPayload: just the python code to execute.\n\n\n\n\n\n\n\n\nInterruption of the running code: this messages asks the daemon to stop the current python code running (each client can only have one python program running at each time).\n\n\n\n\nMessage type: text;\n\n\nPayload: just \nSTOP\n.\n\n\n\n\n\n\n\n\nMessages: Python Daemon \n Webapp\n\n\n\n\n\n\nPort information: this message indicates to the webapp on which port the new python program will listen for its WebSocket.\n\n\n\n\nMessage type: text;\n\n\nMessage format: JSON: \n{\"port\": (integer)}\n.\n\n\n\n\n\n\n\n\nStdout new line: this message is sent to the webapp each time the new python program outputs a line on stdout.\n\n\n\n\nMessage type: text;\n\n\nMessage format: JSON: \n{\"line\": (string)}\n.\n\n\n\n\n\n\n\n\nStderr new line: this message is sent to the webapp each time the new python program outputs a line on stderr.\n\n\n\n\nMessage type: text;\n\n\nMessage format: JSON: \n{\"error\": (string)}\n.\n\n\n\n\n\n\n\n\nLine inserted: this message indicates to the webapp on which line of \nbase-program.py\n the python code has been inserted (it is usefull to find the correspondance between an error and the original line).\n\n\n\n\nMessage type: text;\n\n\nMessage format: JSON: \n{\"codeLine\": (integer)}\n.\n\n\n\n\n\n\n\n\nEnd of the python program: this message is sent to the webapp when the new python program exits, with the code returned.\n\n\n\n\nMessage type: text;\n\n\nMessage format: JSON: \n{\"status\": \"end\", \"code\": (integer)}\n.\n\n\n\n\n\n\n\n\nfinal-program.py \n Webapp\n\n\nThis connection is one-way only: the new python program can send various outputs to the webapp.\n\n\nConnection\n\n\n\n\nProtocol: WebSocket;\n\n\nPort: just over 9000 (choosen and specified by the python daemon).\n\n\n\n\nMessages\n\n\n\n\n\n\nAudio data to play: this message contains a new audio buffer. The python program can for example to something on the audio stream and outputs a new audio stream it wants the webapp to play.\n\n\n\n\nMessage type: binary;\n\n\nPayload: for now, the configuration must be the same as the input stream: \ninput_conf.buffer_frames * input_conf.channels\n 16-bits little-endian integer, in the following order (for example with 2 channels):\n\n\nframes[0].channels[0];\n\n\nframes[0].channels[1];\n\n\nframes[1].channels[0];\n\n\nframes[1].channels[1];\n\n\nframes[2].channels[0];\n\n\nframes[2].channels[1];\n\n\n...\n\n\n\n\n\n\n\n\n\n\n\n\nCreation of a new data handler: this message asks the webapp to create a new data handler, that will be then complete with new data.\n\n\n\n\nMessage type: text;\n\n\nMessage format: JSON:\n{\n    \"addHandler\": (string), // name of the handler for display\n    \"id\": (integer), // id chosen to identify the handler. Must be unique\n    \"type\": (string), // type of handler\n    \"parameters\": (object) // optional parameters\n}\n\n\n\n\n\n\n\n\n\n\n\nNew data for a data handler: this message contains new data for an existing data handler.\n\n\n\n\nMessage type: text;\n\n\nMessage format: JSON:\n{\n    \"dataHandler\": (integer), // id of the existing data handler\n    \"data\": (object) // data for the existing data handler\n}", 
+            "title": "Messages reference"
+        }, 
+        {
+            "location": "/messages-ref/#intro", 
+            "text": "Here you will find the different messages that can be exchanged between the different parts, inside the UNIX Sockets or the WebSockets.\nThe titles are always server   client.", 
+            "title": "Intro"
+        }, 
+        {
+            "location": "/messages-ref/#main-daemon", 
+            "text": "", 
+            "title": "Main Daemon"
+        }, 
+        {
+            "location": "/messages-ref/#main-daemon-wsaudio", 
+            "text": "This connection is only one-way: the main daemon sends messages to WSAudio.", 
+            "title": "Main Daemon &gt; WSAudio"
+        }, 
+        {
+            "location": "/messages-ref/#connection", 
+            "text": "Socket Type: UNIX Socket;  File:  /tmp/micros-audio.socket ;  Transport protocol: TCP.", 
+            "title": "Connection"
+        }, 
+        {
+            "location": "/messages-ref/#messages", 
+            "text": "Audio configuration: this message allows WSAudio to know the audio configuration choosed, so especially it can allocate the right buffer size.  Length in  bytes :  4*sizeof(int) ;  Payload: four integer:  {buffer_frames}{rate}{channels}{volume} :  buffer_frames : number of audio frames in one buffer;  rate : audio rate (in bits/second);  channels : number of channels;  volume : ALSA volume of all microphones, between 0 and 100.    So the size of the audio buffer is  buffer_size = buffer_frames*channels*sizeof(SND_PCM_FORMAT_S16_LE) / 8  in  bytes  (for now, one audio frame is encoded with a 16-bits little-endian integer).    Audio buffer: this message contains new audio data.  Length: the previous computed  buffer_size ;  Payload:  buffer_frames*channels  16-bits little-endian integer, in the following order (for example with 2 channels):  frames[0].channels[0];  frames[0].channels[1];  frames[1].channels[0];  frames[1].channels[1];  frames[2].channels[0];  frames[2].channels[1];  ...       To differentiate the two messages types, WSAudio only uses the length of the message.\nIf it's four integers then it is a configuration information, else it is audio data.", 
+            "title": "Messages"
+        }, 
+        {
+            "location": "/messages-ref/#main-daemon-wsconfig", 
+            "text": "This connection is only one-way: WSConfig sends messages to the main daemon.", 
+            "title": "Main Daemon &lt; WSConfig"
+        }, 
+        {
+            "location": "/messages-ref/#connection_1", 
+            "text": "Socket Type: UNIX Socket;  File:  /tmp/micros-config.socket ;  Transport protocol: TCP.", 
+            "title": "Connection"
+        }, 
+        {
+            "location": "/messages-ref/#messages_1", 
+            "text": "Audio configuration: this message allows WSConfig to send a new audio configuration to the main daemon.  Length in  bytes :  4*sizeof(int) ;  Payload: four integer:  {buffer_frames}{rate}{channels}{volume} :  buffer_frames : number of audio frames in one buffer;  rate : audio rate (in bits/second);  channels : number of channels;  volume : ALSA volume of all microphones, between 0 and 100.", 
+            "title": "Messages"
+        }, 
+        {
+            "location": "/messages-ref/#wsaudio-client", 
+            "text": "This connection is only one-way: WSAudio sends messages to the webapp or the python program.", 
+            "title": "WSAudio &gt; Client"
+        }, 
+        {
+            "location": "/messages-ref/#connection_2", 
+            "text": "Protocol: WebSocket;  Port: 8081.", 
+            "title": "Connection"
+        }, 
+        {
+            "location": "/messages-ref/#messages_2", 
+            "text": "Audio configuration: this message allows the client to know the audio configuration choosed.   Message type: text;   Message format: JSON:  {\n  \"buffer_frames\": (integer), // the number of frames in one buffer\n  \"rate\": (integer), // the bitrate in bits/second\n  \"channels\": (integer), // the number of channels\n  \"volume\": (integer) // the volume of all microphones, between 0 and 100\n}    So the size of the audio buffer is  m.buffer_frames * m.channels * 16 / 8  in  bytes  (16 because a frame is encoded using a 16-bits little-endian integer), where  m  is the JSON received message.      Audio buffer: this message contains new audio data.   Message type: binary;  Payload:  m.buffer_frames * m.channels  16-bits little-endian integer, in the following order (for example with 2 channels):  frames[0].channels[0];  frames[0].channels[1];  frames[1].channels[0];  frames[1].channels[1];  frames[2].channels[0];  frames[2].channels[1];  ...", 
+            "title": "Messages"
+        }, 
+        {
+            "location": "/messages-ref/#wsconfig-webapp", 
+            "text": "This connection is only one-way: the webapp sends new audio configuration to WSConfig", 
+            "title": "WSConfig &lt; Webapp"
+        }, 
+        {
+            "location": "/messages-ref/#connection_3", 
+            "text": "Protocol: WebSocket;  Port: 8082.", 
+            "title": "Connection"
+        }, 
+        {
+            "location": "/messages-ref/#messages_3", 
+            "text": "Audio configuration: this message allows the webapp to send a new audio configuration to WSConfig.  Message type: text;  Message format: JSON: {\n  \"buffer_frames\": (integer), // the number of frames in one buffer\n  \"rate\": (integer), // the bitrate in bits/second\n  \"channels\": (integer), // the number of channels\n  \"volume\": (integer) // the volume of all microphones, between 0 and 100\n}", 
+            "title": "Messages"
+        }, 
+        {
+            "location": "/messages-ref/#python-daemon-webapp", 
+            "text": "This conenction is two-ways: the webapp can send new python code to execute, and the daemon can send back the status of the program.", 
+            "title": "Python Daemon &lt;&gt; Webapp"
+        }, 
+        {
+            "location": "/messages-ref/#connection_4", 
+            "text": "Protocol: WebSocket;  Port: 9000.", 
+            "title": "Connection"
+        }, 
+        {
+            "location": "/messages-ref/#messages-webapp-python-daemon", 
+            "text": "Python code to execute: this message contains new python code to insert into  base-program.py  and to execute.   Message type: text;  Payload: just the python code to execute.     Interruption of the running code: this messages asks the daemon to stop the current python code running (each client can only have one python program running at each time).   Message type: text;  Payload: just  STOP .", 
+            "title": "Messages: Webapp &gt; Python Daemon"
+        }, 
+        {
+            "location": "/messages-ref/#messages-python-daemon-webapp", 
+            "text": "Port information: this message indicates to the webapp on which port the new python program will listen for its WebSocket.   Message type: text;  Message format: JSON:  {\"port\": (integer)} .     Stdout new line: this message is sent to the webapp each time the new python program outputs a line on stdout.   Message type: text;  Message format: JSON:  {\"line\": (string)} .     Stderr new line: this message is sent to the webapp each time the new python program outputs a line on stderr.   Message type: text;  Message format: JSON:  {\"error\": (string)} .     Line inserted: this message indicates to the webapp on which line of  base-program.py  the python code has been inserted (it is usefull to find the correspondance between an error and the original line).   Message type: text;  Message format: JSON:  {\"codeLine\": (integer)} .     End of the python program: this message is sent to the webapp when the new python program exits, with the code returned.   Message type: text;  Message format: JSON:  {\"status\": \"end\", \"code\": (integer)} .", 
+            "title": "Messages: Python Daemon &gt; Webapp"
+        }, 
+        {
+            "location": "/messages-ref/#final-programpy-webapp", 
+            "text": "This connection is one-way only: the new python program can send various outputs to the webapp.", 
+            "title": "final-program.py &gt; Webapp"
+        }, 
+        {
+            "location": "/messages-ref/#connection_5", 
+            "text": "Protocol: WebSocket;  Port: just over 9000 (choosen and specified by the python daemon).", 
+            "title": "Connection"
+        }, 
+        {
+            "location": "/messages-ref/#messages_4", 
+            "text": "Audio data to play: this message contains a new audio buffer. The python program can for example to something on the audio stream and outputs a new audio stream it wants the webapp to play.   Message type: binary;  Payload: for now, the configuration must be the same as the input stream:  input_conf.buffer_frames * input_conf.channels  16-bits little-endian integer, in the following order (for example with 2 channels):  frames[0].channels[0];  frames[0].channels[1];  frames[1].channels[0];  frames[1].channels[1];  frames[2].channels[0];  frames[2].channels[1];  ...       Creation of a new data handler: this message asks the webapp to create a new data handler, that will be then complete with new data.   Message type: text;  Message format: JSON: {\n    \"addHandler\": (string), // name of the handler for display\n    \"id\": (integer), // id chosen to identify the handler. Must be unique\n    \"type\": (string), // type of handler\n    \"parameters\": (object) // optional parameters\n}      New data for a data handler: this message contains new data for an existing data handler.   Message type: text;  Message format: JSON: {\n    \"dataHandler\": (integer), // id of the existing data handler\n    \"data\": (object) // data for the existing data handler\n}", 
+            "title": "Messages"
+        }, 
+        {
+            "location": "/data-handlers/", 
+            "text": "Definition\n\n\nA data handler is an object in the webapp which can be used to handle some data.\n\n\nTypically, they are used to vizualise the output of the program written by the user, which takes into input the audio streams, and could want to draw some charts as a result.\nSeveral data handlers come with the project, but you can also easily write your own, as explained.\n\n\nThere are two main parts when using a data handler:\n\n\n\n\nYou create it, with some configuration information;\n\n\nYou send data to it.\n\n\n\n\nDataHandler: draw classic charts\n\n\nThis handler can be used to draw line charts, histograms.\nThere are always 2D charts, with an x axis and an y axis.\n\n\n\n\n\n\n\n\nConfiguration\n\n\nThe following options are accepted during the creation:\n\n\n\n\nxName\n (string): name of the x axis;\n\n\nseries\n (array[string]): names of the different series. \nThis parameter fixes the number of series to display\n;\n\n\nmin\n (number) [optional]: minimum value for y;\n\n\nmax\n (number) [optional]: maximum value for y.\n\n\n\n\nSending data\n\n\nAdding a point\n\n\nYou can add a new point to each serie:\n\n\n[\n  {\nx\n: 3, \ny\n: 39},\n  {\nx\n: 3, \ny\n: -3},\n  {\nx\n: 3, \ny\n: 23.1}\n]\n\n\n\n\nThe size of the array must be the number of series (specified during the creation).\n\n\nReplacing all the points\n\n\nYou can also replace all the points of all the series:\n\n\n{\n  \nx\n: [0, 1, 2, 3, 4],\n  \ny\n: [\n    [12, 4, 1, 1, 5],\n    [6, 4, 2, 0, -2],\n    [0, 0.5, 1, 0.5, 2]\n  ]\n}\n\n\n\n\nHere we have three series of five points.\nEach serie must have the same number of points, matching the length of the \nx\n array.\n\n\nDataHandler: draw polar charts\n\n\nThis handler can draw polar charts (simple ones for now).\n\n\n\n\nConfiguration\n\n\nThe following options are accepted during the creation:\n\n\n\n\ntitle\n (string): name of the chart;\n\n\nseries\n (array[string]): names of the different series. \nThis parameter fixes the number of series to display\n;\n\n\nlegend\n (object): defines the scale and contains the following parameters:\n\n\nfrom\n (number): the value corresponding to a start from the north;\n\n\nto\n (number): the value corresponding to the arrival to the north after one revolution;\n\n\nstep\n (number): the size of the subdivision.\n\n\n\n\n\n\n\n\nSending data\n\n\nAdding an entry\n\n\nYou can add new data to each serie:\n\n\n[\n  {\nappend\n: 10},\n  {\nappend\n: 4},\n  {\nappend\n: 43}\n]\n\n\n\n\nThe size of the array must be the number of series (specified during the creation).\nThe new values will be pushed at the end of previous data of each serie.\n\n\nDataHandler: log some data\n\n\nWrite your own data handler", 
+            "title": "Data Handlers"
+        }, 
+        {
+            "location": "/data-handlers/#definition", 
+            "text": "A data handler is an object in the webapp which can be used to handle some data.  Typically, they are used to vizualise the output of the program written by the user, which takes into input the audio streams, and could want to draw some charts as a result.\nSeveral data handlers come with the project, but you can also easily write your own, as explained.  There are two main parts when using a data handler:   You create it, with some configuration information;  You send data to it.", 
+            "title": "Definition"
+        }, 
+        {
+            "location": "/data-handlers/#datahandler-draw-classic-charts", 
+            "text": "This handler can be used to draw line charts, histograms.\nThere are always 2D charts, with an x axis and an y axis.", 
+            "title": "DataHandler: draw classic charts"
+        }, 
+        {
+            "location": "/data-handlers/#configuration", 
+            "text": "The following options are accepted during the creation:   xName  (string): name of the x axis;  series  (array[string]): names of the different series.  This parameter fixes the number of series to display ;  min  (number) [optional]: minimum value for y;  max  (number) [optional]: maximum value for y.", 
+            "title": "Configuration"
+        }, 
+        {
+            "location": "/data-handlers/#sending-data", 
+            "text": "", 
+            "title": "Sending data"
+        }, 
+        {
+            "location": "/data-handlers/#adding-a-point", 
+            "text": "You can add a new point to each serie:  [\n  { x : 3,  y : 39},\n  { x : 3,  y : -3},\n  { x : 3,  y : 23.1}\n]  The size of the array must be the number of series (specified during the creation).", 
+            "title": "Adding a point"
+        }, 
+        {
+            "location": "/data-handlers/#replacing-all-the-points", 
+            "text": "You can also replace all the points of all the series:  {\n   x : [0, 1, 2, 3, 4],\n   y : [\n    [12, 4, 1, 1, 5],\n    [6, 4, 2, 0, -2],\n    [0, 0.5, 1, 0.5, 2]\n  ]\n}  Here we have three series of five points.\nEach serie must have the same number of points, matching the length of the  x  array.", 
+            "title": "Replacing all the points"
+        }, 
+        {
+            "location": "/data-handlers/#datahandler-draw-polar-charts", 
+            "text": "This handler can draw polar charts (simple ones for now).", 
+            "title": "DataHandler: draw polar charts"
+        }, 
+        {
+            "location": "/data-handlers/#configuration_1", 
+            "text": "The following options are accepted during the creation:   title  (string): name of the chart;  series  (array[string]): names of the different series.  This parameter fixes the number of series to display ;  legend  (object): defines the scale and contains the following parameters:  from  (number): the value corresponding to a start from the north;  to  (number): the value corresponding to the arrival to the north after one revolution;  step  (number): the size of the subdivision.", 
+            "title": "Configuration"
+        }, 
+        {
+            "location": "/data-handlers/#sending-data_1", 
+            "text": "", 
+            "title": "Sending data"
+        }, 
+        {
+            "location": "/data-handlers/#adding-an-entry", 
+            "text": "You can add new data to each serie:  [\n  { append : 10},\n  { append : 4},\n  { append : 43}\n]  The size of the array must be the number of series (specified during the creation).\nThe new values will be pushed at the end of previous data of each serie.", 
+            "title": "Adding an entry"
+        }, 
+        {
+            "location": "/data-handlers/#datahandler-log-some-data", 
+            "text": "", 
+            "title": "DataHandler: log some data"
+        }, 
+        {
+            "location": "/data-handlers/#write-your-own-data-handler", 
+            "text": "", 
+            "title": "Write your own data handler"
+        }
+    ]
+}

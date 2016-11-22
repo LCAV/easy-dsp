@@ -46,14 +46,22 @@ function graphRickshaw(renderer) {
         color: 'rgba(' + Math.floor(Math.random()*255) + ',' + Math.floor(Math.random()*255) + ',' + Math.floor(Math.random()*255) + ',0.75)',
         name: serieName
       });
-    })
-    var graph = new Rickshaw.Graph({
+    });
+    var graphParams = {
       element: html,
       renderer: renderer,
       height: 250,
       width: 800,
       series: series
-    });
+    };
+    // yMin and yMax
+    if (parameters.min) {
+      graphParams.min = parameters.min;
+    }
+    if (parameters.max) {
+      graphParams.max = parameters.max;
+    }
+    var graph = new Rickshaw.Graph(graphParams);
     graph.render();
 
     var hoverDetail = new Rickshaw.Graph.HoverDetail({
@@ -74,10 +82,21 @@ function graphRickshaw(renderer) {
     yAxis.render();
 
     function newData(data) {
-      // data = [{x: 23, y: -2}]
-      _.forEach(data, function (d, i) {
-        series[i].data.push(d);
-      });
+      if (data.x) { // data = {x: [0, 1, 2], y = [[1, 4, 3], [0, -2, 4]]}
+        for (var i = 0; i < series.length; i++) {
+          series[i].data = [];
+        }
+        _.forEach(data.y, function (d, i) {
+          _.forEach(d, function (y, j) {
+            series[i].data.push({x: data.x[j], y});
+          });
+        });
+      } else {
+        // data = [{x: 23, y: -2}]
+        _.forEach(data, function (d, i) {
+          series[i].data.push(d);
+        });
+      }
       graph.update();
     }
 

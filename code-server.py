@@ -11,13 +11,22 @@ import sys
 import socket
 import json
 
+lineIdentifier = '#####INSERT: Here insert code';
+
 def runCode(message, client, q):
     data = message.data
     print client
     print "start"
     with open('base-program.py', 'r') as baseFile:
         baseCode = baseFile.read()
-    baseCode = baseCode.replace('#####INSERT: Here insert code\n', data)
+    lines = baseCode.split('\n')
+    lineNumber = 0
+    for l in lines:
+        lineNumber += 1
+        if l == lineIdentifier:
+            client.send(json.dumps({'codeLine': lineNumber}))
+            break
+    baseCode = baseCode.replace(lineIdentifier + '\n', data)
     baseFile.close()
     filename = "code-program.py"
     file = open(filename, "w")

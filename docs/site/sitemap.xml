@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+    
+    <url>
+     <loc>/</loc>
+     <lastmod>2016-11-22</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/getting-started/</loc>
+     <lastmod>2016-11-22</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/structure/</loc>
+     <lastmod>2016-11-22</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/messages-ref/</loc>
+     <lastmod>2016-11-22</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/data-handlers/</loc>
+     <lastmod>2016-11-22</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+</urlset>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Data Handlers - Beaglebone Board Web Interface</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Data Handlers";
+    var mkdocs_page_input_path = "data-handlers.md";
+    var mkdocs_page_url = "/data-handlers/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Beaglebone Board Web Interface</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Home</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../getting-started/">Getting started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../structure/">Structure</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../messages-ref/">Messages reference</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Data Handlers</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#definition">Definition</a></li>
+                
+                    <li><a class="toctree-l4" href="#datahandler-draw-classic-charts">DataHandler: draw classic charts</a></li>
+                
+                    <li><a class="toctree-l4" href="#datahandler-draw-polar-charts">DataHandler: draw polar charts</a></li>
+                
+                    <li><a class="toctree-l4" href="#datahandler-log-some-data">DataHandler: log some data</a></li>
+                
+                    <li><a class="toctree-l4" href="#write-your-own-data-handler">Write your own data handler</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Beaglebone Board Web Interface</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Data Handlers</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="definition">Definition</h1>
+<p>A data handler is an object in the webapp which can be used to handle some data.</p>
+<p>Typically, they are used to vizualise the output of the program written by the user, which takes into input the audio streams, and could want to draw some charts as a result.
+Several data handlers come with the project, but you can also easily write your own, as explained.</p>
+<p>There are two main parts when using a data handler:</p>
+<ol>
+<li>You create it, with some configuration information;</li>
+<li>You send data to it.</li>
+</ol>
+<h2 id="datahandler-draw-classic-charts">DataHandler: draw classic charts</h2>
+<p>This handler can be used to draw line charts, histograms.
+There are always 2D charts, with an x axis and an y axis.</p>
+<p><img src="/img/handler-ex1.png" style="height: 100px !important;" />
+<img src="/img/handler-ex2.png" style="height: 100px !important;" />
+<img src="/img/handler-ex3.png" style="height: 100px !important;" /></p>
+<h3 id="configuration">Configuration</h3>
+<p>The following options are accepted during the creation:</p>
+<ul>
+<li><code>xName</code> (string): name of the x axis;</li>
+<li><code>series</code> (array[string]): names of the different series. <strong>This parameter fixes the number of series to display</strong>;</li>
+<li><code>min</code> (number) [optional]: minimum value for y;</li>
+<li><code>max</code> (number) [optional]: maximum value for y.</li>
+</ul>
+<h3 id="sending-data">Sending data</h3>
+<h4 id="adding-a-point">Adding a point</h4>
+<p>You can add a new point to each serie:</p>
+<pre><code class="json">[
+  {&quot;x&quot;: 3, &quot;y&quot;: 39},
+  {&quot;x&quot;: 3, &quot;y&quot;: -3},
+  {&quot;x&quot;: 3, &quot;y&quot;: 23.1}
+]
+</code></pre>
+
+<p>The size of the array must be the number of series (specified during the creation).</p>
+<h4 id="replacing-all-the-points">Replacing all the points</h4>
+<p>You can also replace all the points of all the series:</p>
+<pre><code class="json">{
+  &quot;x&quot;: [0, 1, 2, 3, 4],
+  &quot;y&quot;: [
+    [12, 4, 1, 1, 5],
+    [6, 4, 2, 0, -2],
+    [0, 0.5, 1, 0.5, 2]
+  ]
+}
+</code></pre>
+
+<p>Here we have three series of five points.
+Each serie must have the same number of points, matching the length of the <code>x</code> array.</p>
+<h2 id="datahandler-draw-polar-charts">DataHandler: draw polar charts</h2>
+<p>This handler can draw polar charts (simple ones for now).</p>
+<p><img src="/img/handler-polar-ex1.png" style="height: 200px !important; display: block; margin: 0 auto;" /></p>
+<h3 id="configuration_1">Configuration</h3>
+<p>The following options are accepted during the creation:</p>
+<ul>
+<li><code>title</code> (string): name of the chart;</li>
+<li><code>series</code> (array[string]): names of the different series. <strong>This parameter fixes the number of series to display</strong>;</li>
+<li><code>legend</code> (object): defines the scale and contains the following parameters:<ul>
+<li><code>from</code> (number): the value corresponding to a start from the north;</li>
+<li><code>to</code> (number): the value corresponding to the arrival to the north after one revolution;</li>
+<li><code>step</code> (number): the size of the subdivision.</li>
+</ul>
+</li>
+</ul>
+<h3 id="sending-data_1">Sending data</h3>
+<h4 id="adding-an-entry">Adding an entry</h4>
+<p>You can add new data to each serie:</p>
+<pre><code class="json">[
+  {&quot;append&quot;: 10},
+  {&quot;append&quot;: 4},
+  {&quot;append&quot;: 43}
+]
+</code></pre>
+
+<p>The size of the array must be the number of series (specified during the creation).
+The new values will be pushed at the end of previous data of each serie.</p>
+<h2 id="datahandler-log-some-data">DataHandler: log some data</h2>
+<h2 id="write-your-own-data-handler">Write your own data handler</h2>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="../messages-ref/" class="btn btn-neutral" title="Messages reference"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+    
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../messages-ref/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+    </span>
+</div>
+    <script src="../js/theme.js"></script>
+
+</body>
+</html>

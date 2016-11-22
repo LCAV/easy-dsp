@@ -132,6 +132,7 @@ btnCodeStop.click(function() {
   outputHandle.close();
 });
 
+var codeFirstLine = 31;
 wsPythonServer.onmessage = function(e) {
   var message = JSON.parse(e.data);
   // Information about which port to connect
@@ -145,10 +146,9 @@ wsPythonServer.onmessage = function(e) {
       message.error = message.error.replace(/File "code-program\.py"\, line ([0-9]+)/g, function (l, n) {
         n = parseInt(n);
         var nbOfLines = aceEditor.getValue().match(/[\n]/g).length + 1;
-        var firstLine = 31;
-        if (n > firstLine && n <= (firstLine + nbOfLines)) {
-          aceEditor.session.addMarker(new aceRange(n-firstLine-1, 0, n-firstLine-1, 5), "bg-error", "fullLine");
-          return 'File "code-program.py", line ' + (n-firstLine);
+        if (n >= codeFirstLine && n <= (codeFirstLine + nbOfLines)) {
+          aceEditor.session.addMarker(new aceRange(n-codeFirstLine, 0, n-codeFirstLine, 5), "bg-error", "fullLine");
+          return 'File "code-program.py", line ' + (n-codeFirstLine);
         } else {
           return l;
         }
@@ -161,7 +161,9 @@ wsPythonServer.onmessage = function(e) {
     if (end) {
       outputConsole.scrollTop((outputConsole[0].scrollHeight - outputConsole.height()));
     }
-  } else if(message.status) { // Status information
+  } else if (message.codeLine) {
+    codeFirstLine = message.codeLine;
+  } else if (message.status) { // Status information
     if (message.status == 'ended') {
       btnCodeStart.removeAttr('disabled');
       btnCodeStop.attr('disabled', 'disabled');

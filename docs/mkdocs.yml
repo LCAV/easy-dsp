@@ -1,0 +1,8 @@
+site_name: Beaglebone Board Web Interface
+theme: readthedocs
+pages:
+    - Home: index.md
+    - Getting started: getting-started.md
+    - Structure: structure.md
+    - Messages reference: messages-ref.md
+    - Data Handlers: data-handlers.md
