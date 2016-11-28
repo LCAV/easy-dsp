@@ -1,13 +1,7 @@
 /*
-  A Minimal Capture Program
-  This program opens an audio interface for capture, configures it for
-  stereo, 16 bit, 44.1kHz, interleaved conventional read/write
-  access. Then its reads a chunk of random data from it, and exits. It
-  isn't meant to be a real program.
-  From on Paul David's tutorial : http://equalarea.com/paul/alsa-audio.html
-  Fixes rate and buffer problems
-  sudo apt-get install libasound2-dev
-  gcc -o alsa-record-example -lasound alsa-record-example.c && ./alsa-record-example hw:0
+  The Main Daemon
+  gcc -o browser-main-daemon -lasound browser-main-daemon.c
+  ./browser-main-daemon
 */
 
 #include <stdio.h>
