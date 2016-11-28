@@ -186,8 +186,8 @@ void* main_ws(void* nothing) {
     fprintf(stderr, "Error during libwebsock_init.\n");
     exit(1);
   }
-  libwebsock_bind(ctx, "0.0.0.0", "8081");
-  fprintf(stdout, "libwebsock listening on port 8081\n");
+  libwebsock_bind(ctx, "0.0.0.0", "7321");
+  fprintf(stdout, "libwebsock listening on port 7321\n");
   ctx->onmessage = onmessage;
   ctx->onopen = onopen;
   ctx->onclose = onclose;
