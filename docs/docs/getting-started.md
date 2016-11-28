@@ -11,18 +11,16 @@ You will find explanations about how to use the project (how to start, the diffe
 
 ### Compilation
 
-* `gcc -o alsa-record-example -lasound alsa-record-example.c`
-* `gcc -g -O2 -o client-control client-control.c -lwebsock -ljansso`
-* `gcc -g -O2 -o client client.c -lwebsock`
+`make` should be enough to compile the three programs.
 
 ### Launch
 
-Two possibilities: `./demo.sh` (recommanded) or:
+Two possibilities: `./start.sh log-file.txt` (recommended) or:
 
-    ./alsa-record-example &
+    ./browser-main-daemon &
     export LD_LIBRARY_PATH=/usr/local/lib
-    ./client &
-    ./client-control &
+    ./browser-wsaudio &
+    ./browser-wsconfig &
 
 To stop it, kill the three programs (or use `./stop.sh`).
 
@@ -43,5 +41,5 @@ The IP address of the board must be specified in two files:
 
 ### Launch
 
-1. You first have to laund the python daemon: `python code-server.py`;
+1. You first have to launch the python daemon: `python code-server.py`;
 2. Then you just have to open the file `client.html` in your browser.

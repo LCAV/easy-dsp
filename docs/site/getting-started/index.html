@@ -87,6 +87,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../python-reference/">Python reference</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../data-handlers/">Data Handlers</a>
         
     </li>
@@ -133,17 +140,13 @@
 <li><a href="http://www.digip.org/jansson/">Jansson</a>.</li>
 </ul>
 <h3 id="compilation">Compilation</h3>
-<ul>
-<li><code>gcc -o alsa-record-example -lasound alsa-record-example.c</code></li>
-<li><code>gcc -g -O2 -o client-control client-control.c -lwebsock -ljansso</code></li>
-<li><code>gcc -g -O2 -o client client.c -lwebsock</code></li>
-</ul>
+<p><code>make</code> should be enough to compile the three programs.</p>
 <h3 id="launch">Launch</h3>
-<p>Two possibilities: <code>./demo.sh</code> (recommanded) or:</p>
-<pre><code>./alsa-record-example &amp;
+<p>Two possibilities: <code>./start.sh log-file.txt</code> (recommended) or:</p>
+<pre><code>./browser-main-daemon &amp;
 export LD_LIBRARY_PATH=/usr/local/lib
-./client &amp;
-./client-control &amp;
+./browser-wsaudio &amp;
+./browser-wsconfig &amp;
 </code></pre>
 <p>To stop it, kill the three programs (or use <code>./stop.sh</code>).</p>
 <h2 id="on-the-computer">On the computer</h2>
@@ -160,7 +163,7 @@ export LD_LIBRARY_PATH=/usr/local/lib
 </ul>
 <h3 id="launch_1">Launch</h3>
 <ol>
-<li>You first have to laund the python daemon: <code>python code-server.py</code>;</li>
+<li>You first have to launch the python daemon: <code>python code-server.py</code>;</li>
 <li>Then you just have to open the file <code>client.html</code> in your browser.</li>
 </ol>
               

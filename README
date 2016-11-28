@@ -5,15 +5,13 @@ Required:
 - Jansson (http://www.digip.org/jansson/)
 
 Build:
-gcc -o alsa-record-example -lasound alsa-record-example.c
-gcc -g -O2 -o client-control client-control.c -lwebsock -ljansso
-gcc -g -O2 -o client client.c -lwebsock
+make
 
 Launch:
-./alsa-record-example
-export LD_LIBRARY_PATH=/usr/local/lib
-./client
-./client-control
+./start.sh log-file.txt
+
+Stop:
+./stop.sh
 
 
 ## For the Python on the computer

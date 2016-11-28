@@ -75,6 +75,13 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../python-reference/">Python reference</a>
+        
+    </li>
+<li>
+          
+            <li>
     <li class="toctree-l1 current">
         <a class="current" href="./">Data Handlers</a>
         
@@ -82,11 +89,12 @@
             
                 <li class="toctree-l3"><a href="#definition">Definition</a></li>
                 
+            
+                <li class="toctree-l3"><a href="#example">Example</a></li>
+                
                     <li><a class="toctree-l4" href="#datahandler-draw-classic-charts">DataHandler: draw classic charts</a></li>
                 
                     <li><a class="toctree-l4" href="#datahandler-draw-polar-charts">DataHandler: draw polar charts</a></li>
-                
-                    <li><a class="toctree-l4" href="#datahandler-log-some-data">DataHandler: log some data</a></li>
                 
                     <li><a class="toctree-l4" href="#write-your-own-data-handler">Write your own data handler</a></li>
                 
@@ -137,12 +145,46 @@ Several data handlers come with the project, but you can also easily write your 
 <li>You create it, with some configuration information;</li>
 <li>You send data to it.</li>
 </ol>
+<h1 id="example">Example</h1>
+<p>You can use the data handlers from your python code (it is defined in more details in the python part reference):</p>
+<pre><code class="python">import time
+import random
+
+# First, we create our handlers
+# First we precise the name, then the type, and third the possible parameters
+## A line chart, with two series
+c1 = addHandler(&quot;First chart - Line&quot;, 'base:graph:line', {'xName': 'Name of x axis', 'series': ['First serie', 'Second serie']})
+## A plot chart, with one serie
+c2 = addHandler(&quot;Second chart - Plot&quot;, 'base:graph:plot', {'xName': 'Name of super x axis', 'series': ['Only serie']})
+## A polar chart, with one serie
+c3 = addHandler(&quot;Third chart - Polar&quot;, 'base:polar:area', {'title': 'Awesome polar chart', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
+
+# Then we can send some data to the different handlers
+c1.sendData([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
+c1.sendData([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
+c1.sendData([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
+c1.sendData([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
+c2.sendData([{'x': -4, 'y': 3}])
+
+for i in range(5, 40):
+  c1.sendData([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
+  c3.sendData([{'append': (200+i*3)*10}])
+  time.sleep(1)
+</code></pre>
+
 <h2 id="datahandler-draw-classic-charts">DataHandler: draw classic charts</h2>
 <p>This handler can be used to draw line charts, histograms.
 There are always 2D charts, with an x axis and an y axis.</p>
 <p><img src="/img/handler-ex1.png" style="height: 100px !important;" />
 <img src="/img/handler-ex2.png" style="height: 100px !important;" />
 <img src="/img/handler-ex3.png" style="height: 100px !important;" /></p>
+<h3 id="types">Types</h3>
+<ul>
+<li><code>base:graph:line</code>: a line chart;</li>
+<li><code>base:graph:area</code>: an area chart;</li>
+<li><code>base:graph:bar</code>: an histogram;</li>
+<li><code>base:graph:plot</code>: a plot chart.</li>
+</ul>
 <h3 id="configuration">Configuration</h3>
 <p>The following options are accepted during the creation:</p>
 <ul>
@@ -179,6 +221,10 @@ Each serie must have the same number of points, matching the length of the <code
 <h2 id="datahandler-draw-polar-charts">DataHandler: draw polar charts</h2>
 <p>This handler can draw polar charts (simple ones for now).</p>
 <p><img src="/img/handler-polar-ex1.png" style="height: 200px !important; display: block; margin: 0 auto;" /></p>
+<h3 id="types_1">Types</h3>
+<ul>
+<li><code>base:polar:area</code>: an area polar chart.</li>
+</ul>
 <h3 id="configuration_1">Configuration</h3>
 <p>The following options are accepted during the creation:</p>
 <ul>
@@ -203,8 +249,41 @@ Each serie must have the same number of points, matching the length of the <code
 
 <p>The size of the array must be the number of series (specified during the creation).
 The new values will be pushed at the end of previous data of each serie.</p>
-<h2 id="datahandler-log-some-data">DataHandler: log some data</h2>
 <h2 id="write-your-own-data-handler">Write your own data handler</h2>
+<p>From a code point of view, a data handler is a class, from which instances are created when asking.
+Because we are talking about JavaScript, we are not working with a real class, but with a function returning an object.</p>
+<h3 id="defining-your-data-handler">Defining your data handler</h3>
+<p>When instantiated, two parameters will be given to your function:
+<em> the html element you can use to display things;
+</em> the <code>parameters</code> object specified by the user.</p>
+<p>Your function must return an objet with a property/method <code>newData</code> that will be called with the <code>data</code> object specified by the user.</p>
+<pre><code class="js">function myDataHandler(html, parameters) {
+  // html is the DOM element you can use
+  // Here we just append to this html element the parameters object
+  $(html).append(JSON.stringify(parameters) + '&lt;br /&gt;');
+
+  // We must return an object with a method newData
+  return {
+    newData: function (data) {
+      // This code will be executed each time data is sent to this data handler
+      $(html).append(JSON.stringify(data) + '&lt;br /&gt;');
+    }
+  }
+}
+</code></pre>
+
+<h3 id="registering-your-data-handler">Registering your data handler</h3>
+<p>Then, you have to choose a type for your data handler and to register it:</p>
+<pre><code class="js">dataHandlers.registerNewType('customtype', myDataHandler);
+</code></pre>
+
+<p>You can write this code in the file <code>js/myHandlers.js</code></p>
+<h3 id="using-it">Using it</h3>
+<p>You can use it from the python code like any other data handler:</p>
+<pre><code class="python">myHandlerInstance = addHandler(&quot;Custom thing&quot;, 'customtype', {'param1': True, 'param2': 'hello', 'param3': [0, 1, 2]})
+myHandlerInstance.sendData({'newData': {'i': i}})
+myHandlerInstance.sendData(['an', 'array', 'this', 'time'])
+</code></pre>
               
             </div>
           </div>
@@ -213,7 +292,7 @@ The new values will be pushed at the end of previous data of each serie.</p>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="../messages-ref/" class="btn btn-neutral" title="Messages reference"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../python-reference/" class="btn btn-neutral" title="Python reference"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -239,7 +318,7 @@ The new values will be pushed at the end of previous data of each serie.</p>
     <span class="rst-current-version" data-toggle="rst-current-version">
       
       
-        <span><a href="../messages-ref/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../python-reference/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
     </span>

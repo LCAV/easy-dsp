@@ -5,4 +5,5 @@ pages:
     - Getting started: getting-started.md
     - Structure: structure.md
     - Messages reference: messages-ref.md
+    - Python reference: python-reference.md
     - Data Handlers: data-handlers.md
