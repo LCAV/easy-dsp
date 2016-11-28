@@ -110,6 +110,24 @@ $('#output-tab-audio').click(function (e) {
 
 
 // Code execution
+var outputBuffered = '';
+var printOutputBufferedTimeout;
+
+// We must buffer the output, and add it to the HTML every 100ms
+// Else the interface will freeze
+// This function will be called every 100ms
+function printOutputBuffered() {
+  // Should we maintain a scroll to the end of the output console?
+  var end = outputConsole.scrollTop() == (outputConsole[0].scrollHeight - outputConsole.height());
+  outputConsole.html(outputConsole.html() + outputBuffered);
+  if (end) {
+    outputConsole.scrollTop((outputConsole[0].scrollHeight - outputConsole.height()));
+  }
+
+  outputBuffered = '';
+  printOutputBufferedTimeout = setTimeout(printOutputBuffered, 100);
+}
+
 // Start
 btnCodeStart.click(function() {
   btnCodeStart.attr('disabled', 'disabled');
@@ -126,16 +144,21 @@ btnCodeStart.click(function() {
       aceEditor.session.removeMarker(marker.id);
     }
   });
+
+  // Every 100ms we will display the ouput buffered
+  printOutputBufferedTimeout = setTimeout(printOutputBuffered, 100);
+
   wsPythonServer.send(aceEditor.getValue());
   btnCodeStop.removeAttr('disabled');
 });
 // Stop
 btnCodeStop.click(function() {
   wsPythonServer.send("STOP");
+  clearTimeout(printOutputBufferedTimeout);
   outputHandle.close();
 });
 
-var codeFirstLine = 31;
+var codeFirstLine;
 wsPythonServer.onmessage = function(e) {
   var message = JSON.parse(e.data);
   // Information about which port to connect
@@ -158,12 +181,8 @@ wsPythonServer.onmessage = function(e) {
       });
       line = '<span class="line-error">' + message.error + '</span>';
     }
-    // Should we maintain a scroll to the end of the output console?
-    var end = outputConsole.scrollTop() == (outputConsole[0].scrollHeight - outputConsole.height());
-    outputConsole.html(outputConsole.html() + line);
-    if (end) {
-      outputConsole.scrollTop((outputConsole[0].scrollHeight - outputConsole.height()));
-    }
+
+    outputBuffered += line;
   } else if (message.codeLine) {
     codeFirstLine = message.codeLine;
   } else if (message.status) { // Status information
