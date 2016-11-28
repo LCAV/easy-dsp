@@ -5,9 +5,9 @@ var AcePythonMode = ace.require("ace/mode/python").Mode;
 aceEditor.session.setMode(new AcePythonMode());
 
 // WebSockets
-var wsAudio = new WebSocket("ws://192.168.7.2:8081");
-var wsConfig = new WebSocket("ws://192.168.7.2:8082");
-var wsPythonServer = new WebSocket("ws://127.0.0.1:9000");
+var wsAudio = new WebSocket("ws://192.168.7.2:7321");
+var wsConfig = new WebSocket("ws://192.168.7.2:7322");
+var wsPythonServer = new WebSocket("ws://127.0.0.1:7320");
 
 var inputStream;
 var outputHandle;

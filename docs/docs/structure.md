@@ -37,7 +37,7 @@ The idea is to provide the most basic functionnalities with this daemon, that ca
 ### WSAudio
 
 The WSAudio daemon connects to the main daemon using the UNIX socket `/tmp/micros-audio.socket`, so it receives the audio streams in live.
-It also listens on the port 8081 using WebSocket.
+It also listens on the port 7321 using WebSocket.
 It will send the audio streams it receives to every connected client as binary messages.
 It doesn't keep in memory the frames: each time it receives new data from the main daemon, it sends it to the connected clients.
 When a new client arrives, it starts to receive the audio streams from this moment.
@@ -45,7 +45,7 @@ When a new client arrives, it starts to receive the audio streams from this mome
 ### WSConfig
 
 The WSConfig daemon connects to the main daemon using the UNIX socket `/tmp/micros-control.socket`.
-It also listens on the port 8082 using WebSocket.
+It also listens on the port 7322 using WebSocket.
 When a client sends to it a configuration (using a text message containing JSON), it reads the JSON and sends the new information (using an array of integers) to the main daemon.
 The main daemon will then interrupt its connection with ALSA, set the new configuration it just received and start again to receive the audio stream.
 
@@ -62,7 +62,7 @@ In the webapp, there is an editor where the user can write some python code.
 When he/she clicks on *Execute* the code is sent to the local python daemon.
 Then the python daemon includes the code to an existing python program, `base-program.py` (at the end, it replaces the line `#####INSERT: Here insert code` with the code from the user), and executes it.
 
-This new python program will then connect to `ws-audio`, so it will receive the audio streams in live (and executes the code from the user on it), and it will also listens on a WebSocket (on a port around 9000 specified by the python daemon, which communicated it to the webapp) to which the webapp will connect.
+This new python program will then connect to `ws-audio`, so it will receive the audio streams in live (and executes the code from the user on it), and it will also listens on a WebSocket (on a port around 7320 specified by the python daemon, which communicated it to the webapp) to which the webapp will connect.
 So this new python program will have the possibility to work on the audio streams and to send the output (which can be plots data or a new audio stream) directly to the webapp.
 
 More precisely, the user is invited to write his/her code inside a function `handleData(buffer)` which will be called everytime a new audio buffer is received from the `ws-audio` daemon.

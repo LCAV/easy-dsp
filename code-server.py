@@ -101,7 +101,7 @@ class EchoWebSocketMaison(WebSocket):
         if not self.q_popen.empty():
             self.q_popen.get().kill()
 
-server = make_server('', 9000, server_class=WSGIServer,
+server = make_server('', 7320, server_class=WSGIServer,
                      handler_class=WebSocketWSGIRequestHandler,
                      app=WebSocketWSGIApplication(handler_cls=EchoWebSocketMaison))
 server.initialize_websockets_manager()

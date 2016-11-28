@@ -136,7 +136,7 @@ serverThread.start()
 
 #####INSERT: Here insert code
 
-ws = StreamClient('ws://192.168.7.2:8081/', protocols=['http-only', 'chat'])
+ws = StreamClient('ws://192.168.7.2:7321/', protocols=['http-only', 'chat'])
 ws.connect()
 
 ws.run_forever()

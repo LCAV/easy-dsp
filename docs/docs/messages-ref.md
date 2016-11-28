@@ -68,7 +68,7 @@ This connection is only one-way: WSAudio sends messages to the webapp or the pyt
 #### Connection
 
 * Protocol: WebSocket;
-* Port: 8081.
+* Port: 7321.
 
 #### Messages
 
@@ -103,7 +103,7 @@ This connection is only one-way: the webapp sends new audio configuration to WSC
 #### Connection
 
 * Protocol: WebSocket;
-* Port: 8082.
+* Port: 7322.
 
 #### Messages
 
@@ -125,7 +125,7 @@ This conenction is two-ways: the webapp can send new python code to execute, and
 #### Connection
 
 * Protocol: WebSocket;
-* Port: 9000.
+* Port: 7320.
 
 #### Messages: Webapp > Python Daemon
 
@@ -166,7 +166,7 @@ This connection is one-way only: the new python program can send various outputs
 #### Connection
 
 * Protocol: WebSocket;
-* Port: just over 9000 (choosen and specified by the python daemon).
+* Port: just over 7320 (choosen and specified by the python daemon).
 
 #### Messages
 
