@@ -56,7 +56,7 @@ There are two components on the client(s):
 1. A python daemon `code-server.py` that listens on a WebSocket and executes the python code it receives on it;
 2. The webapp `client.html`, which connects to `ws-audio` and `ws-config` so the user can listen to the audio streams and change the configuration, and also to the local python daemon to which it can send python code written by the user.
 
-### Execution of python code
+### Execution of python code from the browser
 
 In the webapp, there is an editor where the user can write some python code.
 When he/she clicks on *Execute* the code is sent to the local python daemon.
@@ -67,4 +67,20 @@ So this new python program will have the possibility to work on the audio stream
 
 More precisely, the user is invited to write his/her code inside a function `handleData(buffer)` which will be called everytime a new audio buffer is received from the `ws-audio` daemon.
 
+The python daemon will also catch the `stdout` and `stderr` streams and redirect them to the browser, so the user can easily access it.
+
 ![Overview client](img/overview-client.svg)
+
+
+### Execution of a python script
+
+It is also possible to write a python script, that will use the library of the project to easily receive the audio, and to send output to the browser (if wanted).
+In that cas the browser is just used as a vizualisation tool.
+Just as previously, the script will connect to `ws-audio` and receive in live the audio streams.
+
+However, this time, the outputs are not redirected, so you will be able to see them directly in your console, like any python script.
+The library will also choose a port around 7320 by itself, and will communicate it to the python daemon, which will send it to the browser, so this last one can connects to the python script and receive the output (plots or new audio stream).
+
+So can also decide you don't need the browser and just use the connection with the audio stream, and any vizualisation library you want.
+
+![Overview script](img/overview-client-script.svg)
