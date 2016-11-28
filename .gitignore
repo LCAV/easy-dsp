@@ -1,4 +1,5 @@
 browser-main-daemon
 browser-wsaudio
 browser-wsconfig
-rickshaw
+rickshaw/
+node_modules/

@@ -36,7 +36,7 @@ To stop it, kill the three programs (or use `./stop.sh`).
 
 The IP address of the board must be specified in two files:
 
-* Lines 8 and 9 of `js/main.js`;
+* Line 1 of `js/main.js`;
 * At the end of `base-program.py`.
 
 ### Launch

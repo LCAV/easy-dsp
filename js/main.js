@@ -1,3 +1,6 @@
+var boardIp = '192.168.7.2';
+var boardIp = '192.168.1.151';
+
 // ACE Code Editor
 var aceEditor = ace.edit("editor");
 var aceRange = ace.require('ace/range').Range
@@ -5,8 +8,8 @@ var AcePythonMode = ace.require("ace/mode/python").Mode;
 aceEditor.session.setMode(new AcePythonMode());
 
 // WebSockets
-var wsAudio = new WebSocket("ws://192.168.7.2:7321");
-var wsConfig = new WebSocket("ws://192.168.7.2:7322");
+var wsAudio = new WebSocket("ws://" + boardIp + ":7321");
+var wsConfig = new WebSocket("ws://" + boardIp + ":7322");
 var wsPythonServer = new WebSocket("ws://127.0.0.1:7320");
 
 var inputStream;
