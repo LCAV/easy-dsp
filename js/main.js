@@ -21,13 +21,19 @@ var config;
 // Editor
 var btnCodeStart = $('#btn-code-start');
 var btnCodeStop = $('#btn-code-stop');
+var cardEditor = $('#card-editor');
 
 // Console
+var cardConsole = $('#card-console');
 var outputConsole = $('#console');
 var outputReturnCode = $('#output-return-code');
 var animationRunning = $('#animation-running');
 animationRunning.hide();
 
+// Message about external script
+var cardExternalScript = $('#card-external-script');
+var btnExternalScriptStop = $('#btn-external-script-stop');
+cardExternalScript.hide();
 
 // Alerts
 var infosStatusPythonServer = $('#info-status-code');
@@ -78,6 +84,23 @@ wsConfig.onclose = function(e) {
 wsPythonServer.onclose = function() {
   changeBadgeStatus(infosStatusPythonServer, 'disconnected');
 };
+
+
+// External script
+function startExternalScript() {
+  cardEditor.slideUp();
+  cardConsole.slideUp();
+  cardExternalScript.slideDown();
+}
+function endExternalScript() {
+  cardEditor.slideDown();
+  cardConsole.slideDown();
+  cardExternalScript.slideUp();
+}
+btnExternalScriptStop.click(function() {
+  outputHandle.close();
+  endExternalScript();
+});
 
 // Output Analyze
 // Audio
@@ -131,12 +154,11 @@ function printOutputBuffered() {
 // Start
 btnCodeStart.click(function() {
   btnCodeStart.attr('disabled', 'disabled');
-  outputConsole.html('');
   animationRunning.show();
+
+  // We clean the console
+  outputConsole.html('');
   outputReturnCode.html('');
-  // Remove previous tabs
-  $('#output-tabs .output-tab').remove();
-  $('#output-panes .output-pane').remove();
 
   // Remove errors markers
   _.forEach(aceEditor.session.getMarkers(), function(marker) {
@@ -192,6 +214,11 @@ wsPythonServer.onmessage = function(e) {
       outputReturnCode.html(' - Code: ' + message.code);
       animationRunning.hide();
     }
+  } else if (message.standalone) {
+    startExternalScript();
+    setTimeout(function() {
+      outputHandle = new handleOutput(message.standalone);
+    }, 300);
   } else {
     console.warn("wsPythonServer.onmessage(): Unknown message", message);
   }
@@ -246,6 +273,10 @@ function displayConfig() {
 function handleOutput(port) {
   var ws = new WebSocket("ws://127.0.0.1:" + port);
   var outputStream;
+
+  // Remove previous tabs
+  $('#output-tabs .output-tab').remove();
+  $('#output-panes .output-pane').remove();
 
   ws.onmessage = function(e) {
     if (typeof e.data != "string") { // we have binary data: it's audio

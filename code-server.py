@@ -80,12 +80,25 @@ def execute(popen):
     # print return_code
     print "fini"
 
+clients = []
+
 class EchoWebSocketMaison(WebSocket):
     def opened(self):
         print "New client"
+        clients.append(self)
 
     def received_message(self, message):
         print self
+        try:
+            data = json.loads(message.data)
+            if data['standalone']:
+                # Send a message to every connected client so it knows
+                for c in clients:
+                    if c != self:
+                        c.send(json.dumps(data))
+                return
+        except ValueError, e:
+            doNothing = True
         print "New message"
         if message.data != "STOP":
             self.q_popen = Queue()
@@ -98,7 +111,8 @@ class EchoWebSocketMaison(WebSocket):
             # print self.__popen.kill()
 
     def closed(self, code, reason=None):
-        if not self.q_popen.empty():
+        clients.remove(self)
+        if hasattr(self, 'q_popen') and not self.q_popen.empty():
             self.q_popen.get().kill()
 
 server = make_server('', 7320, server_class=WSGIServer,

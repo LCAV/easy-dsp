@@ -98,7 +98,18 @@
           </div>
         </div>
         <div class="col-md-9" id="main-stream">
-          <div class="card">
+          <div class="card" id="card-external-script">
+            <div class="card-main text-xs-center">
+              <br />
+              The browser is currently receiving data from an external script, so the editor and the console have been temporary disabled.
+              <br /><br />
+              <button type="button" class="btn btn-outline-warning btn-lg" id="btn-external-script-stop">
+                Stop and go back to the editor
+              </button>
+              <br /><br />
+            </div>
+          </div>
+          <div class="card" id="card-editor">
             <div class="card-header">
               Editor
             </div>
@@ -131,18 +142,28 @@
 <div class="card-main" id="editor"># handleData is called everytime a new buffer is received
 # You can call sendAudio with a new buffer to send it to the browser
 # A buffer is an array of signed integers, between -32 767 and +32 767
-# while True:
-#     i = 3
 
+import browserinterface
 import time
 import random
 
+def handle(buffer):
+    print "Buffer", len(buffer)
+    i = 0
+    for v in buffer:
+        buffer[i] = v*20
+        i += 1
+    # sendAudio(buffer)
+
+browserinterface.registerHandleData(handle)
+browserinterface.start()
+
 print "Hello World!"
 
-c1 = addHandler("First chart", 'base:graph:line', {'xName': 'ok', 'series': ['yNom', 'ynom 22']})
-# c2 = addHandler("Second chart", 'base:graph:plot', {'xName': 'youpi', 'series': ['yNom']})
-c3 = addHandler("Custom thing", 'customtype', {'param1': True, 'param2': 'hello'})
-c4 = addHandler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
+c1 = browserinterface.addHandler("First chart", 'base:graph:line', {'xName': 'ok', 'series': ['yNom', 'ynom 22']})
+# c2 = browserinterface.addHandler("Second chart", 'base:graph:plot', {'xName': 'youpi', 'series': ['yNom']})
+c3 = browserinterface.addHandler("Custom thing", 'customtype', {'param1': True, 'param2': 'hello'})
+c4 = browserinterface.addHandler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
 
 c1.sendData([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
 c1.sendData([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
@@ -157,13 +178,6 @@ for i in range(5, 40):
   print i
   time.sleep(1)
 
-def handleData(buffer):
-    # print "Buffer", len(buffer)
-    i = 0
-    for v in buffer:
-        buffer[i] = v*20
-        i += 1
-    # sendAudio(buffer)
 </div>
           </div>
           <div class="card">
@@ -186,7 +200,7 @@ def handleData(buffer):
               </div>
             </div>
           </div>
-          <div class="card">
+          <div class="card" id="card-console">
             <div class="card-header">
               Console<span id="output-return-code"></span>
             </div>
