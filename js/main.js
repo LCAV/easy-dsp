@@ -152,7 +152,12 @@ function printOutputBuffered() {
 }
 
 // Start
-btnCodeStart.click(function() {
+var codeRunning = false;
+function executeCode() {
+  if (codeRunning) {
+    return;
+  }
+  codeRunning = true;
   btnCodeStart.attr('disabled', 'disabled');
   animationRunning.show();
 
@@ -172,12 +177,27 @@ btnCodeStart.click(function() {
 
   wsPythonServer.send(aceEditor.getValue());
   btnCodeStop.removeAttr('disabled');
-});
+}
+btnCodeStart.click(executeCode);
 // Stop
-btnCodeStop.click(function() {
+function stopCode() {
+  if (!codeRunning) {
+    return;
+  }
+  codeRunning = false;
   wsPythonServer.send("STOP");
   clearTimeout(printOutputBufferedTimeout);
   outputHandle.close();
+}
+btnCodeStop.click(stopCode);
+
+// Key shortcuts
+key('⌘+e', function(event, handler) {
+  if (codeRunning) {
+    stopCode();
+  } else {
+    executeCode();
+  }
 });
 
 var codeFirstLine;
@@ -213,6 +233,7 @@ wsPythonServer.onmessage = function(e) {
       btnCodeStop.attr('disabled', 'disabled');
       outputReturnCode.html(' - Code: ' + message.code);
       animationRunning.hide();
+      codeRunning = false;
     }
   } else if (message.script) {
     startExternalScript();

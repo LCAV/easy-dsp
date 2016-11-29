@@ -12,6 +12,7 @@
   "author": "Basile Bruneau <basilebruneau@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "ace-builds": "^1.2.5"
+    "ace-builds": "^1.2.5",
+    "keymaster": "^1.6.2"
   }
 }
