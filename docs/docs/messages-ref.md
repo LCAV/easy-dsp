@@ -159,6 +159,10 @@ This conenction is two-ways: the webapp can send new python code to execute, and
     * Message type: text;
     * Message format: JSON: `{"status": "end", "code": (integer)}`.
 
+* New script: this message indicates to the webapp that a python script is running and would like to use the webapp for display, and specify on which port the python program listens for its WebSocket.
+    * Message type: text;
+    * Message format: JSON: `{"script": (integer)}`.
+
 ## final-program.py > Webapp
 
 This connection is one-way only: the new python program can send various outputs to the webapp.

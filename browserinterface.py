@@ -139,7 +139,7 @@ def startServer(port):
 
 class PythonDaemonClient(WebSocketClient):
     def opened(self):
-        self.send(json.dumps({'standalone': 9001}))
+        self.send(json.dumps({'script': 9001}))
         self.close()
 
 def informBrowser():

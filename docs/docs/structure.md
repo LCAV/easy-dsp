@@ -81,6 +81,6 @@ Just as previously, the script will connect to `ws-audio` and receive in live th
 However, this time, the outputs are not redirected, so you will be able to see them directly in your console, like any python script.
 The library will also choose a port around 7320 by itself, and will communicate it to the python daemon, which will send it to the browser, so this last one can connects to the python script and receive the output (plots or new audio stream).
 
-So can also decide you don't need the browser and just use the connection with the audio stream, and any vizualisation library you want.
+So can also decide you don't need the browser and just use the connection to the audio stream, and any vizualisation library you want.
 
 ![Overview script](img/overview-client-script.svg)

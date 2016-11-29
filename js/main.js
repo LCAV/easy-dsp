@@ -214,10 +214,10 @@ wsPythonServer.onmessage = function(e) {
       outputReturnCode.html(' - Code: ' + message.code);
       animationRunning.hide();
     }
-  } else if (message.standalone) {
+  } else if (message.script) {
     startExternalScript();
     setTimeout(function() {
-      outputHandle = new handleOutput(message.standalone);
+      outputHandle = new handleOutput(message.script);
     }, 300);
   } else {
     console.warn("wsPythonServer.onmessage(): Unknown message", message);

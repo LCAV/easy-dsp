@@ -42,4 +42,33 @@ The IP address of the board must be specified in two files:
 ### Launch
 
 1. You first have to launch the python daemon: `python code-server.py`;
-2. Then you just have to open the file `client.html` in your browser.
+2. Then you just have to open the file `client.html` in your browser;
+3. Finally you can write code:
+    - You can write code directly in the browser, where a basic example is provided;
+    - Or you can write a python script with your favorite editor and launch it like any python script:
+
+            import browserinterface
+            import time
+            import random
+
+            def myHandle(data):
+                print "New buffer", len(data)
+
+            browserinterface.registerHandleData(myHandle)
+            browserinterface.standalone = True
+            browserinterface.start()
+
+            print "Hello World!"
+
+            c1 = browserinterface.addHandler("First chart", 'base:graph:line', {'xName': 'ok', 'series': ['yNom', 'ynom 22']})
+            c2 = browserinterface.addHandler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
+
+            c1.sendData([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
+            c1.sendData([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
+            c1.sendData([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
+            c1.sendData([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
+
+            for i in range(5, 40):
+              c1.sendData([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
+              c2.sendData([{'append': (200+i*3)*10}])
+              time.sleep(1)

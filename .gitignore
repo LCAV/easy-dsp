@@ -4,3 +4,4 @@ browser-wsconfig
 rickshaw/
 node_modules/
 code-program.py
+*.pyc

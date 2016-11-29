@@ -91,7 +91,7 @@ class EchoWebSocketMaison(WebSocket):
         print self
         try:
             data = json.loads(message.data)
-            if data['standalone']:
+            if data['script']:
                 # Send a message to every connected client so it knows
                 for c in clients:
                     if c != self:
