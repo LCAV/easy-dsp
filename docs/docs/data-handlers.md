@@ -15,28 +15,29 @@ There are two main parts when using a data handler:
 You can use the data handlers from your python code (it is defined in more details in the python part reference):
 
 ```python
+import browserinterface
 import time
 import random
 
 # First, we create our handlers
 # First we precise the name, then the type, and third the possible parameters
 ## A line chart, with two series
-c1 = addHandler("First chart - Line", 'base:graph:line', {'xName': 'Name of x axis', 'series': ['First serie', 'Second serie']})
+c1 = browserinterface.add_handler("First chart - Line", 'base:graph:line', {'xName': 'Name of x axis', 'series': ['First serie', 'Second serie']})
 ## A plot chart, with one serie
-c2 = addHandler("Second chart - Plot", 'base:graph:plot', {'xName': 'Name of super x axis', 'series': ['Only serie']})
+c2 = browserinterface.add_handler("Second chart - Plot", 'base:graph:plot', {'xName': 'Name of super x axis', 'series': ['Only serie']})
 ## A polar chart, with one serie
-c3 = addHandler("Third chart - Polar", 'base:polar:area', {'title': 'Awesome polar chart', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
+c3 = browserinterface.add_handler("Third chart - Polar", 'base:polar:area', {'title': 'Awesome polar chart', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
 
 # Then we can send some data to the different handlers
-c1.sendData([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
-c1.sendData([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
-c1.sendData([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
-c1.sendData([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
-c2.sendData([{'x': -4, 'y': 3}])
+c1.send_data([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
+c1.send_data([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
+c1.send_data([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
+c1.send_data([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
+c2.send_data([{'x': -4, 'y': 3}])
 
 for i in range(5, 40):
-  c1.sendData([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
-  c3.sendData([{'append': (200+i*3)*10}])
+  c1.send_data([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
+  c3.send_data([{'append': (200+i*3)*10}])
   time.sleep(1)
 ```
 
@@ -183,7 +184,8 @@ You can write this code in the file `js/myHandlers.js`
 You can use it from the python code like any other data handler:
 
 ```python
-myHandlerInstance = addHandler("Custom thing", 'customtype', {'param1': True, 'param2': 'hello', 'param3': [0, 1, 2]})
-myHandlerInstance.sendData({'newData': {'i': i}})
-myHandlerInstance.sendData(['an', 'array', 'this', 'time'])
+import browserinterface
+myHandlerInstance = browserinterface.add_handler("Custom thing", 'customtype', {'param1': True, 'param2': 'hello', 'param3': [0, 1, 2]})
+myHandlerInstance.send_data({'newData': {'i': i}})
+myHandlerInstance.send_data(['an', 'array', 'this', 'time'])
 ```

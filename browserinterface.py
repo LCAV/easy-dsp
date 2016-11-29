@@ -15,24 +15,24 @@ import json
 
 r_messages = Queue()
 r_id = 0
-handleData = 0
+handle_data = 0
 
-def registerHandleData(fn):
-    global handleData
-    handleData = fn
+def register_handle_data(fn):
+    global handle_data
+    handle_data = fn
 
 class DataHandler():
     def __init__(self, id):
         self.id = id
 
-    def sendData(self, data):
+    def send_data(self, data):
         r_messages.put(json.dumps({'dataHandler': self.id, 'data': data}))
 
 # name: name of the graph
 # type: type of the graphs: 'base:graph:area', 'base:graph:line', 'base:graph:bar', 'base:graph:scatterplot'
 # parameters: parameters of the graph. Typically: {xName: "name of the x axis", seriesNames: ["serie 1", "serie 2", "serie 3"] }
 # returns: a Graph object
-def addHandler(name, type, parameters):
+def add_handler(name, type, parameters):
     global r_id
     r_id = r_id + 1
     r_messages.put(json.dumps({'addHandler': name, 'id': r_id, 'type': type, 'parameters': parameters}))
@@ -84,9 +84,10 @@ class StreamClient(WebSocketClient):
                 if (i % channels) == (channels-1):
                     ndata.append(current)
                     current = []
-            handleData(ndata)
+            if handle_data != 0:
+                handle_data(ndata)
 
-def sendAudio(buffer):
+def send_audio(buffer):
     if client != -1:
         try:
             nbuffer = []
@@ -129,7 +130,7 @@ class WSServer(WebSocket):
         # thread.interrupt_main()
         # print "cool"
 
-def startServer(port):
+def start_server(port):
     global server
     server = make_server('', port, server_class=WSGIServer,
                          handler_class=WebSocketWSGIRequestHandler,
@@ -142,23 +143,23 @@ class PythonDaemonClient(WebSocketClient):
         self.send(json.dumps({'script': 9001}))
         self.close()
 
-def informBrowser():
+def inform_browser():
     python_daemon = PythonDaemonClient('ws://127.0.0.1:7320/', protocols=['http-only', 'chat'])
     python_daemon.connect()
 
 
-def startClient():
+def start_client():
     ws = StreamClient('ws://192.168.1.151:7321/', protocols=['http-only', 'chat'])
     ws.connect()
 
     ws.run_forever()
 
 def start():
-    serverThread = Thread(target = startServer, args = (9001, ))
+    serverThread = Thread(target = start_server, args = (9001, ))
     serverThread.start()
 
     if standalone:
-        informBrowser()
+        inform_browser()
 
-    clientThread = Thread(target = startClient)
+    clientThread = Thread(target = start_client)
     clientThread.start()

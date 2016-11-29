@@ -51,24 +51,24 @@ The IP address of the board must be specified in two files:
             import time
             import random
 
-            def myHandle(data):
+            def my_handle(data):
                 print "New buffer", len(data)
 
-            browserinterface.registerHandleData(myHandle)
+            browserinterface.register_handle_hata(my_handle)
             browserinterface.standalone = True
             browserinterface.start()
 
             print "Hello World!"
 
-            c1 = browserinterface.addHandler("First chart", 'base:graph:line', {'xName': 'ok', 'series': ['yNom', 'ynom 22']})
-            c2 = browserinterface.addHandler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
+            c1 = browserinterface.add_handler("First chart", 'base:graph:line', {'xName': 'ok', 'series': ['yNom', 'ynom 22']})
+            c2 = browserinterface.add_handler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
 
-            c1.sendData([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
-            c1.sendData([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
-            c1.sendData([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
-            c1.sendData([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
+            c1.send_data([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
+            c1.send_data([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
+            c1.send_data([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
+            c1.send_data([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
 
             for i in range(5, 40):
-              c1.sendData([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
-              c2.sendData([{'append': (200+i*3)*10}])
+              c1.send_data([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
+              c2.send_data([{'append': (200+i*3)*10}])
               time.sleep(1)

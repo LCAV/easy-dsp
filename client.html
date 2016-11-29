@@ -153,28 +153,28 @@ def handle(buffer):
     for v in buffer:
         buffer[i] = v*20
         i += 1
-    # sendAudio(buffer)
+    # send_audio(buffer)
 
-browserinterface.registerHandleData(handle)
+browserinterface.register_handle_data(handle)
 browserinterface.start()
 
 print "Hello World!"
 
-c1 = browserinterface.addHandler("First chart", 'base:graph:line', {'xName': 'ok', 'series': ['yNom', 'ynom 22']})
-# c2 = browserinterface.addHandler("Second chart", 'base:graph:plot', {'xName': 'youpi', 'series': ['yNom']})
-c3 = browserinterface.addHandler("Custom thing", 'customtype', {'param1': True, 'param2': 'hello'})
-c4 = browserinterface.addHandler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
+c1 = browserinterface.add_handler("First chart", 'base:graph:line', {'xName': 'ok', 'series': ['yNom', 'ynom 22']})
+# c2 = browserinterface.add_handler("Second chart", 'base:graph:plot', {'xName': 'youpi', 'series': ['yNom']})
+c3 = browserinterface.add_handler("Custom thing", 'customtype', {'param1': True, 'param2': 'hello'})
+c4 = browserinterface.add_handler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
 
-c1.sendData([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
-c1.sendData([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
-c1.sendData([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
-c1.sendData([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
-# c2.sendData([{'x': -4, 'y': 3}])
+c1.send_data([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
+c1.send_data([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
+c1.send_data([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
+c1.send_data([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
+# c2.send_data([{'x': -4, 'y': 3}])
 
 for i in range(5, 40):
-  c1.sendData([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
-  c3.sendData({'newData': {'i': i}})
-  c4.sendData([{'append': (200+i*3)*10}])
+  c1.send_data([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
+  c3.send_data({'newData': {'i': i}})
+  c4.send_data([{'append': (200+i*3)*10}])
   print i
   time.sleep(1)
 

@@ -24,7 +24,7 @@ def handle(buffer):
 browserinterface.standalone = True
 
 # Finally you register your function, so browserinterface will call it every time a new audio buffer is received,
-browserinterface.registerHandleData(handle)
+browserinterface.register_handle_data(handle)
 # And you start
 browserinterface.start()
 ```
@@ -46,9 +46,9 @@ These are read-only, and you must not change them!
 
 You can define a function that will be called each time a new audio buffer is received, by registering it:
 ```python
-def myFunction(buffer):
+def my_function(buffer):
     print "Buffer received", len(buffer)
-browserinterface.registerHandleData(myFunction)
+browserinterface.register_handle_data(my_function)
 ```
 
 The parameter `buffer` will contain an array of size `buffer_frames` containing arrays of size `channels` containing integers between -32 767 and +32 767.
@@ -71,8 +71,8 @@ After you performed some algorithms on the audio streams, you may want to displa
 What you have to do is to send the data you want to display to a **data handler** of the webapp.
 You have two simple steps to do:
 
-1. You create a new data handler using the function `addHandler(name, type, parameters)` which returns an object representing this new instance;
-2. You send data to this instance using its method `sendData(data)`.
+1. You create a new data handler using the function `add_handler(name, type, parameters)` which returns an object representing this new instance;
+2. You send data to this instance using its method `send_data(data)`.
 
-Once you call the function `addHandler`, a new tab will be created in the webapp, with the name `name` you specified, and the chart/plot/audio player will appear inside.
+Once you call the function `add_handler`, a new tab will be created in the webapp, with the name `name` you specified, and the chart/plot/audio player will appear inside.
 You can use the part [Data Handlers](data-handlers.md) to see which *types* of data handlers exist, which parameters are supported, and which structure the `data` you send must follow.
