@@ -85,6 +85,34 @@ wsPythonServer.onclose = function() {
   changeBadgeStatus(infosStatusPythonServer, 'disconnected');
 };
 
+// Audio recording
+var btnRecording = $('#btn-recording');
+var inRecording = false;
+var recording;
+btnRecording.click(function() {
+  if (!inRecording) {
+    recording = new Recorder(inputStream.source, {wokerPath: 'Recorderjs/dist/recorder.js'});
+    recording.record();
+    inRecording = true;
+    btnRecording.removeClass('btn-danger');
+    btnRecording.addClass('btn-secondary');
+    btnRecording.text('Stop');
+  } else {
+    recording.stop();
+    recording.exportWAV(function (file) {
+      var a = document.createElement("a");
+      document.body.appendChild(a);
+      a.style = "display: none";
+      a.href = window.URL.createObjectURL(file);
+      a.download = 'recording.wav';
+      a.click();
+    });
+    btnRecording.removeClass('btn-secondary');
+    btnRecording.addClass('btn-danger');
+    btnRecording.text('Record');
+    inRecording = false;
+  }
+})
 
 // External script
 function startExternalScript() {
