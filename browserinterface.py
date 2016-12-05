@@ -12,6 +12,7 @@ import json
 import sys
 import socket
 import json
+import datetime
 
 r_messages = Queue()
 r_id = 0
@@ -43,6 +44,12 @@ channels = -1
 buffer_frames = -1
 volume = -1
 
+# The following variables are used to measure the latency
+## Date we began to receive audio stream
+bi_audio_start = None
+## Number of audio messages we received so far
+bi_audio_number = 0
+
 class StreamClient(WebSocketClient):
     # def opened(self):
     #     def data_provider():
@@ -59,18 +66,33 @@ class StreamClient(WebSocketClient):
     #     print "Closed down", code, reason
 
     def received_message(self, m):
+        global bi_audio_start
+        global bi_audio_number
         if not m.is_binary:
             print m
             global rate
             global channels
             global buffer_frames
             global volume
+            bi_audio_start = None
+            bi_audio_number = 0
             m = json.loads(m.data)
             rate = m['rate']
             channels = m['channels']
             buffer_frames = m['buffer_frames']
             volume = m['volume']
         else:
+            if bi_audio_start == None:
+                bi_audio_start = datetime.datetime.now()
+
+            time_diff = datetime.datetime.now() - bi_audio_start
+            time_elapsed = time_diff.total_seconds()*1000 # in milliseconds
+            audio_received = bi_audio_number*buffer_frames*1000/rate
+            # print str(time_elapsed) + ' ' + str(audio_received) + ' ' + str(time_elapsed - audio_received)
+            audio_delay = time_elapsed - audio_received
+            r_messages.put(json.dumps({'latency': audio_delay}))
+
+            bi_audio_number += 1
             data = bytearray()
             data.extend(m.data)
             ndata = []

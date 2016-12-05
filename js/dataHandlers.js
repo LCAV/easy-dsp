@@ -113,7 +113,7 @@ function plotPolar(html, parameters) {
       t: [],
       r: [],
       name: serie,
-      geometry: 'AreaChart',
+      geometry: parameters.type,
       groupId: 0
     };
     for (var i = parameters.legend.from; i < parameters.legend.to; i += parameters.legend.step) {
@@ -124,18 +124,34 @@ function plotPolar(html, parameters) {
 
   var c = {
     data: data,
-    layout: { title: parameters.title || '', width: 350, height: 350, margin: { left: 30, right: 30, top: 30, bottom: 30, pad: 0 },
-    angularAxis: { domain: null }, font: { family: 'Arial, sans-serif', size: 12, color: 'grey' },
-    direction: 'clockwise', orientation: 270, barmode: 'stack', backgroundColor: 'ghostwhite', showLegend: false }
+    layout: {
+      title: parameters.title || '',
+      width: 350,
+      height: 350,
+      margin: { left: 30, right: 30, top: 30, bottom: 30, pad: 0 },
+      angularAxis: { domain: null },
+      font: { family: 'Arial, sans-serif', size: 12, color: 'grey' },
+      direction: 'clockwise',
+      orientation: 270,
+      barmode: 'stack',
+      backgroundColor: 'ghostwhite',
+      showLegend: false
+    }
   };
+  if (parameters.rmin !== undefined && parameters.rmax !== undefined) {
+    c.layout.radialAxis = {domain: [parameters.rmin, parameters.rmax]};
+    console.log(c.layout);
+  }
   var m = micropolar.Axis();
   m.config(c);
   m.render(d3.select(html));
 
   function newData(data) {
-    _.forEach(data, function (d, i) {
-      if (d.append) {
+    _.forEach(data, function (d, i) { // loop on the series
+      if (d.append) { // we ca append a new point
         c.data[i].r.push(d.append);
+      } else if (d.replace) { // or replace the whole values
+        c.data[i].r = d.replace;
       }
     });
     m.config(c);

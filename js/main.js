@@ -1,4 +1,4 @@
-var boardIp = '192.168.7.2';
+// var boardIp = '192.168.7.2';
 var boardIp = '192.168.1.151';
 
 // ACE Code Editor
@@ -87,8 +87,12 @@ wsPythonServer.onclose = function() {
 
 // Audio recording
 var btnRecording = $('#btn-recording');
+var textRecording = $('#btn-recording .text');
+var timeRecording = $('#btn-recording .time');
 var inRecording = false;
 var recording;
+var recordingTimer;
+var recordingStart;
 btnRecording.click(function() {
   if (!inRecording) {
     recording = new Recorder(inputStream.source, {wokerPath: 'Recorderjs/dist/recorder.js'});
@@ -96,8 +100,11 @@ btnRecording.click(function() {
     inRecording = true;
     btnRecording.removeClass('btn-danger');
     btnRecording.addClass('btn-secondary');
-    btnRecording.text('Stop');
+    textRecording.text('Stop');
+    recordingStart = new Date();
+    recordingTimerUpdate();
   } else {
+    clearTimeout(recordingTimer);
     recording.stop();
     recording.exportWAV(function (file) {
       var a = document.createElement("a");
@@ -109,10 +116,26 @@ btnRecording.click(function() {
     });
     btnRecording.removeClass('btn-secondary');
     btnRecording.addClass('btn-danger');
-    btnRecording.text('Record');
+    textRecording.text('Record');
     inRecording = false;
   }
-})
+});
+function recordingTimerUpdate() {
+  recordingTimer = setTimeout(recordingTimerUpdate, 30 + Math.floor(20*Math.random()));
+  var diff = ((new Date()) - recordingStart);
+  var display = zeros(Math.floor(diff/1000/60)) + ':' + zeros(Math.floor((diff/1000)%60)) + '.' + zeros((diff%1000), 2);
+  timeRecording.text(display);
+}
+function zeros(n, number) {
+  var out = n;
+  if (n < 10) {
+    out = '0' + out;
+  }
+  if (number == 2 && n < 100) {
+    out = '0' + out;
+  }
+  return out;
+}
 
 // External script
 function startExternalScript() {
@@ -318,6 +341,9 @@ function displayConfig() {
   $('#info-volume').text(config.volume);
 }
 
+// Audio latency
+var infosAudioLatency = $('#info-audio-latency');
+
 // Manage the connection with the running code
 function handleOutput(port) {
   var ws = new WebSocket("ws://127.0.0.1:" + port);
@@ -345,6 +371,21 @@ function handleOutput(port) {
         dataHandlers.addHandler(data.id, data.type, document.getElementById('graph-' + data.id), data.parameters);
       } else if (data.dataHandler) {
         dataHandlers.addNewData(data.dataHandler, data.data);
+      } else if (data.latency) {
+        infosAudioLatency.text(Math.ceil(data.latency) + ' ms');
+        if (data.latency < 400) {
+          infosAudioLatency.removeClass('tag-danger');
+          infosAudioLatency.removeClass('tag-warning');
+          infosAudioLatency.addClass('tag-success');
+        } else if (data.latency < 1000) {
+          infosAudioLatency.removeClass('tag-danger');
+          infosAudioLatency.removeClass('tag-success');
+          infosAudioLatency.addClass('tag-warning');
+        } else {
+          infosAudioLatency.removeClass('tag-warning');
+          infosAudioLatency.removeClass('tag-success');
+          infosAudioLatency.addClass('tag-danger');
+        }
       } else {
         console.warn("handleOutput - ws.onmessage: unknow message type:", data);
       }

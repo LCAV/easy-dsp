@@ -22,31 +22,35 @@
             </div>
             <ul class="list-group list-group-flush">
               <li class="list-group-item">
-                <span class="tag tag-default tag-pill pull-xs-right tag-danger" id="info-status-code">Disconnected</span>
+                <span class="tag tag-default tag-pill float-xs-right tag-danger" id="info-status-code">Disconnected</span>
                 Code server
               </li>
               <li class="list-group-item">
-                <span class="tag tag-default tag-pill pull-xs-right tag-danger" id="info-status-audio">Disconnected</span>
+                <span class="tag tag-default tag-pill float-xs-right tag-danger" id="info-status-audio">Disconnected</span>
                 Audio stream
               </li>
               <li class="list-group-item">
-                <span class="tag tag-default tag-pill pull-xs-right tag-danger" id="info-status-control">Disconnected</span>
+                <span class="tag tag-default tag-pill float-xs-right tag-danger" id="info-status-control">Disconnected</span>
                 Control stream
               </li>
               <li class="list-group-item">
-                <span class="tag tag-default tag-pill pull-xs-right" id="info-rate">-</span>
+                <span class="tag tag-default tag-pill float-xs-right" id="info-audio-latency">-</span>
+                Latency
+              </li>
+              <li class="list-group-item">
+                <span class="tag tag-default tag-pill float-xs-right" id="info-rate">-</span>
                 Rate
               </li>
               <li class="list-group-item">
-                <span class="tag tag-default tag-pill pull-xs-right" id="info-channels">-</span>
+                <span class="tag tag-default tag-pill float-xs-right" id="info-channels">-</span>
                 Channels
               </li>
               <li class="list-group-item">
-                <span class="tag tag-default tag-pill pull-xs-right" id="info-frames">-</span>
+                <span class="tag tag-default tag-pill float-xs-right" id="info-frames">-</span>
                 Buffer frames
               </li>
               <li class="list-group-item">
-                <span class="tag tag-default tag-pill pull-xs-right" id="info-volume">-</span>
+                <span class="tag tag-default tag-pill float-xs-right" id="info-volume">-</span>
                 Volume
               </li>
             </ul>
@@ -56,7 +60,10 @@
               Recording
             </div>
             <div class="card-block">
-              <button id="btn-recording" class="btn btn-danger">Record</button>
+              <button id="btn-recording" class="btn btn-danger btn-block">
+                <span class="text">Record</span>
+                <span class="time" style="font-family: Courier"></span>
+              </button>
             </div>
           </div>
           <div class="card">
