@@ -57,9 +57,14 @@
           </div>
           <div class="card">
             <div class="card-header">
-              Recording
+              Input
             </div>
             <div class="card-block">
+              <div class="btn-group" style="display: block;">
+                <a id="btn-audio-input-play" class="btn btn-outline-primary col-xs-6">Play</a>
+                <a id="btn-audio-input-stop" class="btn btn-outline-danger col-xs-6">Stop</a>
+              </div>
+              <br /><br />
               <button id="btn-recording" class="btn btn-danger btn-block">
                 <span class="text">Record</span>
                 <span class="time" style="font-family: Courier"></span>
@@ -208,7 +213,6 @@ for i in range(5, 40):
               <div class="tab-content" id="output-panes">
                 <div class="tab-pane active" id="output-pane-audio" role="tabpanel">
                   <ul>
-                    <li>Input: <a id="btn-audio-input-play">Play</a> <a id="btn-audio-input-stop">Stop</a></li>
                     <li>Output: <a id="btn-audio-output-play">Play</a> <a id="btn-audio-output-stop">Stop</a></li>
                   </ul>
                 </div>
