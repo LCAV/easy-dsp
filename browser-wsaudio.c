@@ -30,6 +30,8 @@ int main(void)
   int s, t, len, i;
   struct sockaddr_un remote;
   char *buffer;
+  char *buffer_temp;
+  int buffer_pos = 0;
   int buffer_frames;
   const char *SOCKNAME = "/tmp/micros-audio.socket";
   ws_clients = NULL;
@@ -72,14 +74,15 @@ int main(void)
   buffer_frames = config[0]*config[2]*2;
 
   buffer = malloc(buffer_frames);
+  buffer_temp = malloc(buffer_frames);
   struct ws_client* c;
 
   while(1) {
     printf("ok\n");
-    if ((t=recv(s, buffer, buffer_frames, 0)) > 0) {
+    if ((t=recv(s, buffer_temp, buffer_frames, 0)) > 0) {
       if (t == config_size) {
         printf("New config\n");
-        int* temp = (int*) buffer;
+        int* temp = (int*) buffer_temp;
         config[0] = temp[0];
         config[1] = temp[1];
         config[2] = temp[2];
@@ -87,18 +90,29 @@ int main(void)
         buffer_frames = config[0]*config[2]*2;
         printf("New config %d %d %d %d\n", config[0], config[1], config[2], config[3]);
         free(buffer);
+        free(buffer_temp);
         buffer = malloc(buffer_frames);
+        buffer_temp = malloc(buffer_frames);
+        buffer_pos = 0;
         for (c = ws_clients; c != NULL; c = c->next) {
           send_config(c->c);
         }
         continue;
       }
+      printf("%d %d %d", buffer_pos, t, buffer_frames);
+      // We must fill completly buffer with buffer_frames length before sending it
+      memcpy((buffer + buffer_pos), buffer_temp, t);
+      if ((buffer_pos + t) < buffer_frames) {
+        buffer_pos += t;
+        continue;
+      }
+      buffer_pos = 0;
       printf("ok2\n");
       struct ws_client* previous = NULL;
       pthread_mutex_lock(&ws_client_lock);
       for (c = ws_clients; c != NULL; c = c->next) {
-        printf("ici\n");
-        int re = libwebsock_send_binary(c->c, buffer, t);
+        // printf("ici\n");
+        int re = libwebsock_send_binary(c->c, buffer, buffer_frames);
         if (re == -1) {
           if (previous == NULL) {
             ws_clients = c->next;
@@ -110,7 +124,7 @@ int main(void)
         }
       }
       pthread_mutex_unlock(&ws_client_lock);
-      printf("%d bytes received %d %d\n", t, buffer[0], buffer[1]);
+      // printf("%d bytes received %d %d\n", t, buffer[0], buffer[1]);
     } else {
       if (t < 0) perror("recv");
       else printf("Server closed connection\n");
