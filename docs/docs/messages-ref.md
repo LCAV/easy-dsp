@@ -185,6 +185,14 @@ This connection is one-way only: the new python program can send various outputs
         6. frames[2].channels[1];
         7. ...
 
+* Audio latency: this message contains the delay in milliseconds between the processing and the reality. We just measure how much time elapsed between the first audio frame we received, and the audio duration we received.
+    * Message type: text;
+    * Message format: JSON:
+
+            {
+                "latency": (float)
+            }
+
 * Creation of a new data handler: this message asks the webapp to create a new data handler, that will be then complete with new data.
     * Message type: text;
     * Message format: JSON:

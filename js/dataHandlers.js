@@ -106,60 +106,61 @@ function graphRickshaw(renderer) {
   }
 }
 
-function plotPolar(html, parameters) {
-  var data = [];
-  _.forEach(parameters.series, function (serie) {
-    var d = {
-      t: [],
-      r: [],
-      name: serie,
-      geometry: parameters.type,
-      groupId: 0
-    };
-    for (var i = parameters.legend.from; i < parameters.legend.to; i += parameters.legend.step) {
-      d.t.push(i);
-    }
-    data.push(d);
-  });
-
-  var c = {
-    data: data,
-    layout: {
-      title: parameters.title || '',
-      width: 350,
-      height: 350,
-      margin: { left: 30, right: 30, top: 30, bottom: 30, pad: 0 },
-      angularAxis: { domain: null },
-      font: { family: 'Arial, sans-serif', size: 12, color: 'grey' },
-      direction: 'clockwise',
-      orientation: 270,
-      barmode: 'stack',
-      backgroundColor: 'ghostwhite',
-      showLegend: false
-    }
-  };
-  if (parameters.rmin !== undefined && parameters.rmax !== undefined) {
-    c.layout.radialAxis = {domain: [parameters.rmin, parameters.rmax]};
-    console.log(c.layout);
-  }
-  var m = micropolar.Axis();
-  m.config(c);
-  m.render(d3.select(html));
-
-  function newData(data) {
-    _.forEach(data, function (d, i) { // loop on the series
-      if (d.append) { // we ca append a new point
-        c.data[i].r.push(d.append);
-      } else if (d.replace) { // or replace the whole values
-        c.data[i].r = d.replace;
+function plotPolarType(type) {
+  return function plotPolar(html, parameters) {
+    var data = [];
+    _.forEach(parameters.series, function (serie) {
+      var d = {
+        t: [],
+        r: [],
+        name: serie,
+        geometry: type,
+        groupId: 0
+      };
+      for (var i = parameters.legend.from; i < parameters.legend.to; i += parameters.legend.step) {
+        d.t.push(i);
       }
+      data.push(d);
     });
+
+    var c = {
+      data: data,
+      layout: {
+        title: parameters.title || '',
+        width: 350,
+        height: 350,
+        margin: { left: 30, right: 30, top: 30, bottom: 30, pad: 0 },
+        angularAxis: { domain: null },
+        font: { family: 'Arial, sans-serif', size: 12, color: 'grey' },
+        direction: 'clockwise',
+        orientation: 270,
+        barmode: 'stack',
+        backgroundColor: 'ghostwhite',
+        showLegend: false
+      }
+    };
+    if (parameters.rmin !== undefined && parameters.rmax !== undefined) {
+      c.layout.radialAxis = {domain: [parameters.rmin, parameters.rmax]};
+    }
+    var m = micropolar.Axis();
     m.config(c);
     m.render(d3.select(html));
-  }
 
-  return {
-    newData: newData
+    function newData(data) {
+      _.forEach(data, function (d, i) { // loop on the series
+        if (d.append) { // we ca append a new point
+          c.data[i].r.push(d.append);
+        } else if (d.replace) { // or replace the whole values
+          c.data[i].r = d.replace;
+        }
+      });
+      m.config(c);
+      m.render(d3.select(html));
+    }
+
+    return {
+      newData: newData
+    };
   };
 }
 
@@ -167,7 +168,9 @@ dataHandlers.registerNewType('base:graph:line', graphRickshaw('line'));
 dataHandlers.registerNewType('base:graph:area', graphRickshaw('area'));
 dataHandlers.registerNewType('base:graph:bar', graphRickshaw('bar'));
 dataHandlers.registerNewType('base:graph:plot', graphRickshaw('scatterplot'));
-dataHandlers.registerNewType('base:polar:area', plotPolar);
+dataHandlers.registerNewType('base:polar:area', plotPolarType('AreaChart'));
+dataHandlers.registerNewType('base:polar:line', plotPolarType('LinePlot'));
+
 
 dataHandlers.registerNewType('customtype', function (html, parameters) {
   $(html).append(JSON.stringify(parameters) + '<br />');

@@ -103,12 +103,14 @@ Each serie must have the same number of points, matching the length of the `x` a
 
 ## DataHandler: draw polar charts
 
-This handler can draw polar charts (simple ones for now).
+This handler can draw polar charts.
 
-<img src="/img/handler-polar-ex1.png" style="height: 200px !important; display: block; margin: 0 auto;" />
+<img src="/img/handler-polar-ex2.png" style="height: 200px !important;" />
+<img src="/img/handler-polar-ex1.png" style="height: 200px !important;" />
 
 ### Types
 
+* `base:polar:line`: a line polar chart;
 * `base:polar:area`: an area polar chart.
 
 ### Configuration
@@ -137,8 +139,23 @@ You can add new data to each serie:
 ]
 ```
 
-The size of the array must be the number of series (specified during the creation).
 The new values will be pushed at the end of previous data of each serie.
+The size of the array must be the number of series (specified during the creation).
+
+
+#### Replacing all entries
+
+You can replace all data at once:
+
+```json
+[
+  {"replace": [3, 5, 1, 1, 4]},
+  {"replace": [1, 7, 3.4, 2.2, 2]},
+  {"replace": [2, 1, 3.8, 3.9, 4]}
+]
+```
+
+The size of the array must be the number of series (specified during the creation).
 
 ## Write your own data handler
 
