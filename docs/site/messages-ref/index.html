@@ -105,6 +105,13 @@
     </li>
 <li>
           
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../acknowledgements/">Acknowledgements</a>
+        
+    </li>
+<li>
+          
         </ul>
       </div>
       &nbsp;
@@ -330,6 +337,13 @@ If it's four integers then it is a configuration information, else it is audio d
 <li>Message format: JSON: <code>{"status": "end", "code": (integer)}</code>.</li>
 </ul>
 </li>
+<li>
+<p>New script: this message indicates to the webapp that a python script is running and would like to use the webapp for display, and specify on which port the python program listens for its WebSocket.</p>
+<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON: <code>{"script": (integer)}</code>.</li>
+</ul>
+</li>
 </ul>
 <h2 id="final-programpy-webapp">final-program.py &gt; Webapp</h2>
 <p>This connection is one-way only: the new python program can send various outputs to the webapp.</p>
@@ -353,6 +367,17 @@ If it's four integers then it is a configuration information, else it is audio d
 <li>frames[2].channels[1];</li>
 <li>...</li>
 </ol>
+</li>
+</ul>
+</li>
+<li>
+<p>Audio latency: this message contains the delay in milliseconds between the processing and the reality. We just measure how much time elapsed between the first audio frame we received, and the audio duration we received.</p>
+<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON:<pre><code>{
+    "latency": (float)
+}
+</code></pre>
 </li>
 </ul>
 </li>

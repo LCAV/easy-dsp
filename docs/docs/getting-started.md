@@ -29,7 +29,7 @@ To stop it, kill the three programs (or use `./stop.sh`).
 ### Prerequisites
 
 * Install [ws4py](https://ws4py.readthedocs.io/en/latest/);
-* Clone [Rickshaw](https://github.com/shutterstock/rickshaw) in the directory of the `client.html` file: `git clone https://github.com/shutterstock/rickshaw.git`.
+* Numpy.
 
 
 ### Configuration

@@ -172,11 +172,11 @@ dataHandlers.registerNewType('base:polar:area', plotPolarType('AreaChart'));
 dataHandlers.registerNewType('base:polar:line', plotPolarType('LinePlot'));
 
 
-dataHandlers.registerNewType('customtype', function (html, parameters) {
-  $(html).append(JSON.stringify(parameters) + '<br />');
-  return {
-    newData: function (data) {
-      $(html).append(JSON.stringify(data) + '<br />');
-    }
-  }
-});
+// dataHandlers.registerNewType('customtype', function (html, parameters) {
+//   $(html).append(JSON.stringify(parameters) + '<br />');
+//   return {
+//     newData: function (data) {
+//       $(html).append(JSON.stringify(data) + '<br />');
+//     }
+//   }
+// });

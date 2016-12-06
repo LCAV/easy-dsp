@@ -86,7 +86,11 @@
                 
                     <li><a class="toctree-l4" href="#reading-the-configuration">Reading the configuration</a></li>
                 
+                    <li><a class="toctree-l4" href="#receiving-configuration-changes">Receiving configuration changes</a></li>
+                
                     <li><a class="toctree-l4" href="#receiving-the-audio-streams">Receiving the audio streams</a></li>
+                
+                    <li><a class="toctree-l4" href="#recording-audio">Recording audio</a></li>
                 
                     <li><a class="toctree-l4" href="#using-the-data-handlers">Using the data handlers</a></li>
                 
@@ -99,6 +103,13 @@
             <li>
     <li class="toctree-l1 ">
         <a class="" href="../data-handlers/">Data Handlers</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../acknowledgements/">Acknowledgements</a>
         
     </li>
 <li>
@@ -138,8 +149,28 @@
                 <h1 id="intro">Intro</h1>
 <p>This part explains how to get the audio streams in python code and how to send results to the webapp, so it can display them in live.</p>
 <h2 id="how-it-works">How it works</h2>
-<p>It is important to understand that the code written in the editor in the webapp will be inserted in the file <code>base-program.py</code>, at the line <code>#####INSERT: Here insert code</code>.
-So pre-existing functions and variables will be accessible, whereas you will not see them in the editor.</p>
+<p>When your write code in the webapp editor and click "Execute", it will be executed as a new python script.
+So either you use the browser or write directly a python script that you launch from your terminal, the working is similar.</p>
+<p>To easily access the audio streams, and display something in the webapp, we provide a python module <code>browserinterface</code>.</p>
+<p>The minimum python code is the following:</p>
+<pre><code class="python"># First you import the module
+import browserinterface
+
+# Then you define the function that will perform some algorithm on the audio streams
+def handle(buffer):
+    print &quot;Buffer received&quot;, len(buffer)
+
+# If you run a python script directly from your terminal, you need to set `standalone` to True
+# If you write this code directly in the webapp, you must remove this line (or set `standalone` to False)
+browserinterface.standalone = True
+
+# Finally you register your function, so browserinterface will call it every time a new audio buffer is received,
+browserinterface.register_handle_data(handle)
+# And you start
+browserinterface.start()
+</code></pre>
+
+<p>In the following, when we talk about functions and variables, they all come from the module <code>browserinterface</code>, so you must prefixe them with <code>browserinterface.</code>.</p>
 <h2 id="reading-the-configuration">Reading the configuration</h2>
 <p>Four variables contain the configuration:</p>
 <ul>
@@ -149,18 +180,47 @@ So pre-existing functions and variables will be accessible, whereas you will not
 <li><code>volume</code>: the volume between 0 and 100.</li>
 </ul>
 <p>These are read-only, and you must not change them!</p>
+<h2 id="receiving-configuration-changes">Receiving configuration changes</h2>
+<p>When you start your script, the four previous variables can still be uninitialized, because the module did not received the configuration yet.
+Plus, sometimes, a configuration change can happen.</p>
+<p>You can register a callback to receive the configuration, when it first arrives, and each time it changes, using <code>register_when_new_config(callback)</code>.
+Your callback function must accept four parameters: <code>callback(buffer_frames, rate, channels, volume)</code>.</p>
+<p>If you have some variables to initialize, depending on the audio configuration, <strong>it is safer to do it in your callback</strong>.</p>
+<pre><code class="python">def my_function(buffer_frames, rate, channels, volume):
+    print &quot;New config received: buffer_frames, rate, channels, volume&quot;
+    print buffer_frames, rate, channels, volume
+
+browserinterface.register_when_new_config(my_function)
+</code></pre>
+
 <h2 id="receiving-the-audio-streams">Receiving the audio streams</h2>
-<p>A function <code>handleData(buffer)</code> must be defined in your code.
-It will be called each time a new audio buffer is received.</p>
-<p>The parameter <code>buffer</code> will contain an array of size <code>buffer_frames</code> containing arrays of size <code>channels</code> containing integers between -32 767 and +32 767.</p>
+<p>You can define a function that will be called each time a new audio buffer is received, by registering it:</p>
+<pre><code class="python">def my_function(buffer):
+    print &quot;Buffer received&quot;, len(buffer)
+browserinterface.register_handle_data(my_function)
+</code></pre>
+
+<p>The parameter <code>buffer</code> will contain a 2D numpy array of size <code>(buffer_frames, channels)</code> containing 16 bits integers (between -32 767 and +32 767).</p>
 <p>An example with 5 frames per buffer and 2 channels:</p>
-<pre><code class="python">[
+<pre><code class="python">np.array([
   [100, 300],
   [80, 240],
   [130, 0],
   [-800, 123],
   [-400, 0]
-]
+], dtype=np.int16)
+</code></pre>
+
+<h2 id="recording-audio">Recording audio</h2>
+<p>You can ask the python module to record a certain audio duration for you, and to call the callback you specified, using the method <code>record_audio(duration, callback)</code> with <code>duration</code> in milliseconds.
+The recording starts just after you called the method.</p>
+<p>The function <code>callback</code> you specified must accept one parameter <code>buffer</code> (which will follow the same structure than above).
+Pay attention that <code>buffer</code> will not be exactly of the duration you specified, but can be slightly longer.</p>
+<pre><code class="python">def my_function(buffer):
+    print &quot;Audio has been recorded&quot;, len(buffer)
+
+browserinterface.record_audio(5000, my_function) # my_function will be called after 5 seconds
+browserinterface.record_audio(15000, my_function) # my_function will be called after 15 seconds
 </code></pre>
 
 <h2 id="using-the-data-handlers">Using the data handlers</h2>
@@ -168,10 +228,10 @@ It will be called each time a new audio buffer is received.</p>
 What you have to do is to send the data you want to display to a <strong>data handler</strong> of the webapp.
 You have two simple steps to do:</p>
 <ol>
-<li>You create a new data handler using the function <code>addHandler(name, type, parameters)</code> which returns an object representing this new instance;</li>
-<li>You send data to this instance using its method <code>sendData(data)</code>.</li>
+<li>You create a new data handler using the function <code>add_handler(name, type, parameters)</code> which returns an object representing this new instance;</li>
+<li>You send data to this instance using its method <code>send_data(data)</code>.</li>
 </ol>
-<p>Once you call the function <code>addHandler</code>, a new tab will be created in the webapp, with the name <code>name</code> you specified, and the chart/plot/audio player will appear inside.
+<p>Once you call the function <code>add_handler</code>, a new tab will be created in the webapp, with the name <code>name</code> you specified, and the chart/plot/audio player will appear inside.
 You can use the part <a href="../data-handlers/">Data Handlers</a> to see which <em>types</em> of data handlers exist, which parameters are supported, and which structure the <code>data</code> you send must follow.</p>
               
             </div>

@@ -1,13 +1,17 @@
+# Interface for Audio Control BeagleBone Black
+
+The full and up-to-date documentation is in docs/ (docs/site/index.html for the compiled version, docs/docs/ for the markdown source).
+
 ## For the C on the board
 
-Required:
-- libwebsock (https://github.com/payden/libwebsock)
-- Jansson (http://www.digip.org/jansson/)
+### Required:
+* libwebsock (https://github.com/payden/libwebsock)
+* Jansson (http://www.digip.org/jansson/)
 
-Build:
+### Build:
 make
 
-Launch:
+### Launch:
 ./start.sh log-file.txt
 
 Stop:
@@ -15,9 +19,11 @@ Stop:
 
 
 ## For the Python on the computer
-Required:
-- ws4py (https://ws4py.readthedocs.io/en/latest/)
 
-## For the web page
-Required:
-- git clone https://github.com/shutterstock/rickshaw
+### Required:
+* ws4py (https://ws4py.readthedocs.io/en/latest/)
+* Numpy.
+
+### Launch
+* python code-server.py
+* Just open client.html

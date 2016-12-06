@@ -104,6 +104,13 @@
     </li>
 <li>
           
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../acknowledgements/">Acknowledgements</a>
+        
+    </li>
+<li>
+          
         </ul>
       </div>
       &nbsp;
@@ -147,28 +154,29 @@ Several data handlers come with the project, but you can also easily write your 
 </ol>
 <h1 id="example">Example</h1>
 <p>You can use the data handlers from your python code (it is defined in more details in the python part reference):</p>
-<pre><code class="python">import time
+<pre><code class="python">import browserinterface
+import time
 import random
 
 # First, we create our handlers
 # First we precise the name, then the type, and third the possible parameters
 ## A line chart, with two series
-c1 = addHandler(&quot;First chart - Line&quot;, 'base:graph:line', {'xName': 'Name of x axis', 'series': ['First serie', 'Second serie']})
+c1 = browserinterface.add_handler(&quot;First chart - Line&quot;, 'base:graph:line', {'xName': 'Name of x axis', 'series': ['First serie', 'Second serie']})
 ## A plot chart, with one serie
-c2 = addHandler(&quot;Second chart - Plot&quot;, 'base:graph:plot', {'xName': 'Name of super x axis', 'series': ['Only serie']})
+c2 = browserinterface.add_handler(&quot;Second chart - Plot&quot;, 'base:graph:plot', {'xName': 'Name of super x axis', 'series': ['Only serie']})
 ## A polar chart, with one serie
-c3 = addHandler(&quot;Third chart - Polar&quot;, 'base:polar:area', {'title': 'Awesome polar chart', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
+c3 = browserinterface.add_handler(&quot;Third chart - Polar&quot;, 'base:polar:area', {'title': 'Awesome polar chart', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
 
 # Then we can send some data to the different handlers
-c1.sendData([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
-c1.sendData([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
-c1.sendData([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
-c1.sendData([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
-c2.sendData([{'x': -4, 'y': 3}])
+c1.send_data([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
+c1.send_data([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
+c1.send_data([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
+c1.send_data([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
+c2.send_data([{'x': -4, 'y': 3}])
 
 for i in range(5, 40):
-  c1.sendData([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
-  c3.sendData([{'append': (200+i*3)*10}])
+  c1.send_data([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
+  c3.send_data([{'append': (200+i*3)*10}])
   time.sleep(1)
 </code></pre>
 
@@ -219,10 +227,12 @@ There are always 2D charts, with an x axis and an y axis.</p>
 <p>Here we have three series of five points.
 Each serie must have the same number of points, matching the length of the <code>x</code> array.</p>
 <h2 id="datahandler-draw-polar-charts">DataHandler: draw polar charts</h2>
-<p>This handler can draw polar charts (simple ones for now).</p>
-<p><img src="/img/handler-polar-ex1.png" style="height: 200px !important; display: block; margin: 0 auto;" /></p>
+<p>This handler can draw polar charts.</p>
+<p><img src="/img/handler-polar-ex2.png" style="height: 200px !important;" />
+<img src="/img/handler-polar-ex1.png" style="height: 200px !important;" /></p>
 <h3 id="types_1">Types</h3>
 <ul>
+<li><code>base:polar:line</code>: a line polar chart;</li>
 <li><code>base:polar:area</code>: an area polar chart.</li>
 </ul>
 <h3 id="configuration_1">Configuration</h3>
@@ -247,8 +257,18 @@ Each serie must have the same number of points, matching the length of the <code
 ]
 </code></pre>
 
-<p>The size of the array must be the number of series (specified during the creation).
-The new values will be pushed at the end of previous data of each serie.</p>
+<p>The new values will be pushed at the end of previous data of each serie.
+The size of the array must be the number of series (specified during the creation).</p>
+<h4 id="replacing-all-entries">Replacing all entries</h4>
+<p>You can replace all data at once:</p>
+<pre><code class="json">[
+  {&quot;replace&quot;: [3, 5, 1, 1, 4]},
+  {&quot;replace&quot;: [1, 7, 3.4, 2.2, 2]},
+  {&quot;replace&quot;: [2, 1, 3.8, 3.9, 4]}
+]
+</code></pre>
+
+<p>The size of the array must be the number of series (specified during the creation).</p>
 <h2 id="write-your-own-data-handler">Write your own data handler</h2>
 <p>From a code point of view, a data handler is a class, from which instances are created when asking.
 Because we are talking about JavaScript, we are not working with a real class, but with a function returning an object.</p>
@@ -280,9 +300,10 @@ Because we are talking about JavaScript, we are not working with a real class, b
 <p>You can write this code in the file <code>js/myHandlers.js</code></p>
 <h3 id="using-it">Using it</h3>
 <p>You can use it from the python code like any other data handler:</p>
-<pre><code class="python">myHandlerInstance = addHandler(&quot;Custom thing&quot;, 'customtype', {'param1': True, 'param2': 'hello', 'param3': [0, 1, 2]})
-myHandlerInstance.sendData({'newData': {'i': i}})
-myHandlerInstance.sendData(['an', 'array', 'this', 'time'])
+<pre><code class="python">import browserinterface
+myHandlerInstance = browserinterface.add_handler(&quot;Custom thing&quot;, 'customtype', {'param1': True, 'param2': 'hello', 'param3': [0, 1, 2]})
+myHandlerInstance.send_data({'newData': {'i': i}})
+myHandlerInstance.send_data(['an', 'array', 'this', 'time'])
 </code></pre>
               
             </div>
@@ -290,6 +311,8 @@ myHandlerInstance.sendData(['an', 'array', 'this', 'time'])
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../acknowledgements/" class="btn btn-neutral float-right" title="Acknowledgements">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../python-reference/" class="btn btn-neutral" title="Python reference"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -320,6 +343,8 @@ myHandlerInstance.sendData(['an', 'array', 'this', 'time'])
       
         <span><a href="../python-reference/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
+      
+        <span style="margin-left: 15px"><a href="../acknowledgements/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

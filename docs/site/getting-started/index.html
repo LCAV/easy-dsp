@@ -99,6 +99,13 @@
     </li>
 <li>
           
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../acknowledgements/">Acknowledgements</a>
+        
+    </li>
+<li>
+          
         </ul>
       </div>
       &nbsp;
@@ -153,7 +160,7 @@ export LD_LIBRARY_PATH=/usr/local/lib
 <h3 id="prerequisites_1">Prerequisites</h3>
 <ul>
 <li>Install <a href="https://ws4py.readthedocs.io/en/latest/">ws4py</a>;</li>
-<li>Clone <a href="https://github.com/shutterstock/rickshaw">Rickshaw</a> in the directory of the <code>client.html</code> file: <code>git clone https://github.com/shutterstock/rickshaw.git</code>.</li>
+<li>Numpy.</li>
 </ul>
 <h3 id="configuration">Configuration</h3>
 <p>The IP address of the board must be specified in two files:</p>
@@ -164,7 +171,38 @@ export LD_LIBRARY_PATH=/usr/local/lib
 <h3 id="launch_1">Launch</h3>
 <ol>
 <li>You first have to launch the python daemon: <code>python code-server.py</code>;</li>
-<li>Then you just have to open the file <code>client.html</code> in your browser.</li>
+<li>Then you just have to open the file <code>client.html</code> in your browser;</li>
+<li>Finally you can write code:<ul>
+<li>You can write code directly in the browser, where a basic example is provided;</li>
+<li>Or you can write a python script with your favorite editor and launch it like any python script:<pre><code>import browserinterface
+import time
+import random
+
+def my_handle(data):
+    print "New buffer", len(data)
+
+browserinterface.register_handle_hata(my_handle)
+browserinterface.standalone = True
+browserinterface.start()
+
+print "Hello World!"
+
+c1 = browserinterface.add_handler("First chart", 'base:graph:line', {'xName': 'ok', 'series': ['yNom', 'ynom 22']})
+c2 = browserinterface.add_handler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
+
+c1.send_data([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
+c1.send_data([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
+c1.send_data([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
+c1.send_data([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
+
+for i in range(5, 40):
+  c1.send_data([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
+  c2.send_data([{'append': (200+i*3)*10}])
+  time.sleep(1)
+</code></pre>
+</li>
+</ul>
+</li>
 </ol>
               
             </div>

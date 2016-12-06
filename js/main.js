@@ -118,7 +118,7 @@ var recordingTimer;
 var recordingStart;
 btnRecording.click(function() {
   if (!inRecording) {
-    recording = new Recorder(inputStream.source, {wokerPath: 'Recorderjs/dist/recorder.js'});
+    recording = new Recorder(inputStream.source, {wokerPath: 'vendors/recorder.js'});
     recording.record();
     inRecording = true;
     btnRecording.removeClass('btn-danger');
@@ -450,7 +450,7 @@ function sourceAudio(audioCtx, config) {
   source.buffer = audioData;
   source.connect(audioCtx.destination);
   setTimeout(function () {
-    console.log("start");
+    console.log("Start receiving audio");
     source.start();
   }, 3000);
 
@@ -458,9 +458,6 @@ function sourceAudio(audioCtx, config) {
     var fileReader = new FileReader();
     fileReader.onload = function() {
       var data = new Int16Array(this.result);
-      // console.log(data[0], data[100], data[1000], data[5000]);
-      // console.log(data.length);
-      // console.log(data);
       for (var i = 0; i < data.length; i++) {
         var channel = i % config.channels;
         channelData[channel][audioPos] = data[i]/256/128; // 16 bits audio => we must move it between -1 and 1
