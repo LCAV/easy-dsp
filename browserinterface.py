@@ -135,14 +135,15 @@ def send_audio(buffer):
     if client != -1:
         try:
             nbuffer = []
-            for i in range(len(buffer)):
-                if buffer[i] >= 0:
-                    nbuffer.append(min(buffer[i]%256, 255))
-                    nbuffer.append(min(buffer[i]/256, 255))
-                else:
-                    t = max(0, 32768 + buffer[i])
-                    nbuffer.append(min(t%256, 255))
-                    nbuffer.append(min(t/256 + 128, 255))
+            for buf in buffer:
+                for b in buf:
+                    if b >= 0:
+                        nbuffer.append(min(b%256, 255))
+                        nbuffer.append(min(b/256, 255))
+                    else:
+                        t = max(0, 32768 + b)
+                        nbuffer.append(min(t%256, 255))
+                        nbuffer.append(min(t/256 + 128, 255))
             client.send(bytearray(nbuffer), True)
         except socket.error, e:
             print "autre erreur11"
