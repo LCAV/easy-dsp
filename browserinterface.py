@@ -50,6 +50,23 @@ bi_audio_start = None
 ## Number of audio messages we received so far
 bi_audio_number = 0
 
+
+bi_recordings = []
+# duration in ms
+def record_audio(duration, callback):
+    global bi_recordings
+    bi_recordings.append({'duration': duration, 'callback': callback, 'buffer': [], 'ended': False})
+
+def handle_recordings():
+    global bi_recordings
+    for i in reversed(range(len(bi_recordings))):
+        recording = bi_recordings[i]
+        audio_duration = len(recording['buffer'])*1000/rate
+        if audio_duration >= recording['duration']:
+            recording['ended'] = True
+            recording['callback'](recording['buffer'])
+            del bi_recordings[i]
+
 class StreamClient(WebSocketClient):
     # def opened(self):
     #     def data_provider():
@@ -68,6 +85,7 @@ class StreamClient(WebSocketClient):
     def received_message(self, m):
         global bi_audio_start
         global bi_audio_number
+        global bi_recordings
         if not m.is_binary:
             print m
             global rate
@@ -82,17 +100,17 @@ class StreamClient(WebSocketClient):
             buffer_frames = m['buffer_frames']
             volume = m['volume']
         else:
+            # For measuring the latency
             if bi_audio_start == None:
                 bi_audio_start = datetime.datetime.now()
 
             time_diff = datetime.datetime.now() - bi_audio_start
             time_elapsed = time_diff.total_seconds()*1000 # in milliseconds
             audio_received = bi_audio_number*buffer_frames*1000/rate
-            # print str(time_elapsed) + ' ' + str(audio_received) + ' ' + str(time_elapsed - audio_received)
             audio_delay = time_elapsed - audio_received
             r_messages.put(json.dumps({'latency': audio_delay}))
-
             bi_audio_number += 1
+
             data = bytearray()
             data.extend(m.data)
             ndata = []
@@ -106,6 +124,10 @@ class StreamClient(WebSocketClient):
                 if (i % channels) == (channels-1):
                     ndata.append(current)
                     current = []
+            for recording in bi_recordings:
+                if not recording['ended']:
+                    recording['buffer'] = recording['buffer'] + ndata
+            handle_recordings()
             if handle_data != 0:
                 handle_data(ndata)
 
