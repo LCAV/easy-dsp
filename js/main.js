@@ -85,6 +85,29 @@ wsPythonServer.onclose = function() {
   changeBadgeStatus(infosStatusPythonServer, 'disconnected');
 };
 
+// Auto save of the editor
+function restoreEditor() {
+  var codeSaved = localStorage.getItem('editor.value');
+  var cursorRow = parseInt(localStorage.getItem('editor.cursor.row'));
+  var cursorColumn = localStorage.getItem('editor.cursor.column');
+  if (codeSaved) {
+    aceEditor.setValue(codeSaved, -1);
+    aceEditor.moveCursorTo(cursorRow, cursorColumn);
+    setTimeout(function () {
+      aceEditor.scrollToLine(cursorRow+1, true, false);
+    }, 500);
+  }
+}
+restoreEditor();
+function saveEditor() {
+  var cursor = aceEditor.getCursorPosition();
+  localStorage.setItem('editor.value', aceEditor.getValue());
+  localStorage.setItem('editor.cursor.row', cursor.row);
+  localStorage.setItem('editor.cursor.column', cursor.column);
+  localStorage.setItem('editor.date', new Date());
+}
+aceEditor.on("change", _.throttle(saveEditor, 5000));
+
 // Audio recording
 var btnRecording = $('#btn-recording');
 var textRecording = $('#btn-recording .text');
