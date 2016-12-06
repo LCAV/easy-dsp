@@ -18,10 +18,15 @@ import numpy as np
 r_messages = Queue()
 r_id = 0
 handle_data = 0
+when_new_config = 0
 
 def register_handle_data(fn):
     global handle_data
     handle_data = fn
+
+def register_when_new_config(fn):
+    global when_new_config
+    when_new_config = fn
 
 class DataHandler():
     def __init__(self, id):
@@ -70,20 +75,6 @@ def handle_recordings():
             del bi_recordings[i]
 
 class StreamClient(WebSocketClient):
-    # def opened(self):
-    #     def data_provider():
-    #         for i in range(1, 200, 25):
-    #             yield "#" * i
-    #
-    #     self.send(data_provider())
-    #
-    #     for i in range(0, 200, 25):
-    #         print i
-    #         self.send("*" * i)
-    #
-    # def closed(self, code, reason=None):
-    #     print "Closed down", code, reason
-
     def received_message(self, m):
         global bi_audio_start
         global bi_audio_number
@@ -105,6 +96,8 @@ class StreamClient(WebSocketClient):
             bi_buffer = np.zeros((buffer_frames, channels), dtype=np.int16)
             for recording in bi_recordings:
                 recording['buffer'] = np.empty([0, channels], dtype=np.int16)
+            if when_new_config != 0:
+                when_new_config(buffer_frames, rate, channels, volume)
         else:
             # For measuring the latency
             if bi_audio_start == None:
@@ -151,7 +144,6 @@ def send_audio(buffer):
                     nbuffer.append(min(t%256, 255))
                     nbuffer.append(min(t/256 + 128, 255))
             client.send(bytearray(nbuffer), True)
-            # print "send11"
         except socket.error, e:
             print "autre erreur11"
         except IOError, e:
@@ -175,11 +167,6 @@ class WSServer(WebSocket):
         sys.stderr.write("1.1\n")
         client = -1
         os._exit(1)
-        # print "ok"
-        # # server.server_close()
-        # print "la"
-        # thread.interrupt_main()
-        # print "cool"
 
 def start_server(port):
     global server

@@ -31,6 +31,7 @@ browserinterface.start()
 
 In the following, when we talk about functions and variables, they all come from the module `browserinterface`, so you must prefixe them with `browserinterface.`.
 
+
 ## Reading the configuration
 
 Four variables contain the configuration:
@@ -42,6 +43,24 @@ Four variables contain the configuration:
 
 These are read-only, and you must not change them!
 
+
+## Receiving configuration changes
+
+When you start your script, the four previous variables can still be uninitialized, because the module did not received the configuration yet.
+Plus, sometimes, a configuration change can happen.
+
+You can register a callback to receive the configuration, when it first arrives, and each time it changes, using `register_when_new_config(callback)`.
+Your callback function must accept four parameters: `callback(buffer_frames, rate, channels, volume)`.
+
+If you have some variables to initialize, depending on the audio configuration, **it is safer to do it in your callback**.
+
+```python
+def my_function(buffer_frames, rate, channels, volume):
+    print "New config received: buffer_frames, rate, channels, volume"
+    print buffer_frames, rate, channels, volume
+
+browserinterface.register_when_new_config(my_function)
+```
 
 ## Receiving the audio streams
 
