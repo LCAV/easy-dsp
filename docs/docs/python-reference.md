@@ -62,6 +62,7 @@ def my_function(buffer_frames, rate, channels, volume):
 browserinterface.register_when_new_config(my_function)
 ```
 
+
 ## Receiving the audio streams
 
 You can define a function that will be called each time a new audio buffer is received, by registering it:
@@ -101,6 +102,7 @@ def my_function(buffer):
 browserinterface.record_audio(5000, my_function) # my_function will be called after 5 seconds
 browserinterface.record_audio(15000, my_function) # my_function will be called after 15 seconds
 ```
+
 
 ## Using the data handlers
 
