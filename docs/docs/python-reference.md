@@ -65,6 +65,23 @@ An example with 5 frames per buffer and 2 channels:
 ]
 ```
 
+
+## Recording audio
+
+You can ask the python module to record a certain audio duration for you, and to call the callback you specified, using the method `record_audio(duration, callback)` with `duration` in milliseconds.
+The recording starts just after you called the method.
+
+The function `callback` you specified must accept one parameter `buffer` (which will follow the same structure than above).
+Pay attention that `buffer` will not be exactly of the duration you specified, but can be slightly longer.
+
+```python
+def my_function(buffer):
+    print "Audio has been recorded", len(buffer)
+
+browserinterface.record_audio(5000, my_function) # my_function will be called after 5 seconds
+browserinterface.record_audio(15000, my_function) # my_function will be called after 15 seconds
+```
+
 ## Using the data handlers
 
 After you performed some algorithms on the audio streams, you may want to display some outputs, like charts, histograms or new audio streams.
