@@ -42,6 +42,7 @@ Four variables contain the configuration:
 
 These are read-only, and you must not change them!
 
+
 ## Receiving the audio streams
 
 You can define a function that will be called each time a new audio buffer is received, by registering it:
@@ -51,18 +52,18 @@ def my_function(buffer):
 browserinterface.register_handle_data(my_function)
 ```
 
-The parameter `buffer` will contain an array of size `buffer_frames` containing arrays of size `channels` containing integers between -32 767 and +32 767.
+The parameter `buffer` will contain a 2D numpy array of size `(buffer_frames, channels)` containing 16 bits integers (between -32 767 and +32 767).
 
 An example with 5 frames per buffer and 2 channels:
 
 ```python
-[
+np.array([
   [100, 300],
   [80, 240],
   [130, 0],
   [-800, 123],
   [-400, 0]
-]
+], dtype=np.int16)
 ```
 
 

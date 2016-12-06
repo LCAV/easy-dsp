@@ -13,6 +13,7 @@ import sys
 import socket
 import json
 import datetime
+import numpy as np
 
 r_messages = Queue()
 r_id = 0
@@ -40,7 +41,7 @@ def add_handler(name, type, parameters):
     return DataHandler(r_id)
 
 rate = -1
-channels = -1
+channels = 0
 buffer_frames = -1
 volume = -1
 
@@ -50,12 +51,13 @@ bi_audio_start = None
 ## Number of audio messages we received so far
 bi_audio_number = 0
 
+bi_buffer = 0
 
 bi_recordings = []
 # duration in ms
 def record_audio(duration, callback):
     global bi_recordings
-    bi_recordings.append({'duration': duration, 'callback': callback, 'buffer': [], 'ended': False})
+    bi_recordings.append({'duration': duration, 'callback': callback, 'buffer': np.empty([0, channels], dtype=np.int16), 'ended': False})
 
 def handle_recordings():
     global bi_recordings
@@ -86,6 +88,7 @@ class StreamClient(WebSocketClient):
         global bi_audio_start
         global bi_audio_number
         global bi_recordings
+        global bi_buffer
         if not m.is_binary:
             print m
             global rate
@@ -99,6 +102,9 @@ class StreamClient(WebSocketClient):
             channels = m['channels']
             buffer_frames = m['buffer_frames']
             volume = m['volume']
+            bi_buffer = np.zeros((buffer_frames, channels), dtype=np.int16)
+            for recording in bi_recordings:
+                recording['buffer'] = np.empty([0, channels], dtype=np.int16)
         else:
             # For measuring the latency
             if bi_audio_start == None:
@@ -113,23 +119,24 @@ class StreamClient(WebSocketClient):
 
             data = bytearray()
             data.extend(m.data)
-            ndata = []
-            current = []
             i = 0
-            for i in range(len(data) / 2):
+            i_frame = 0
+            i_channel = 0
+            for i in range(len(data) / 2): # we work with 16 bits = 2 bytes
                 if data[2*i+1] <= 127:
-                    current.append(data[2*i] + 256*data[2*i+1])
+                    bi_buffer[i_frame][i_channel] = data[2*i] + 256*data[2*i+1]
                 else:
-                    current.append((data[2*i+1]-128)*256 + data[2*i] - 32768)
+                    bi_buffer[i_frame][i_channel] = (data[2*i+1]-128)*256 + data[2*i] - 32768
+                i_channel += 1
                 if (i % channels) == (channels-1):
-                    ndata.append(current)
-                    current = []
+                    i_channel = 0
+                    i_frame += 1
             for recording in bi_recordings:
                 if not recording['ended']:
-                    recording['buffer'] = recording['buffer'] + ndata
+                    recording['buffer'] = np.concatenate((recording['buffer'], bi_buffer))
             handle_recordings()
             if handle_data != 0:
-                handle_data(ndata)
+                handle_data(bi_buffer)
 
 def send_audio(buffer):
     if client != -1:
