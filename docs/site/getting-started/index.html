@@ -182,7 +182,7 @@ def my_handle(data):
     print "New buffer", len(data)
 
 browserinterface.register_handle_hata(my_handle)
-browserinterface.standalone = True
+browserinterface.inform_browser = True
 browserinterface.start()
 
 print "Hello World!"

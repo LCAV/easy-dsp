@@ -160,9 +160,9 @@ import browserinterface
 def handle(buffer):
     print &quot;Buffer received&quot;, len(buffer)
 
-# If you run a python script directly from your terminal, you need to set `standalone` to True
-# If you write this code directly in the webapp, you must remove this line (or set `standalone` to False)
-browserinterface.standalone = True
+# If you run a python script directly from your terminal, and you want to display something in the browser, you need to set `inform_browser` to True
+# If you write this code directly in the webapp, you must remove this line (or set `inform_browser` to False, which is its default value).
+browserinterface.inform_browser = True
 
 # Finally you register your function, so browserinterface will call it every time a new audio buffer is received,
 browserinterface.register_handle_data(handle)

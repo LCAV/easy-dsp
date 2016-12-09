@@ -199,7 +199,12 @@ There are always 2D charts, with an x axis and an y axis.</p>
 <li><code>xName</code> (string): name of the x axis;</li>
 <li><code>series</code> (array[string]): names of the different series. <strong>This parameter fixes the number of series to display</strong>;</li>
 <li><code>min</code> (number) [optional]: minimum value for y;</li>
-<li><code>max</code> (number) [optional]: maximum value for y.</li>
+<li><code>max</code> (number) [optional]: maximum value for y;</li>
+<li>Limit the number of points displayed. When the limit is reached, the first values are deleted, and all the graph is "translated":<ul>
+<li><code>xLimitNb</code> (integer): maximum number of points to display;</li>
+<li><code>xLimitDistance</code> (number): maximum distance along the x-axis, between the first and the last point.</li>
+</ul>
+</li>
 </ul>
 <h3 id="sending-data">Sending data</h3>
 <h4 id="adding-a-point">Adding a point</h4>
