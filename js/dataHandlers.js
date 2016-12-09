@@ -180,13 +180,57 @@ function plotPolarType(type) {
   };
 }
 
+function heatmap(html, parameters) {
+  // store the current canvas size [x, y]
+  var size = [800, 600];
+
+  var canvas = $('<canvas id="supercanvas" width="' + size[0] + '" height="' + size[1] + '"></canvas>');
+  $(html).append(canvas);
+  var heat = simpleheat(canvas.get(0));
+  if (parameters.max) {
+    heat.max(parameters.max);
+  }
+
+  heat.radius(1, 0);
+
+  function newData(data) {
+    // data = [ [1, 2, 0, 3, 4], [0, 2, 2, 1, 1], [5, 2, 6, 5, 4]]
+
+    // Do we have to resize the canvas?
+    if (data.length > 0 && data[0].length > 0 && (data.length != size[0] || data[0].length != size[1])) {
+      canvas.attr('height', data.length);
+      canvas.attr('width', data[0].length);
+      size = [data.length, data[0].length];
+      heat.resize();
+    }
+
+    var hdata = [];
+    _.forEach(data, function (row, i) {
+      _.forEach(row, function (v, j) {
+        hdata.push([i, j, v]);
+      })
+    });
+    heat.data(hdata);
+
+    if (parameters.min) {
+      heat.draw(parameters.min);
+    } else {
+      heat.draw();
+    }
+  }
+
+  return {
+    newData: newData
+  };
+}
+
 dataHandlers.registerNewType('base:graph:line', graphRickshaw('line'));
 dataHandlers.registerNewType('base:graph:area', graphRickshaw('area'));
 dataHandlers.registerNewType('base:graph:bar', graphRickshaw('bar'));
 dataHandlers.registerNewType('base:graph:plot', graphRickshaw('scatterplot'));
 dataHandlers.registerNewType('base:polar:area', plotPolarType('AreaChart'));
 dataHandlers.registerNewType('base:polar:line', plotPolarType('LinePlot'));
-
+dataHandlers.registerNewType('base:heatmap', heatmap);
 
 // dataHandlers.registerNewType('customtype', function (html, parameters) {
 //   $(html).append(JSON.stringify(parameters) + '<br />');

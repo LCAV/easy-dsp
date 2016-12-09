@@ -96,6 +96,8 @@
                 
                     <li><a class="toctree-l4" href="#datahandler-draw-polar-charts">DataHandler: draw polar charts</a></li>
                 
+                    <li><a class="toctree-l4" href="#datahandler-draw-heatmaps">DataHandler: draw heatmaps</a></li>
+                
                     <li><a class="toctree-l4" href="#write-your-own-data-handler">Write your own data handler</a></li>
                 
             
@@ -274,6 +276,30 @@ The size of the array must be the number of series (specified during the creatio
 </code></pre>
 
 <p>The size of the array must be the number of series (specified during the creation).</p>
+<h2 id="datahandler-draw-heatmaps">DataHandler: draw heatmaps</h2>
+<p>This handler can draw heatmaps.</p>
+<p><img src="/img/handler-heatmap-ex1.png" style="display: block; height: 200px !important; margin: 0 auto;" /></p>
+<h3 id="types_2">Types</h3>
+<ul>
+<li><code>base:heatmap</code>: a heatmap.</li>
+</ul>
+<h3 id="configuration_2">Configuration</h3>
+<p>The following options are accepted during the creation:</p>
+<ul>
+<li><code>min</code> (number): the value corresponding to the minimum (which will be blue);</li>
+<li><code>max</code> (number): the value corresponding to the maximum (which will be red).</li>
+</ul>
+<h3 id="sending-data_2">Sending data</h3>
+<h4 id="replacing-all-entries_1">Replacing all entries</h4>
+<p>You can replace all data at once by sending a 2D-array.
+Each array corresponds to a row and contains numbers.</p>
+<pre><code class="js">[
+  [2, 3, 4, 0], // first row of the image
+  [1, 0, 0, 1], // second row of the image
+  [3, 4, 4, 1], // last row of the image
+]
+</code></pre>
+
 <h2 id="write-your-own-data-handler">Write your own data handler</h2>
 <p>From a code point of view, a data handler is a class, from which instances are created when asking.
 Because we are talking about JavaScript, we are not working with a real class, but with a function returning an object.</p>

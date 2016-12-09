@@ -160,6 +160,40 @@ You can replace all data at once:
 
 The size of the array must be the number of series (specified during the creation).
 
+
+## DataHandler: draw heatmaps
+
+This handler can draw heatmaps.
+
+<img src="/img/handler-heatmap-ex1.png" style="display: block; height: 200px !important; margin: 0 auto;" />
+
+### Types
+
+* `base:heatmap`: a heatmap.
+
+### Configuration
+
+The following options are accepted during the creation:
+
+* `min` (number): the value corresponding to the minimum (which will be blue);
+* `max` (number): the value corresponding to the maximum (which will be red).
+
+### Sending data
+
+#### Replacing all entries
+
+You can replace all data at once by sending a 2D-array.
+Each array corresponds to a row and contains numbers.
+
+```js
+[
+  [2, 3, 4, 0], // first row of the image
+  [1, 0, 0, 1], // second row of the image
+  [3, 4, 4, 1], // last row of the image
+]
+```
+
+
 ## Write your own data handler
 
 From a code point of view, a data handler is a class, from which instances are created when asking.
