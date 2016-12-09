@@ -40,6 +40,8 @@ function graphRickshaw(renderer) {
   return function graphRickshawLine(html, parameters) {
     var series = [];
     var xName = parameters.xName;
+    var xLimitNb = parameters.xLimitNb || -1;
+    var xLimitDistance = parameters.xLimitDistance || -1;
     _.forEach(parameters.series, function (serieName) {
       series.push({
         data: [],
@@ -96,6 +98,20 @@ function graphRickshaw(renderer) {
         _.forEach(data, function (d, i) {
           series[i].data.push(d);
         });
+
+        if (xLimitNb != -1) {
+          _.forEach(series, function (serie) {
+            if (serie.data.length > xLimitNb) {
+              serie.data.shift();
+            }
+          });
+        } else if (xLimitDistance != -1) {
+          _.forEach(series, function (serie) {
+            if (serie.data.length >= 2 && (serie.data[serie.data.length-1].x - serie.data[0].x) > xLimitDistance) {
+              serie.data.shift();
+            }
+          });
+        }
       }
       graph.update();
     }

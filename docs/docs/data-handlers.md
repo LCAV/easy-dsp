@@ -65,7 +65,10 @@ The following options are accepted during the creation:
 * `xName` (string): name of the x axis;
 * `series` (array[string]): names of the different series. **This parameter fixes the number of series to display**;
 * `min` (number) [optional]: minimum value for y;
-* `max` (number) [optional]: maximum value for y.
+* `max` (number) [optional]: maximum value for y;
+* Limit the number of points displayed. When the limit is reached, the first values are deleted, and all the graph is "translated":
+    * `xLimitNb` (integer): maximum number of points to display;
+    * `xLimitDistance` (number): maximum distance along the x-axis, between the first and the last point.
 
 ### Sending data
 
