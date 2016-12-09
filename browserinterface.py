@@ -21,8 +21,11 @@ bi_buffer = 0
 # Represent the browser
 client = -1
 
-# If the module is called from a standalone python script (True) or via some code from the browser (False)
-standalone = False
+# If the module is called from a python script launched from outside of the browser,
+# and which needs the browser to display data, set to True.
+# If the python script doesn't need the browser, let it to False.
+# If the code is launched from the browser, no need to inform it (it will be already aware), so let it to False.
+inform_browser = False
 
 # Messages to send
 r_messages = Queue()
@@ -218,7 +221,7 @@ class PythonDaemonClient(WebSocketClient):
         self.send(json.dumps({'script': 9001}))
         self.close()
 
-def inform_browser():
+def inform_browser_query():
     python_daemon = PythonDaemonClient('ws://127.0.0.1:7320/', protocols=['http-only', 'chat'])
     python_daemon.connect()
 
@@ -233,8 +236,8 @@ def start():
     serverThread = Thread(target = start_server, args = (9001, ))
     serverThread.start()
 
-    if standalone:
-        inform_browser()
+    if inform_browser:
+        inform_browser_query()
 
     clientThread = Thread(target = start_client)
     clientThread.start()

@@ -55,7 +55,7 @@ The IP address of the board must be specified in two files:
                 print "New buffer", len(data)
 
             browserinterface.register_handle_hata(my_handle)
-            browserinterface.standalone = True
+            browserinterface.inform_browser = True
             browserinterface.start()
 
             print "Hello World!"
