@@ -197,6 +197,11 @@ for i in range(5, 40):
   print i
   time.sleep(1)
 
+# This call is blocking and will never return
+# So the code you put below will never be executed
+# It's an infinite loop inside which your callbacks will be called
+browserinterface.loop_callbacks()
+
 </div>
           </div>
           <div class="card">

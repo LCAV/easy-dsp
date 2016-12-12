@@ -30,6 +30,9 @@ inform_browser = False
 # Messages to send
 r_messages = Queue()
 
+# Callbacks to call
+r_calls = Queue()
+
 # Configuration parameters
 rate = -1
 channels = 0
@@ -86,15 +89,31 @@ def record_audio(duration, callback):
 
 # This method goes through all recordings, and send those which must have finished
 def handle_recordings():
-    global bi_recordings
+    global bi_recordings, r_calls
     for i in reversed(range(len(bi_recordings))):
         recording = bi_recordings[i]
         audio_duration = len(recording['buffer'])*1000/rate
         if audio_duration >= recording['duration']:
             recording['ended'] = True
-            recording['callback'](recording['buffer'])
+            r_calls.put((recording['callback'], (recording['buffer'], )))
+            # recording['callback'](recording['buffer'])
             del bi_recordings[i]
 
+def measure_latency(cb, params):
+    global bi_audio_start, bi_audio_number
+
+    if bi_audio_start == None:
+        bi_audio_start = datetime.datetime.now()
+
+    time_diff = datetime.datetime.now() - bi_audio_start
+    time_elapsed = time_diff.total_seconds()*1000 # in milliseconds
+    audio_received = bi_audio_number*buffer_frames*1000/rate
+    audio_delay = time_elapsed - audio_received
+    r_messages.put(json.dumps({'latency': audio_delay}))
+    bi_audio_number += 1
+
+    # We call the callback
+    cb(*params)
 
 # Connection with WSAudio
 class StreamClient(WebSocketClient):
@@ -103,6 +122,7 @@ class StreamClient(WebSocketClient):
         global bi_audio_number
         global bi_recordings
         global bi_buffer
+        global r_calls
         if not m.is_binary: # new configuration
             global rate
             global channels
@@ -123,20 +143,8 @@ class StreamClient(WebSocketClient):
                 recording['buffer'] = np.empty([0, channels], dtype=np.int16)
 
             if when_new_config != 0:
-                when_new_config(buffer_frames, rate, channels, volume)
+                r_calls.put((when_new_config, (buffer_frames, rate, channels, volume)))
         else: # new audio data
-
-            # For measuring the latency
-            if bi_audio_start == None:
-                bi_audio_start = datetime.datetime.now()
-
-            time_diff = datetime.datetime.now() - bi_audio_start
-            time_elapsed = time_diff.total_seconds()*1000 # in milliseconds
-            audio_received = bi_audio_number*buffer_frames*1000/rate
-            audio_delay = time_elapsed - audio_received
-            r_messages.put(json.dumps({'latency': audio_delay}))
-            bi_audio_number += 1
-
             # We convert the binary stream into a 2D Numpy array of 16-bits integers
             data = bytearray()
             data.extend(m.data)
@@ -161,8 +169,7 @@ class StreamClient(WebSocketClient):
 
             # We call the potential callback
             if handle_data != 0:
-                handle_data(bi_buffer)
-
+                r_calls.put((measure_latency, (handle_data, (bi_buffer, ))))
 
 # Send a new audio buffer to the browser
 def send_audio(buffer):
@@ -261,3 +268,10 @@ def start():
 
     clientThread = Thread(target = start_client)
     clientThread.start()
+
+def loop_callbacks():
+    global r_calls
+    while True:
+        c = r_calls.get()
+        c[0](*c[1])
+        r_calls.task_done()

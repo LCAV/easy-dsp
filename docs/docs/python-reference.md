@@ -25,8 +25,14 @@ browserinterface.inform_browser = True
 
 # Finally you register your function, so browserinterface will call it every time a new audio buffer is received,
 browserinterface.register_handle_data(handle)
-# And you start
+# You start the module, so it will connects to WSAudio, and listen so the browser will be able to connect
 browserinterface.start()
+
+# Finally you start the callbacks blocking infinite loop
+# All code below will not be executed
+# This mecanism ensure the callbacks you specified to be called from the main thread
+# If you forget this call, your callbacks will never be called!
+browserinterface.loop_callbacks()
 ```
 
 In the following, when we talk about functions and variables, they all come from the module `browserinterface`, so you must prefixe them with `browserinterface.`.

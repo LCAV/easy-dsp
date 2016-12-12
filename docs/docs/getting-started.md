@@ -72,3 +72,5 @@ The IP address of the board must be specified in two files:
               c1.send_data([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
               c2.send_data([{'append': (200+i*3)*10}])
               time.sleep(1)
+
+            browserinterface.loop_callbacks()
