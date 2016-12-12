@@ -53,33 +53,33 @@ The main daemon will then interrupt its connection with ALSA, set the new config
 
 There are two components on the client(s):
 
-1. A python daemon `code-server.py` that listens on a WebSocket and executes the python code it receives on it;
-2. The webapp `client.html`, which connects to `ws-audio` and `ws-config` so the user can listen to the audio streams and change the configuration, and also to the local python daemon to which it can send python code written by the user.
+1. A Python daemon `code-server.py` that listens on a WebSocket and executes the Python code it receives on it;
+2. The webapp `client.html`, which connects to `ws-audio` and `ws-config` so the user can listen to the audio streams and change the configuration, and also to the local Python daemon to which it can send Python code written by the user.
 
-### Execution of python code from the browser
+### Execution of Python code from the browser
 
-In the webapp, there is an editor where the user can write some python code.
-When he/she clicks on *Execute* the code is sent to the local python daemon.
-Then the python daemon includes the code to an existing python program, `base-program.py` (at the end, it replaces the line `#####INSERT: Here insert code` with the code from the user), and executes it.
+In the webapp, there is an editor where the user can write some Python code.
+When he/she clicks on *Execute* the code is sent to the local Python daemon.
+Then the Python daemon includes the code to an existing Python program, `base-program.py` (at the end, it replaces the line `#####INSERT: Here insert code` with the code from the user), and executes it.
 
-This new python program will then connect to `ws-audio`, so it will receive the audio streams in live (and executes the code from the user on it), and it will also listens on a WebSocket (on a port around 7320 specified by the python daemon, which communicated it to the webapp) to which the webapp will connect.
-So this new python program will have the possibility to work on the audio streams and to send the output (which can be plots data or a new audio stream) directly to the webapp.
+This new Python program will then connect to `ws-audio`, so it will receive the audio streams in live (and executes the code from the user on it), and it will also listens on a WebSocket (on a port around 7320 specified by the Python daemon, which communicated it to the webapp) to which the webapp will connect.
+So this new Python program will have the possibility to work on the audio streams and to send the output (which can be plots data or a new audio stream) directly to the webapp.
 
-More precisely, the user is invited to write his/her code inside a function `handleData(buffer)` which will be called everytime a new audio buffer is received from the `ws-audio` daemon.
+More precisely, the user is invited to write his/her code inside a function (for example `my_handle_data(buffer)`) and to register it as a callback (using `browserinterface.register_handle_data(my_handle_data)`) so it will be called every time a new audio buffer is received from the `ws-audio` daemon.
 
-The python daemon will also catch the `stdout` and `stderr` streams and redirect them to the browser, so the user can easily access it.
+The Python daemon will also catch the `stdout` and `stderr` streams and redirect them to the browser, so the user can easily access it.
 
 ![Overview client](img/overview-client.svg)
 
 
-### Execution of a python script
+### Execution of a Python script
 
-It is also possible to write a python script, that will use the library of the project to easily receive the audio, and to send output to the browser (if wanted).
+It is also possible to write a Python script, that will use the library of the project to easily receive the audio, and to send output to the browser (if wanted).
 In that cas the browser is just used as a vizualisation tool.
 Just as previously, the script will connect to `ws-audio` and receive in live the audio streams.
 
-However, this time, the outputs are not redirected, so you will be able to see them directly in your console, like any python script.
-The library will also choose a port around 7320 by itself, and will communicate it to the python daemon, which will send it to the browser, so this last one can connects to the python script and receive the output (plots or new audio stream).
+However, this time, the outputs are not redirected, so you will be able to see them directly in your console, like any Python script.
+The library will also choose a port around 7320 by itself, and will communicate it to the Python daemon, which will send it to the browser, so this last one can connects to the Python script and receive the output (plots or new audio stream).
 
 So can also decide you don't need the browser and just use the connection to the audio stream, and any vizualisation library you want.
 

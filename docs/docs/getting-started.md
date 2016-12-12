@@ -1,7 +1,5 @@
 # Getting Started
 
-You will find explanations about how to use the project (how to start, the different commands available), and how to develop on it (the global structure, the different components, their interactions and details about the C and Javascript code).
-
 ## On the board
 
 ### Prerequisites
@@ -11,7 +9,7 @@ You will find explanations about how to use the project (how to start, the diffe
 
 ### Compilation
 
-`make` should be enough to compile the three programs.
+`make` should be enough to compile the three programs `browser-main-daemon`, `browser-wsaudio` and `browser-wsconfig`.
 
 ### Launch
 
@@ -36,16 +34,16 @@ To stop it, kill the three programs (or use `./stop.sh`).
 
 The IP address of the board must be specified in two files:
 
-* Line 1 of `js/main.js`;
-* At the end of `base-program.py`.
+* Line 1 of `js/main.js`, the variable `boardIp`;
+* At the beginning of `browserinterface.py`, the variable `bi_board_ip`.
 
 ### Launch
 
-1. You first have to launch the python daemon: `python code-server.py`;
+1. You first have to launch the Python daemon: `python code-server.py`;
 2. Then you just have to open the file `client.html` in your browser;
 3. Finally you can write code:
     - You can write code directly in the browser, where a basic example is provided;
-    - Or you can write a python script with your favorite editor and launch it like any python script:
+    - Or you can write a Python script with your favorite editor and launch it like any Python script:
 
             import browserinterface
             import time
@@ -54,7 +52,7 @@ The IP address of the board must be specified in two files:
             def my_handle(data):
                 print "New buffer", len(data)
 
-            browserinterface.register_handle_hata(my_handle)
+            browserinterface.register_handle_data(my_handle)
             browserinterface.inform_browser = True
             browserinterface.start()
 

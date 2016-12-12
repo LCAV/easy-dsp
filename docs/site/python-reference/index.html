@@ -149,12 +149,12 @@
             <div class="section">
               
                 <h1 id="intro">Intro</h1>
-<p>This part explains how to get the audio streams in python code and how to send results to the webapp, so it can display them in live.</p>
+<p>This part explains how to get the audio streams in Python code and how to send results to the webapp, so it can display them in live.</p>
 <h2 id="how-it-works">How it works</h2>
-<p>When your write code in the webapp editor and click "Execute", it will be executed as a new python script.
-So either you use the browser or write directly a python script that you launch from your terminal, the working is similar.</p>
-<p>To easily access the audio streams, and display something in the webapp, we provide a python module <code>browserinterface</code>.</p>
-<p>The minimum python code is the following:</p>
+<p>When your write code in the webapp editor and click "Execute", it will be executed as a new Python script.
+So either you use the browser or write directly a Python script that you launch from your terminal, the working is similar.</p>
+<p>To easily access the audio streams, and display something in the webapp, we provide a Python module <code>browserinterface</code>.</p>
+<p>The minimum Python code is the following:</p>
 <pre><code class="python"># First you import the module
 import browserinterface
 
@@ -162,7 +162,7 @@ import browserinterface
 def handle(buffer):
     print &quot;Buffer received&quot;, len(buffer)
 
-# If you run a python script directly from your terminal, and you want to display something in the browser, you need to set `inform_browser` to True
+# If you run a Python script directly from your terminal, and you want to display something in the browser, you need to set `inform_browser` to True
 # If you write this code directly in the webapp, you must remove this line (or set `inform_browser` to False, which is its default value).
 browserinterface.inform_browser = True
 
@@ -225,7 +225,7 @@ browserinterface.register_handle_data(my_function)
 </code></pre>
 
 <h2 id="recording-audio">Recording audio</h2>
-<p>You can ask the python module to record a certain audio duration for you, and to call the callback you specified, using the method <code>record_audio(duration, callback)</code> with <code>duration</code> in milliseconds.
+<p>You can ask the Python module to record a certain audio duration for you, and to call the callback you specified, using the method <code>record_audio(duration, callback)</code> with <code>duration</code> in milliseconds.
 The recording starts just after you called the method.</p>
 <p>The function <code>callback</code> you specified must accept one parameter <code>buffer</code> (which will follow the same structure than above).
 Pay attention that <code>buffer</code> will not be exactly of the duration you specified, but can be slightly longer.</p>

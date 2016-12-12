@@ -63,7 +63,7 @@ This connection is only one-way: WSConfig sends messages to the main daemon.
 
 ## WSAudio > Client
 
-This connection is only one-way: WSAudio sends messages to the webapp or the python program.
+This connection is only one-way: WSAudio sends messages to the webapp or the Python program.
 
 #### Connection
 
@@ -120,7 +120,7 @@ This connection is only one-way: the webapp sends new audio configuration to WSC
 
 ## Python Daemon <> Webapp
 
-This conenction is two-ways: the webapp can send new python code to execute, and the daemon can send back the status of the program.
+This conenction is two-ways: the webapp can send new Python code to execute, and the daemon can send back the status of the program.
 
 #### Connection
 
@@ -129,52 +129,52 @@ This conenction is two-ways: the webapp can send new python code to execute, and
 
 #### Messages: Webapp > Python Daemon
 
-* Python code to execute: this message contains new python code to insert into `base-program.py` and to execute.
+* Python code to execute: this message contains new Python code to insert into `base-program.py` and to execute.
     * Message type: text;
-    * Payload: just the python code to execute.
+    * Payload: just the Python code to execute.
 
-* Interruption of the running code: this messages asks the daemon to stop the current python code running (each client can only have one python program running at each time).
+* Interruption of the running code: this messages asks the daemon to stop the current Python code running (each client can only have one Python program running at each time).
     * Message type: text;
     * Payload: just `STOP`.
 
 #### Messages: Python Daemon > Webapp
 
-* Port information: this message indicates to the webapp on which port the new python program will listen for its WebSocket.
+* Port information: this message indicates to the webapp on which port the new Python program will listen for its WebSocket.
     * Message type: text;
     * Message format: JSON: `{"port": (integer)}`.
 
-* Stdout new line: this message is sent to the webapp each time the new python program outputs a line on stdout.
+* Stdout new line: this message is sent to the webapp each time the new Python program outputs a line on stdout.
     * Message type: text;
     * Message format: JSON: `{"line": (string)}`.
 
-* Stderr new line: this message is sent to the webapp each time the new python program outputs a line on stderr.
+* Stderr new line: this message is sent to the webapp each time the new Python program outputs a line on stderr.
     * Message type: text;
     * Message format: JSON: `{"error": (string)}`.
 
-* Line inserted: this message indicates to the webapp on which line of `base-program.py` the python code has been inserted (it is usefull to find the correspondance between an error and the original line).
+* Line inserted: this message indicates to the webapp on which line of `base-program.py` the Python code has been inserted (it is usefull to find the correspondance between an error and the original line).
     * Message type: text;
     * Message format: JSON: `{"codeLine": (integer)}`.
 
-* End of the python program: this message is sent to the webapp when the new python program exits, with the code returned.
+* End of the Python program: this message is sent to the webapp when the new Python program exits, with the code returned.
     * Message type: text;
     * Message format: JSON: `{"status": "end", "code": (integer)}`.
 
-* New script: this message indicates to the webapp that a python script is running and would like to use the webapp for display, and specify on which port the python program listens for its WebSocket.
+* New script: this message indicates to the webapp that a Python script is running and would like to use the webapp for display, and specify on which port the Python program listens for its WebSocket.
     * Message type: text;
     * Message format: JSON: `{"script": (integer)}`.
 
 ## final-program.py > Webapp
 
-This connection is one-way only: the new python program can send various outputs to the webapp.
+This connection is one-way only: the new Python program can send various outputs to the webapp.
 
 #### Connection
 
 * Protocol: WebSocket;
-* Port: just over 7320 (choosen and specified by the python daemon).
+* Port: just over 7320 (choosen and specified by the Python daemon).
 
 #### Messages
 
-* Audio data to play: this message contains a new audio buffer. The python program can for example to something on the audio stream and outputs a new audio stream it wants the webapp to play.
+* Audio data to play: this message contains a new audio buffer. The Python program can for example perform something on the audio stream and outputs a new audio stream it wants the webapp to play.
     * Message type: binary;
     * Payload: for now, the configuration must be the same as the input stream: `input_conf.buffer_frames * input_conf.channels` 16-bits little-endian integer, in the following order (for example with 2 channels):
         1. frames[0].channels[0];

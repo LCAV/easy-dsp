@@ -15,6 +15,8 @@ import json
 import datetime
 import numpy as np
 
+bi_board_ip = '192.168.1.151'
+
 # Buffer for audio reception
 bi_buffer = 0
 
@@ -211,7 +213,7 @@ def change_config(rate=None, channels=None, buffer_frames=None, volume=None):
             self.send(json.dumps({'rate': rate, 'channels': channels, 'buffer_frames': buffer_frames, 'volume': volume}))
             self.close()
 
-    change_config_q = WSConfigClient('ws://192.168.1.151:7322/', protocols=['http-only', 'chat'])
+    change_config_q = WSConfigClient('ws://' + bi_board_ip + ':7322/', protocols=['http-only', 'chat'])
     change_config_q.connect()
 
 
@@ -254,7 +256,7 @@ def inform_browser_query():
 
 # Connection to WSAudio
 def start_client():
-    ws = StreamClient('ws://192.168.1.151:7321/', protocols=['http-only', 'chat'])
+    ws = StreamClient('ws://' + bi_board_ip + ':7321/', protocols=['http-only', 'chat'])
     ws.connect()
 
     ws.run_forever()

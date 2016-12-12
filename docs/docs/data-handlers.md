@@ -12,7 +12,7 @@ There are two main parts when using a data handler:
 
 # Example
 
-You can use the data handlers from your python code (it is defined in more details in the python part reference):
+You can use the data handlers from your Python code (it is defined in more details in the Python part reference):
 
 ```python
 import browserinterface
@@ -235,7 +235,7 @@ You can write this code in the file `js/myHandlers.js`
 
 ### Using it
 
-You can use it from the python code like any other data handler:
+You can use it from the Python code like any other data handler:
 
 ```python
 import browserinterface

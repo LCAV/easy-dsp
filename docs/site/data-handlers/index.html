@@ -155,7 +155,7 @@ Several data handlers come with the project, but you can also easily write your 
 <li>You send data to it.</li>
 </ol>
 <h1 id="example">Example</h1>
-<p>You can use the data handlers from your python code (it is defined in more details in the python part reference):</p>
+<p>You can use the data handlers from your Python code (it is defined in more details in the Python part reference):</p>
 <pre><code class="python">import browserinterface
 import time
 import random
@@ -330,7 +330,7 @@ Because we are talking about JavaScript, we are not working with a real class, b
 
 <p>You can write this code in the file <code>js/myHandlers.js</code></p>
 <h3 id="using-it">Using it</h3>
-<p>You can use it from the python code like any other data handler:</p>
+<p>You can use it from the Python code like any other data handler:</p>
 <pre><code class="python">import browserinterface
 myHandlerInstance = browserinterface.add_handler(&quot;Custom thing&quot;, 'customtype', {'param1': True, 'param2': 'hello', 'param3': [0, 1, 2]})
 myHandlerInstance.send_data({'newData': {'i': i}})

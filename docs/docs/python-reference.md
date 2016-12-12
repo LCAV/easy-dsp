@@ -1,15 +1,15 @@
 # Intro
 
-This part explains how to get the audio streams in python code and how to send results to the webapp, so it can display them in live.
+This part explains how to get the audio streams in Python code and how to send results to the webapp, so it can display them in live.
 
 ## How it works
 
-When your write code in the webapp editor and click "Execute", it will be executed as a new python script.
-So either you use the browser or write directly a python script that you launch from your terminal, the working is similar.
+When your write code in the webapp editor and click "Execute", it will be executed as a new Python script.
+So either you use the browser or write directly a Python script that you launch from your terminal, the working is similar.
 
-To easily access the audio streams, and display something in the webapp, we provide a python module `browserinterface`.
+To easily access the audio streams, and display something in the webapp, we provide a Python module `browserinterface`.
 
-The minimum python code is the following:
+The minimum Python code is the following:
 
 ```python
 # First you import the module
@@ -19,7 +19,7 @@ import browserinterface
 def handle(buffer):
     print "Buffer received", len(buffer)
 
-# If you run a python script directly from your terminal, and you want to display something in the browser, you need to set `inform_browser` to True
+# If you run a Python script directly from your terminal, and you want to display something in the browser, you need to set `inform_browser` to True
 # If you write this code directly in the webapp, you must remove this line (or set `inform_browser` to False, which is its default value).
 browserinterface.inform_browser = True
 
@@ -104,7 +104,7 @@ np.array([
 
 ## Recording audio
 
-You can ask the python module to record a certain audio duration for you, and to call the callback you specified, using the method `record_audio(duration, callback)` with `duration` in milliseconds.
+You can ask the Python module to record a certain audio duration for you, and to call the callback you specified, using the method `record_audio(duration, callback)` with `duration` in milliseconds.
 The recording starts just after you called the method.
 
 The function `callback` you specified must accept one parameter `buffer` (which will follow the same structure than above).

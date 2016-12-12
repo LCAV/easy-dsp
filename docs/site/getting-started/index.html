@@ -139,7 +139,6 @@
             <div class="section">
               
                 <h1 id="getting-started">Getting Started</h1>
-<p>You will find explanations about how to use the project (how to start, the different commands available), and how to develop on it (the global structure, the different components, their interactions and details about the C and Javascript code).</p>
 <h2 id="on-the-board">On the board</h2>
 <h3 id="prerequisites">Prerequisites</h3>
 <ul>
@@ -147,7 +146,7 @@
 <li><a href="http://www.digip.org/jansson/">Jansson</a>.</li>
 </ul>
 <h3 id="compilation">Compilation</h3>
-<p><code>make</code> should be enough to compile the three programs.</p>
+<p><code>make</code> should be enough to compile the three programs <code>browser-main-daemon</code>, <code>browser-wsaudio</code> and <code>browser-wsconfig</code>.</p>
 <h3 id="launch">Launch</h3>
 <p>Two possibilities: <code>./start.sh log-file.txt</code> (recommended) or:</p>
 <pre><code>./browser-main-daemon &amp;
@@ -165,23 +164,23 @@ export LD_LIBRARY_PATH=/usr/local/lib
 <h3 id="configuration">Configuration</h3>
 <p>The IP address of the board must be specified in two files:</p>
 <ul>
-<li>Line 1 of <code>js/main.js</code>;</li>
-<li>At the end of <code>base-program.py</code>.</li>
+<li>Line 1 of <code>js/main.js</code>, the variable <code>boardIp</code>;</li>
+<li>At the beginning of <code>browserinterface.py</code>, the variable <code>bi_board_ip</code>.</li>
 </ul>
 <h3 id="launch_1">Launch</h3>
 <ol>
-<li>You first have to launch the python daemon: <code>python code-server.py</code>;</li>
+<li>You first have to launch the Python daemon: <code>python code-server.py</code>;</li>
 <li>Then you just have to open the file <code>client.html</code> in your browser;</li>
 <li>Finally you can write code:<ul>
 <li>You can write code directly in the browser, where a basic example is provided;</li>
-<li>Or you can write a python script with your favorite editor and launch it like any python script:<pre><code>import browserinterface
+<li>Or you can write a Python script with your favorite editor and launch it like any Python script:<pre><code>import browserinterface
 import time
 import random
 
 def my_handle(data):
     print "New buffer", len(data)
 
-browserinterface.register_handle_hata(my_handle)
+browserinterface.register_handle_data(my_handle)
 browserinterface.inform_browser = True
 browserinterface.start()
 
