@@ -266,11 +266,17 @@ function stopCode() {
 btnCodeStop.click(stopCode);
 
 // Key shortcuts
-key('⌘+e', function(event, handler) {
+function toggleCodeLaunch() {
   if (codeRunning) {
     stopCode();
   } else {
     executeCode();
+  }
+}
+key('⌘+e', toggleCodeLaunch); // outside the editor
+aceEditor.keyBinding.addKeyboardHandler(function (editor, cmd, char, touch) { // in the editor
+  if (cmd == 8 && touch == 69) { // ⌘+e
+    toggleCodeLaunch();
   }
 });
 
