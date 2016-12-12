@@ -88,6 +88,8 @@
                 
                     <li><a class="toctree-l4" href="#receiving-configuration-changes">Receiving configuration changes</a></li>
                 
+                    <li><a class="toctree-l4" href="#changing-the-configuration">Changing the configuration</a></li>
+                
                     <li><a class="toctree-l4" href="#receiving-the-audio-streams">Receiving the audio streams</a></li>
                 
                     <li><a class="toctree-l4" href="#recording-audio">Recording audio</a></li>
@@ -181,7 +183,7 @@ browserinterface.start()
 </ul>
 <p>These are read-only, and you must not change them!</p>
 <h2 id="receiving-configuration-changes">Receiving configuration changes</h2>
-<p>When you start your script, the four previous variables can still be uninitialized, because the module did not received the configuration yet.
+<p>When you start your script, the four previous variables will still be uninitialized, because the module did not received the configuration yet.
 Plus, sometimes, a configuration change can happen.</p>
 <p>You can register a callback to receive the configuration, when it first arrives, and each time it changes, using <code>register_when_new_config(callback)</code>.
 Your callback function must accept four parameters: <code>callback(buffer_frames, rate, channels, volume)</code>.</p>
@@ -191,6 +193,11 @@ Your callback function must accept four parameters: <code>callback(buffer_frames
     print buffer_frames, rate, channels, volume
 
 browserinterface.register_when_new_config(my_function)
+</code></pre>
+
+<h2 id="changing-the-configuration">Changing the configuration</h2>
+<p>You can change the configuration using the method <code>change_config(rate, channels, buffer_frames, volume)</code>.</p>
+<pre><code class="python">browserinterface.change_config(rate=44100, channels=2, buffer_frames=2048, volume=90)
 </code></pre>
 
 <h2 id="receiving-the-audio-streams">Receiving the audio streams</h2>

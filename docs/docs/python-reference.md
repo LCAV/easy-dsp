@@ -46,7 +46,7 @@ These are read-only, and you must not change them!
 
 ## Receiving configuration changes
 
-When you start your script, the four previous variables can still be uninitialized, because the module did not received the configuration yet.
+When you start your script, the four previous variables will still be uninitialized, because the module did not received the configuration yet.
 Plus, sometimes, a configuration change can happen.
 
 You can register a callback to receive the configuration, when it first arrives, and each time it changes, using `register_when_new_config(callback)`.
@@ -60,6 +60,15 @@ def my_function(buffer_frames, rate, channels, volume):
     print buffer_frames, rate, channels, volume
 
 browserinterface.register_when_new_config(my_function)
+```
+
+
+## Changing the configuration
+
+You can change the configuration using the method `change_config(rate, channels, buffer_frames, volume)`.
+
+```python
+browserinterface.change_config(rate=44100, channels=2, buffer_frames=2048, volume=90)
 ```
 
 

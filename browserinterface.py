@@ -188,6 +188,26 @@ def send_audio(buffer):
             print "Error when send_audio: the browser might be disconnected, we remove it"
             client = -1
 
+# Change the configuration (WSConfig)
+def change_config(rate=None, channels=None, buffer_frames=None, volume=None):
+    if rate is None:
+        rate = globals()['rate']
+    if channels is None:
+        channels = globals()['channels']
+    if buffer_frames is None:
+        buffer_frames = globals()['buffer_frames']
+    if volume is None:
+        volume = globals()['volume']
+
+    class WSConfigClient(WebSocketClient):
+        def opened(self):
+            self.send(json.dumps({'rate': rate, 'channels': channels, 'buffer_frames': buffer_frames, 'volume': volume}))
+            self.close()
+
+    change_config_q = WSConfigClient('ws://192.168.1.151:7322/', protocols=['http-only', 'chat'])
+    change_config_q.connect()
+
+
 # Connection with the browser
 class WSServer(WebSocket):
     def opened(self):
