@@ -263,12 +263,14 @@ def start_client():
 
 def start():
     serverThread = Thread(target = start_server, args = (9001, ))
+    serverThread.daemon = True
     serverThread.start()
 
     if inform_browser:
         inform_browser_query()
 
     clientThread = Thread(target = start_client)
+    clientThread.daemon = True
     clientThread.start()
 
 def loop_callbacks():

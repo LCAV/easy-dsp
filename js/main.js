@@ -335,7 +335,7 @@ wsAudio.onmessage = function(e) {
     if (inputStream) {
       inputStream.destroyAudio();
     }
-    inputStream = new sourceAudio(audioCt, conf);
+    // inputStream = new sourceAudio(audioCt, conf);
     return;
   }
   b = e;

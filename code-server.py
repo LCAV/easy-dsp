@@ -10,6 +10,7 @@ import time
 import sys
 import socket
 import json
+import signal
 
 lineIdentifier = '#####INSERT: Here insert code';
 
@@ -82,7 +83,7 @@ def execute(popen):
 
 clients = []
 
-class EchoWebSocketMaison(WebSocket):
+class PythonDaemon(WebSocket):
     def opened(self):
         print "New client"
         clients.append(self)
@@ -117,6 +118,14 @@ class EchoWebSocketMaison(WebSocket):
 
 server = make_server('', 7320, server_class=WSGIServer,
                      handler_class=WebSocketWSGIRequestHandler,
-                     app=WebSocketWSGIApplication(handler_cls=EchoWebSocketMaison))
+                     app=WebSocketWSGIApplication(handler_cls=PythonDaemon))
+
+def quit_everything(signal, frame):
+    global server
+    print 'Exiting...'
+    server.server_close()
+signal.signal(signal.SIGINT, quit_everything)
+
 server.initialize_websockets_manager()
+print "Listening..."
 server.serve_forever()
