@@ -174,31 +174,46 @@ export LD_LIBRARY_PATH=/usr/local/lib
 <li>Finally you can write code:<ul>
 <li>You can write code directly in the browser, where a basic example is provided;</li>
 <li>Or you can write a Python script with your favorite editor and launch it like any Python script:<pre><code>import browserinterface
-import time
 import random
 
-def my_handle(data):
-    print "New buffer", len(data)
-
-browserinterface.register_handle_data(my_handle)
+# If that case, you have to inform the browser of your existence,
+# to be able to use it for display
 browserinterface.inform_browser = True
+
+print "Simple program"
+
+# First we define two data handlers: one line chart and one polar chart
+c1 = browserinterface.add_handler("First chart", 'base:graph:line', {'xName': 'Duration', 'xLimitNb': 180, 'series': [{'name': 'Intensity 1'}, {'name':'Intensity 2'}]})
+c2 = browserinterface.add_handler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 1}})
+
+c1.send_data({'add': [{'x': [1, 2, 3, 4], 'y': [89, 70, 40, 2, 3]}, {'x': [1, 2, 3, 4], 'y': [39, 20, -2, 4]}]})
+
+i = 4
+
+def handle_buffer(buffer):
+    # print "New buffer", len(buffer)
+    global i
+    i += 1
+    # We send some random data
+    c1.send_data({'add': [{'x': [i], 'y': [20+i*5*random.random()]}, {'x': [i], 'y': [i*5*random.random()]}]})
+    c2.send_data([{'append': (200+i*3)*10}])
+
+# We register this function as a callback function, called every time a new audio buffer is received
+browserinterface.register_handle_data(handle_buffer)
+
+def new_config_is_here(buffer_frames, rate, channels, volume):
+    print "New config received: buffer_frames, rate, channels, volume"
+    print buffer_frames, rate, channels, volume
+
+# We register our function so it will be called when a new configuration arrives
+browserinterface.register_when_new_config(new_config_is_here)
+
+# We start the module, so it will connect to the daemons to receive the audio stream
 browserinterface.start()
 
-print "Hello World!"
-
-c1 = browserinterface.add_handler("First chart", 'base:graph:line', {'xName': 'ok', 'series': ['yNom', 'ynom 22']})
-c2 = browserinterface.add_handler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
-
-c1.send_data([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
-c1.send_data([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
-c1.send_data([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
-c1.send_data([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
-
-for i in range(5, 40):
-  c1.send_data([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
-  c2.send_data([{'append': (200+i*3)*10}])
-  time.sleep(1)
-
+# This call is blocking and will never return
+# So the code you put below will never be executed
+# It's an infinite loop inside which your callbacks will be called
 browserinterface.loop_callbacks()
 </code></pre>
 </li>

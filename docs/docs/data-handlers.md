@@ -19,24 +19,23 @@ import browserinterface
 import time
 import random
 
+browserinterface.start()
+
 # First, we create our handlers
 # First we precise the name, then the type, and third the possible parameters
 ## A line chart, with two series
-c1 = browserinterface.add_handler("First chart - Line", 'base:graph:line', {'xName': 'Name of x axis', 'series': ['First serie', 'Second serie']})
+c1 = browserinterface.add_handler("First chart - Line", 'base:graph:line', {'xName': 'Name of x axis', 'series': [{'name': 'First serie'}, {'name': 'Second serie'}]})
 ## A plot chart, with one serie
-c2 = browserinterface.add_handler("Second chart - Plot", 'base:graph:plot', {'xName': 'Name of super x axis', 'series': ['Only serie']})
+c2 = browserinterface.add_handler("Second chart - Plot", 'base:graph:plot', {'xName': 'Name of super x axis', 'series': [{'name': 'Only serie'}]})
 ## A polar chart, with one serie
 c3 = browserinterface.add_handler("Third chart - Polar", 'base:polar:area', {'title': 'Awesome polar chart', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
 
 # Then we can send some data to the different handlers
-c1.send_data([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
-c1.send_data([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
-c1.send_data([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
-c1.send_data([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
-c2.send_data([{'x': -4, 'y': 3}])
+c1.send_data({'add': [{'x': [1, 2, 3, 4], 'y': [89, 70, 40, 2, 3]}, {'x': [1, 2, 3, 4], 'y': [39, 20, -2, 4]}]})
+c2.send_data({'add': [{'x': [10, 30, 40, 70], 'y': [100, 234, 90, 23]}]})
 
 for i in range(5, 40):
-  c1.send_data([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
+  c1.send_data({'add': [{'x': [i], 'y': [20+i*5*random.random()]}, {'x': [i], 'y': [i*5*random.random()]}]})
   c3.send_data([{'append': (200+i*3)*10}])
   time.sleep(1)
 ```
@@ -69,24 +68,30 @@ The following options are accepted during the creation:
 * `min` (number) [optional]: minimum value for y;
 * `max` (number) [optional]: maximum value for y;
 * Limit the number of points displayed. When the limit is reached, the first values are deleted, and all the graph is "translated":
-    * `xLimitNb` (integer): maximum number of points to display;
-    * `xLimitDistance` (number): maximum distance along the x-axis, between the first and the last point.
+    * `xLimitNb` (integer): maximum number of points to display.
 
 ### Sending data
 
-#### Adding a point
+#### Adding points
 
-You can add a new point to each serie:
+You can add new points to each series:
 
 ```json
-[
-  {"x": 3, "y": 39},
-  {"x": 3, "y": -3},
-  {"x": 3, "y": 23.1}
-]
+{
+  "add": [
+    {
+      "x": [3, 4],
+      "y": [39, 21]
+    },
+    {
+      "x": [3, 4],
+      "y": [11, 32.5]
+    }
+  ]
+}
 ```
 
-The size of the array must be the number of series (specified during the creation).
+The size of the array `add` must be the number of series (specified during the creation).
 
 #### Replacing all the points
 
@@ -94,17 +99,19 @@ You can also replace all the points of all the series:
 
 ```json
 {
-  "x": [0, 1, 2, 3, 4],
-  "y": [
-    [12, 4, 1, 1, 5],
-    [6, 4, 2, 0, -2],
-    [0, 0.5, 1, 0.5, 2]
+  "replace": [
+    {
+      "x": [0, 1, 2, 3, 4],
+      "y": [8, 1, 3, 0, 2]
+    },
+    {
+      "x": [0, 1, 2, 3, 4],
+      "y": [21, 18, 17, 13, 10]
+    }
   ]
 }
 ```
 
-Here we have three series of five points.
-Each serie must have the same number of points, matching the length of the `x` array.
 
 ## DataHandler: draw polar charts
 

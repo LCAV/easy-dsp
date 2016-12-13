@@ -287,7 +287,7 @@ wsPythonServer.onmessage = function(e) {
   if (message.port) {
     setTimeout(function() {
       outputHandle = new handleOutput(message.port);
-    }, 300);
+    }, 500);
   } else if (message.line || message.error) { // Simple output from stdout or stderr from the programm
     var line = message.line;
     if (message.error) {

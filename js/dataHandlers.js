@@ -54,7 +54,8 @@ function graphRickshaw(renderer) {
       renderer: renderer,
       height: 250,
       width: 800,
-      series: series
+      series: series,
+      interpolation: 'linear'
     };
     // yMin and yMax
     if (parameters.min) {
@@ -84,35 +85,44 @@ function graphRickshaw(renderer) {
     yAxis.render();
 
     function newData(data) {
-      if (data.x) { // data = {x: [0, 1, 2], y = [[1, 4, 3], [0, -2, 4]]}
+      var newData = data.add;
+      if (data.replace) { // data = {x: [0, 1, 2], y = [[1, 4, 3], [0, -2, 4]]}
         for (var i = 0; i < series.length; i++) {
           series[i].data = [];
         }
-        _.forEach(data.y, function (d, i) {
-          _.forEach(d, function (y, j) {
-            series[i].data.push({x: data.x[j], y});
-          });
+        newData = data.replace;
+      }
+      _.forEach(newData, function (serie, i) {
+        if (!serie.x || !serie.y) {
+          console.error("x or y attribute is missing for serie", i);
+          return;
+        }
+        if (serie.x.length != serie.y.length) {
+          console.error("x and y have different sizes for serie", i);
+          return;
+        }
+        _.forEach(serie.x, function (x, j) {
+          series[i].data.push({x: x, y: serie.y[j]});
         });
-      } else {
-        // data = [{x: 23, y: -2}]
-        _.forEach(data, function (d, i) {
-          series[i].data.push(d);
-        });
+      });
 
-        if (xLimitNb != -1) {
+      if (xLimitNb != -1) {
+        var xs = _.sortedUniq(_.sortBy(_.flatten(_.map(series, function (serie) {
+          return _.map(serie.data, 'x');
+        }))));
+        var xlimit = xs[xs.length - xLimitNb];
+        if (xlimit !== undefined) {
           _.forEach(series, function (serie) {
-            if (serie.data.length > xLimitNb) {
-              serie.data.shift();
-            }
-          });
-        } else if (xLimitDistance != -1) {
-          _.forEach(series, function (serie) {
-            if (serie.data.length >= 2 && (serie.data[serie.data.length-1].x - serie.data[0].x) > xLimitDistance) {
-              serie.data.shift();
-            }
+            serie.data = _.filter(serie.data, function (d) {
+              if (d.x < xlimit) {
+                return false;
+              }
+              return true;
+            })
           });
         }
       }
+
       graph.update();
     }
 
