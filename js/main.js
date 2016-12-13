@@ -340,7 +340,9 @@ wsAudio.onmessage = function(e) {
   }
   b = e;
   // console.log(e.data);
-  inputStream.loadData(e.data);
+  if (inputStream) {
+    inputStream.loadData(e.data);
+  }
 }
 var inputConfigRate = $('#config-rate');
 var inputConfigBuffer = $('#config-buffer');

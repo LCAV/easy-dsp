@@ -42,11 +42,11 @@ function graphRickshaw(renderer) {
     var xName = parameters.xName;
     var xLimitNb = parameters.xLimitNb || -1;
     var xLimitDistance = parameters.xLimitDistance || -1;
-    _.forEach(parameters.series, function (serieName) {
+    _.forEach(parameters.series, function (serie) {
       series.push({
         data: [],
-        color: 'rgba(' + Math.floor(Math.random()*255) + ',' + Math.floor(Math.random()*255) + ',' + Math.floor(Math.random()*255) + ',0.75)',
-        name: serieName
+        color: serie.color || ('rgba(' + Math.floor(Math.random()*255) + ',' + Math.floor(Math.random()*255) + ',' + Math.floor(Math.random()*255) + ',0.75)'),
+        name: serie.name
       });
     });
     var graphParams = {

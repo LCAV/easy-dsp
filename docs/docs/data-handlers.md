@@ -63,7 +63,9 @@ There are always 2D charts, with an x axis and an y axis.
 The following options are accepted during the creation:
 
 * `xName` (string): name of the x axis;
-* `series` (array[string]): names of the different series. **This parameter fixes the number of series to display**;
+* `series` (array[object]): parameters (name, color) of the different series. **This parameter fixes the number of series to display.** The object representing a serie can have the following keys:
+    * `name` (string) [optional]: name of the serie;
+    * `color` (string) [optional]: color for the serie. Can be a CSS name (`blue`, `red`, `steelblue`, `green`, `lightblue`...) or a rgba value (`rgba(192,132,255,0.3)`).
 * `min` (number) [optional]: minimum value for y;
 * `max` (number) [optional]: maximum value for y;
 * Limit the number of points displayed. When the limit is reached, the first values are deleted, and all the graph is "translated":
