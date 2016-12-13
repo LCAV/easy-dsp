@@ -158,44 +158,44 @@
                 </div>
               </div>
             </div>
-<div class="card-main" id="editor"># handleData is called everytime a new buffer is received
-# You can call sendAudio with a new buffer to send it to the browser
-# A buffer is an array of signed integers, between -32 767 and +32 767
-
-import browserinterface
-import time
+<div class="card-main" id="editor">import browserinterface
 import random
 
-def handle(buffer):
-    print "Buffer", len(buffer)
-    i = 0
-    for v in buffer:
-        buffer[i] = v*20
-        i += 1
-    # send_audio(buffer)
+print "Simple program"
 
-browserinterface.register_handle_data(handle)
-browserinterface.start()
-
-print "Hello World!"
-
-c1 = browserinterface.add_handler("First chart", 'base:graph:line', {'xName': 'ok', 'series': ['yNom', 'ynom 22']})
-# c2 = browserinterface.add_handler("Second chart", 'base:graph:plot', {'xName': 'youpi', 'series': ['yNom']})
-c3 = browserinterface.add_handler("Custom thing", 'customtype', {'param1': True, 'param2': 'hello'})
-c4 = browserinterface.add_handler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 10}})
+# First we define two data handlers: one line chart and one polar chart
+c1 = browserinterface.add_handler("First chart", 'base:graph:line', {'xName': 'ok', 'xLimitNb': 180, 'series': [{'name': 'yNom'}, {'name':'ynom 22'}]})
+c2 = browserinterface.add_handler("Polar", 'base:polar:area', {'title': 'Direction', 'series': ['Intensity'], 'legend': {'from': 0, 'to': 360, 'step': 1}})
 
 c1.send_data([{'x': 1, 'y': 89}, {'x': 1, 'y': 39}])
 c1.send_data([{'x': 2, 'y': 70}, {'x': 2, 'y': 20}])
 c1.send_data([{'x': 3, 'y': 40}, {'x': 3, 'y': -2}])
 c1.send_data([{'x': 4, 'y': 2}, {'x': 4, 'y': 4}])
-# c2.send_data([{'x': -4, 'y': 3}])
 
-for i in range(5, 40):
-  c1.send_data([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
-  c3.send_data({'newData': {'i': i}})
-  c4.send_data([{'append': (200+i*3)*10}])
-  print i
-  time.sleep(1)
+i = 4
+
+def handle_buffer(buffer):
+    # print "New buffer", len(buffer)
+    global i
+    i += 1
+    # We send some random data
+    c1.send_data([{'x': i, 'y': 20+i*5*random.random()}, {'x': i, 'y': i*5*random.random()}])
+    c2.send_data([{'append': (200+i*3)*10}])
+
+# We register this function as a callback function, called every time a new audio buffer is received
+browserinterface.register_handle_data(handle_buffer)
+
+
+def new_config_is_here(buffer_frames, rate, channels, volume):
+    print "New config received: buffer_frames, rate, channels, volume"
+    print buffer_frames, rate, channels, volume
+
+# We register our function so it will be called when a new configuration arrives
+browserinterface.register_when_new_config(new_config_is_here)
+
+
+# We start the module, so it will connect to the daemons to receive the audio stream
+browserinterface.start()
 
 # This call is blocking and will never return
 # So the code you put below will never be executed
