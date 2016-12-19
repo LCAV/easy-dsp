@@ -15,6 +15,7 @@ import json
 import datetime
 import numpy as np
 
+# bi_board_ip = '192.168.7.2'
 bi_board_ip = '192.168.1.151'
 
 # Buffer for audio reception
@@ -23,11 +24,9 @@ bi_buffer = 0
 # Represent the browser
 client = -1
 
-# If the module is called from a python script launched from outside of the browser,
-# and which needs the browser to display data, set to True.
-# If the python script doesn't need the browser, let it to False.
-# If the code is launched from the browser, no need to inform it (it will be already aware), so let it to False.
-inform_browser = False
+# If the module is used from an external script which doesn't need the browser,
+# set it to False.
+inform_browser = True
 
 # Messages to send
 r_messages = Queue()

@@ -1,5 +1,6 @@
 // var boardIp = '192.168.7.2';
 var boardIp = '192.168.1.151';
+var pythonDaemon = '127.0.0.1';
 
 // ACE Code Editor
 var aceEditor = ace.edit("editor");
@@ -10,7 +11,7 @@ aceEditor.session.setMode(new AcePythonMode());
 // WebSockets
 var wsAudio = new WebSocket("ws://" + boardIp + ":7321");
 var wsConfig = new WebSocket("ws://" + boardIp + ":7322");
-var wsPythonServer = new WebSocket("ws://127.0.0.1:7320");
+var wsPythonServer = new WebSocket("ws://" + pythonDaemon + ":7320");
 
 var inputStream;
 var outputHandle;
@@ -281,13 +282,11 @@ aceEditor.keyBinding.addKeyboardHandler(function (editor, cmd, char, touch) { //
 });
 
 var codeFirstLine;
+var scriptLaunchedPort = -1;
 wsPythonServer.onmessage = function(e) {
   var message = JSON.parse(e.data);
-  // Information about which port to connect
-  if (message.port) {
-    setTimeout(function() {
-      outputHandle = new handleOutput(message.port);
-    }, 500);
+  if (message.port) { // A script has be launched on port message.port
+    scriptLaunchedPort = message.port;
   } else if (message.line || message.error) { // Simple output from stdout or stderr from the programm
     var line = message.line;
     if (message.error) {
@@ -316,7 +315,10 @@ wsPythonServer.onmessage = function(e) {
       codeRunning = false;
     }
   } else if (message.script) {
-    startExternalScript();
+    if (scriptLaunchedPort != message.script) {
+      startExternalScript();
+    }
+    scriptLaunchedPort = -1;
     setTimeout(function() {
       outputHandle = new handleOutput(message.script);
     }, 300);
@@ -377,8 +379,13 @@ var infosAudioLatency = $('#info-audio-latency');
 
 // Manage the connection with the running code
 function handleOutput(port) {
-  var ws = new WebSocket("ws://127.0.0.1:" + port);
+  var ws = new WebSocket("ws://" + pythonDaemon + ":" + port);
+  var nbTry = 1;
+  var stop = false; // se to true when the close of this handleOutput is asked
   var outputStream;
+
+  // Try multiple times to connect
+  // Useful because we don't know after how much time
 
   // Remove previous tabs
   $('#output-tabs .output-tab').remove();
@@ -432,6 +439,7 @@ function handleOutput(port) {
     outputStream = new sourceAudio(audioCt, config);
   }
   function close() {
+    stop = true;
     stopAudio();
     ws.close();
   }
@@ -489,3 +497,13 @@ function sourceAudio(audioCtx, config) {
     source: source
   };
 }
+
+// Selection of the Python daemon
+var btnPythonDmCustom = $('#python-dm-custom');
+var displayPythonDmCustomIp = $('#python-dm-custom-ip');
+btnPythonDmCustom.click(function () {
+  var ip = prompt("Which IP address to use for the Python daemon?", pythonDaemon);
+  pythonDaemon = ip;
+  displayPythonDmCustomIp.text(ip);
+  wsPythonServer = new WebSocket("ws://" + pythonDaemon + ":7320");
+});

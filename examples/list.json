@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Spectrum and low-pass filter",
+    "description": "Display the spectrum in live",
+    "file": "frame_processing.py"
+  },
+  {
+    "name": "Direction of arrival",
+    "description": "Visualize the direction of the sound in live",
+    "file": "test_doa.py"
+  },
+  {
+    "name": "Speech detection",
+    "description": "Visualize the audio stream with speech detection in live",
+    "file": "test_vad_interface.py"
+  }
+]

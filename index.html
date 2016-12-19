@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>Microphones live control</title>
     <link rel="stylesheet" href="vendors/bootstrap.min.css">
-    <link rel="stylesheet" href="client.css">
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <div class="container-fluid">
@@ -15,6 +15,38 @@
       <br /> -->
       <div class="row">
         <div class="col-md-3">
+          <div class="card">
+            <div class="card-header">
+              Daemons control
+            </div>
+            <div class="card-block">
+              <div class="form-group row">
+                <label class="col-xs-5 col-form-label">Board daemons</label>
+                <div class="col-xs-7 text-xs-right">
+                  <div class="btn-group" role="group" aria-label="Basic example">
+                    <button type="button" class="btn btn-secondary">↺</button>
+                    <button type="button" class="btn btn-secondary">◼</button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-xs-5 col-form-label">Python daemon</label>
+                <div class="col-xs-7 text-xs-right">
+                  <div class="btn-group" data-toggle="buttons">
+                    <label class="btn btn-primary active">
+                      <input type="radio" name="options" id="python-dm-onboard" autocomplete="off" checked> Board
+                    </label>
+                    <label class="btn btn-primary">
+                      <input type="radio" name="options" id="python-dm-local" autocomplete="off"> Local
+                    </label>
+                    <label class="btn btn-primary" id="python-dm-custom">
+                      <input type="radio" name="options" autocomplete="off"> <span id="python-dm-custom-ip">Other</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="card">
             <div class="card-header">
               Status
@@ -136,8 +168,16 @@
               <div class="row">
                 <div class="col-sm-4 col-lg-4">
                   <div class="btn-group" role="group" aria-label="Basic example">
+                    <a class="btn btn-primary" href="docs/site" target="_blank">Documentation</a>
                     <button type="button" class="btn btn-secondary" id="btn-code-start">Execute (⌘+E)</button>
                     <button type="button" class="btn btn-secondary" id="btn-code-stop" disabled="disabled">Stop</button>
+                    <div class="btn-group" role="group">
+                      <button id="btnGroupDrop1" type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Load an example
+                      </button>
+                      <div class="dropdown-menu" aria-labelledby="Examples" id="div-examples-dropdown">
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div class="col-sm-4 col-lg-9">
@@ -248,6 +288,7 @@ browserinterface.loop_callbacks()
     <script type="text/javascript" charset="utf-8" src="js/dataHandlers.js"></script>
     <script type="text/javascript" charset="utf-8" src="js/myHandlers.js"></script>
     <script type="text/javascript" charset="utf-8" src="js/main.js"></script>
+    <script type="text/javascript" charset="utf-8" src="js/examples.js"></script>
     <link rel="stylesheet" href="vendors/rickshaw/rickshaw.min.css">
   </body>
 </html>
