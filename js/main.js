@@ -9,8 +9,7 @@ var AcePythonMode = ace.require("ace/mode/python").Mode;
 aceEditor.session.setMode(new AcePythonMode());
 
 // WebSockets
-var wsAudio = new WebSocket("ws://" + boardIp + ":7321");
-var wsConfig = new WebSocket("ws://" + boardIp + ":7322");
+var wsAudio, wsConfig;
 var wsPythonServer = new WebSocket("ws://" + pythonDaemon + ":7320");
 
 var inputStream;
@@ -57,34 +56,60 @@ function changeBadgeStatus(e, status) {
     console.warn("changeBadgeStatus(): Unknown badge status", e, status);
   }
 }
-wsAudio.onopen = function(e) {
-  addAlert('success', 'Connected', 'Now connected to the audio stream');
-  changeBadgeStatus(infosStatusWSAudio, 'connected');
-};
-wsConfig.onopen = function(e) {
-  addAlert('success', 'Connected', 'Now connected to the control stream')
-  changeBadgeStatus(infosStatusWSConfig, 'connected');
-};
+
 wsPythonServer.onopen = function() {
   changeBadgeStatus(infosStatusPythonServer, 'connected');
-};
-wsAudio.onerror = function(e) {
-  addAlert('danger', 'Error', 'Impossible to connect to the audio websocket');
-};
-wsConfig.onerror = function(e) {
-  addAlert('danger', 'Error', 'Impossible to connect to the control websocket');
-};
-wsAudio.onclose = function(e) {
-  addAlert('danger', 'Error', 'Disconnected from the audio websocket');
-  changeBadgeStatus(infosStatusWSAudio, 'disconnected');
-};
-wsConfig.onclose = function(e) {
-  addAlert('danger', 'Error', 'Disconnected from the control websocket');
-  changeBadgeStatus(infosStatusWSConfig, 'disconnected');
 };
 wsPythonServer.onclose = function() {
   changeBadgeStatus(infosStatusPythonServer, 'disconnected');
 };
+
+// Connection to daemons
+function daemonsConnect() {
+  wsAudio = new WebSocket("ws://" + boardIp + ":7321");
+  wsConfig = new WebSocket("ws://" + boardIp + ":7322");
+  wsAudio.onopen = function(e) {
+    addAlert('success', 'Connected', 'Now connected to the audio stream');
+    changeBadgeStatus(infosStatusWSAudio, 'connected');
+  };
+  wsConfig.onopen = function(e) {
+    addAlert('success', 'Connected', 'Now connected to the control stream')
+    changeBadgeStatus(infosStatusWSConfig, 'connected');
+  };
+  wsAudio.onerror = function(e) {
+    addAlert('danger', 'Error', 'Impossible to connect to the audio websocket');
+  };
+  wsConfig.onerror = function(e) {
+    addAlert('danger', 'Error', 'Impossible to connect to the control websocket');
+  };
+  wsAudio.onclose = function(e) {
+    addAlert('danger', 'Error', 'Disconnected from the audio websocket');
+    changeBadgeStatus(infosStatusWSAudio, 'disconnected');
+  };
+  wsConfig.onclose = function(e) {
+    addAlert('danger', 'Error', 'Disconnected from the control websocket');
+    changeBadgeStatus(infosStatusWSConfig, 'disconnected');
+  };
+  wsAudio.onmessage = onWSAudioMessage;
+}
+// Initially we try to connect
+daemonsConnect();
+
+// Restarting/Stopping board daemons
+var btnDaemonsRestart = $('#btn-daemons-restart');
+var btnDaemonsStop = $('#btn-daemons-stop');
+btnDaemonsRestart.click(function() {
+  $.get('api.php?restart=1', function (result) {
+    console.log("Daemons restarted");
+    // We reconnect
+    daemonsConnect();
+  });
+});
+btnDaemonsStop.click(function() {
+  $.get('api.php?stop=1', function (result) {
+    console.log("Daemons stopped");
+  });
+});
 
 // Auto save of the editor
 function restoreEditor() {
@@ -328,7 +353,7 @@ wsPythonServer.onmessage = function(e) {
 };
 
 // Input stream: audio and configuration
-wsAudio.onmessage = function(e) {
+function onWSAudioMessage(e) {
   if (typeof e.data == "string") { // configuration
     var conf = JSON.parse(e.data);
     config = conf;

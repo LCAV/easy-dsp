@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 killall browser-wsconfig
 killall browser-wsaudio
 killall browser-main-daemon
 
-print "Daemons stopped"
+echo "Daemons stopped"
