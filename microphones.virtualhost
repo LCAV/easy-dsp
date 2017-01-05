@@ -1,0 +1,20 @@
+<VirtualHost *:8081>
+	ServerAdmin webmaster@localhost
+
+	DocumentRoot /var/bbb-sta321mp/browser-interface
+
+	<Directory /var/bbb-sta321mp/browser-interface>
+		Options Indexes FollowSymLinks MultiViews
+		AllowOverride None
+		Order allow,deny
+		allow from all
+	</Directory>
+
+	ErrorLog ${APACHE_LOG_DIR}/microphones-error.log
+
+	# Possible values include: debug, info, notice, warn, error, crit,
+	# alert, emerg.
+	LogLevel warn
+
+	CustomLog ${APACHE_LOG_DIR}/microphones-access.log combined
+</VirtualHost>

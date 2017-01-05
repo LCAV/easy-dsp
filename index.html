@@ -33,11 +33,11 @@
                 <label class="col-xs-5 col-form-label">Python daemon</label>
                 <div class="col-xs-7 text-xs-right">
                   <div class="btn-group" data-toggle="buttons">
-                    <label class="btn btn-primary active">
-                      <input type="radio" name="options" id="python-dm-onboard" autocomplete="off" checked> Board
-                    </label>
                     <label class="btn btn-primary">
-                      <input type="radio" name="options" id="python-dm-local" autocomplete="off"> Local
+                      <input type="radio" name="options" id="python-dm-onboard" autocomplete="off"> Board
+                    </label>
+                    <label class="btn btn-primary active">
+                      <input type="radio" name="options" id="python-dm-local" autocomplete="off" checked> Local
                     </label>
                     <label class="btn btn-primary" id="python-dm-custom">
                       <input type="radio" name="options" autocomplete="off"> <span id="python-dm-custom-ip">Other</span>
@@ -110,7 +110,7 @@
               <div class="form-group row">
                 <label class="col-xs-5 col-form-label">Rate</label>
                 <div class="col-xs-7">
-                  <select class="form-control" id="config-rate">
+                  <select class="form-control" id="config-rate" disabled="disabled">
                     <option value="22050">22,050 Hz</option>
                     <option value="44100">44,100 Hz</option>
                     <option value="88200">88,200 Hz</option>
@@ -121,7 +121,7 @@
               <div class="form-group row">
                 <label class="col-xs-5 col-form-label">Channels</label>
                 <div class="col-xs-7">
-                  <select class="form-control" id="config-channels">
+                  <select class="form-control" id="config-channels" disabled="disabled">
                     <option value="2">2</option>
                     <option value="4">4</option>
                     <option value="6">6</option>
@@ -131,18 +131,18 @@
               <div class="form-group row">
                 <label class="col-xs-5 col-form-label">Buffer frames</label>
                 <div class="col-xs-7">
-                  <input type="number" min="1" step=="1" class="form-control" value="3000" id="config-buffer">
+                  <input type="number" min="1" step=="1" class="form-control" value="3000" id="config-buffer" disabled="disabled">
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-xs-5 col-form-label">Volume</label>
                 <div class="col-xs-7">
-                  <input type="range" min="0" step=="100" class="form-control" value="50" id="config-volume">
+                  <input type="range" min="0" step=="100" class="form-control" value="50" id="config-volume" disabled="disabled">
                 </div>
               </div>
               <div class="form-group row">
                 <div class="col-xs-12">
-                  <input type="button" class="btn btn-primary btn-block" value="Submit" id="config-change">
+                  <input type="button" class="btn btn-primary btn-block" value="Submit" id="config-change" disabled="disabled">
                 </div>
               </div>
             </div>
@@ -166,10 +166,10 @@
             </div>
             <div class="card-main" style="padding: 20px; border-bottom: 1px solid lightgray;">
               <div class="row">
-                <div class="col-sm-4 col-lg-4">
+                <div class="col-sm-10 col-lg-7">
                   <div class="btn-group" role="group" aria-label="Basic example">
                     <a class="btn btn-primary" href="docs/site" target="_blank">Documentation</a>
-                    <button type="button" class="btn btn-secondary" id="btn-code-start">Execute (⌘+E)</button>
+                    <button type="button" class="btn btn-secondary" id="btn-code-start" disabled="disabled">Execute (⌘+E)</button>
                     <button type="button" class="btn btn-secondary" id="btn-code-stop" disabled="disabled">Stop</button>
                     <div class="btn-group" role="group">
                       <button id="btnGroupDrop1" type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -180,7 +180,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-sm-4 col-lg-9">
+                <div class="col-sm-2 col-lg-3">
                   <div class="sk-fading-circle" id="animation-running">
                     <div class="sk-circle1 sk-circle"></div>
                     <div class="sk-circle2 sk-circle"></div>

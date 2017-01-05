@@ -1,5 +1,5 @@
+var boardIp = location.host.replace(/:.+$/, '');
 // var boardIp = '192.168.7.2';
-var boardIp = '192.168.1.151';
 var pythonDaemon = '127.0.0.1';
 
 // ACE Code Editor
@@ -59,9 +59,12 @@ function changeBadgeStatus(e, status) {
 
 wsPythonServer.onopen = function() {
   changeBadgeStatus(infosStatusPythonServer, 'connected');
+  btnCodeStart.removeAttr('disabled');
+  wsPythonServer.send(JSON.stringify({board: boardIp}));
 };
 wsPythonServer.onclose = function() {
   changeBadgeStatus(infosStatusPythonServer, 'disconnected');
+  btnCodeStart.attr('disabled', 'disabled');
 };
 
 // Connection to daemons
@@ -73,14 +76,16 @@ function daemonsConnect() {
     changeBadgeStatus(infosStatusWSAudio, 'connected');
   };
   wsConfig.onopen = function(e) {
-    addAlert('success', 'Connected', 'Now connected to the control stream')
+    addAlert('success', 'Connected', 'Now connected to the control stream');
     changeBadgeStatus(infosStatusWSConfig, 'connected');
+    configEnable();
   };
   wsAudio.onerror = function(e) {
     addAlert('danger', 'Error', 'Impossible to connect to the audio websocket');
   };
   wsConfig.onerror = function(e) {
     addAlert('danger', 'Error', 'Impossible to connect to the control websocket');
+    configDisable();
   };
   wsAudio.onclose = function(e) {
     addAlert('danger', 'Error', 'Disconnected from the audio websocket');
@@ -89,6 +94,7 @@ function daemonsConnect() {
   wsConfig.onclose = function(e) {
     addAlert('danger', 'Error', 'Disconnected from the control websocket');
     changeBadgeStatus(infosStatusWSConfig, 'disconnected');
+    configDisable();
   };
   wsAudio.onmessage = onWSAudioMessage;
 }
@@ -375,7 +381,9 @@ var inputConfigRate = $('#config-rate');
 var inputConfigBuffer = $('#config-buffer');
 var inputConfigChannels = $('#config-channels');
 var inputConfigVolume = $('#config-volume');
-$('#config-change').click(function() {
+var btnConfigChange = $('#config-change');
+var configElements = [inputConfigRate, inputConfigBuffer, inputConfigChannels, inputConfigVolume, btnConfigChange];
+btnConfigChange.click(function() {
   var newConfig = {
     rate: parseInt(inputConfigRate.val()),
     buffer_frames: parseInt(inputConfigBuffer.val()),
@@ -386,6 +394,17 @@ $('#config-change').click(function() {
   addAlert('info', 'Configuration sent', 'New configuration sent: ' + JSON.stringify(newConfig));
   wsConfig.send(JSON.stringify(newConfig));
 });
+
+function configDisable() {
+  _.forEach(configElements, function (e) {
+    e.attr('disabled', 'disabled');
+  });
+}
+function configEnable() {
+  _.forEach(configElements, function (e) {
+    e.removeAttr('disabled');
+  });
+}
 
 function displayConfig() {
   inputConfigRate.val(config.rate);
