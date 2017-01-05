@@ -2,25 +2,20 @@
 
 ## On the board
 
-### Prerequisites
+### Installation
+
+#### Prerequisites
 
 * [libwebsock](https://github.com/payden/libwebsock);
-* [Jansson](http://www.digip.org/jansson/).
+* [Jansson](http://www.digip.org/jansson/);
+* Apache and PHP: `sudo apt-get install apache2 libapache2-mod-php5 php5 php5-common`.
 
-### Compilation
+#### Setup
 
-`make` should be enough to compile the three programs `browser-main-daemon`, `browser-wsaudio` and `browser-wsconfig`.
-
-### Launch
-
-Two possibilities: `./start.sh log-file.txt` (recommended) or:
-
-    ./browser-main-daemon &
-    export LD_LIBRARY_PATH=/usr/local/lib
-    ./browser-wsaudio &
-    ./browser-wsconfig &
-
-To stop it, kill the three programs (or use `./stop.sh`).
+* Clone the repository in `/var/bbb-sta321mp`: `cd /var && git clone https://git.epfl.ch/repo/bbb-sta321mp.git`;
+* Create a file `/var/bbb-sta321mp/browser-interface/logs.txt` and set the owner to `www-data`: `cd /var/bbb-sta321mp/browser-interface/ && touch logs.txt && chown www-data:www-data logs.txt`;
+* Copy the virtualhost configuration file and enable it: `cp /var/bbb-sta321mp/browser-interface/microphones.virtualhost /etc/apache2/sites-available/microphones && a2ensite microphones`;
+* Compile the C daemons: `cd /var/bbb-sta321mp/browser-interface/ && make`
 
 ## On the computer
 
@@ -32,25 +27,20 @@ To stop it, kill the three programs (or use `./stop.sh`).
 
 ### Configuration
 
-The IP address of the board must be specified in two files:
+The IP address of the board must be specified in one file:
 
-* Line 1 of `js/main.js`, the variable `boardIp`;
 * At the beginning of `browserinterface.py`, the variable `bi_board_ip`.
 
 ### Launch
 
 1. You first have to launch the Python daemon: `python code-server.py`;
-2. Then you just have to open the file `client.html` in your browser;
+2. Then you just have to open your browser and access `http://ip.of.the.board:8081`;
 3. Finally you can write code:
-    - You can write code directly in the browser, where a basic example is provided;
+    - You can write code directly in the browser, where basics examples are provided;
     - Or you can write a Python script with your favorite editor and launch it like any Python script:
 
             import browserinterface
             import random
-
-            # If that case, you have to inform the browser of your existence,
-            # to be able to use it for display
-            browserinterface.inform_browser = True
 
             print "Simple program"
 

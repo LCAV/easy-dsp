@@ -140,21 +140,20 @@
               
                 <h1 id="getting-started">Getting Started</h1>
 <h2 id="on-the-board">On the board</h2>
-<h3 id="prerequisites">Prerequisites</h3>
+<h3 id="installation">Installation</h3>
+<h4 id="prerequisites">Prerequisites</h4>
 <ul>
 <li><a href="https://github.com/payden/libwebsock">libwebsock</a>;</li>
-<li><a href="http://www.digip.org/jansson/">Jansson</a>.</li>
+<li><a href="http://www.digip.org/jansson/">Jansson</a>;</li>
+<li>Apache and PHP: <code>sudo apt-get install apache2 libapache2-mod-php5 php5 php5-common</code>.</li>
 </ul>
-<h3 id="compilation">Compilation</h3>
-<p><code>make</code> should be enough to compile the three programs <code>browser-main-daemon</code>, <code>browser-wsaudio</code> and <code>browser-wsconfig</code>.</p>
-<h3 id="launch">Launch</h3>
-<p>Two possibilities: <code>./start.sh log-file.txt</code> (recommended) or:</p>
-<pre><code>./browser-main-daemon &amp;
-export LD_LIBRARY_PATH=/usr/local/lib
-./browser-wsaudio &amp;
-./browser-wsconfig &amp;
-</code></pre>
-<p>To stop it, kill the three programs (or use <code>./stop.sh</code>).</p>
+<h4 id="setup">Setup</h4>
+<ul>
+<li>Clone the repository in <code>/var/bbb-sta321mp</code>: <code>cd /var &amp;&amp; git clone https://git.epfl.ch/repo/bbb-sta321mp.git</code>;</li>
+<li>Create a file <code>/var/bbb-sta321mp/browser-interface/logs.txt</code> and set the owner to <code>www-data</code>: <code>cd /var/bbb-sta321mp/browser-interface/ &amp;&amp; touch logs.txt &amp;&amp; chown www-data:www-data logs.txt</code>;</li>
+<li>Copy the virtualhost configuration file and enable it: <code>cp /var/bbb-sta321mp/browser-interface/microphones.virtualhost /etc/apache2/sites-available/microphones &amp;&amp; a2ensite microphones</code>;</li>
+<li>Compile the C daemons: <code>cd /var/bbb-sta321mp/browser-interface/ &amp;&amp; make</code></li>
+</ul>
 <h2 id="on-the-computer">On the computer</h2>
 <h3 id="prerequisites_1">Prerequisites</h3>
 <ul>
@@ -162,23 +161,18 @@ export LD_LIBRARY_PATH=/usr/local/lib
 <li>Numpy.</li>
 </ul>
 <h3 id="configuration">Configuration</h3>
-<p>The IP address of the board must be specified in two files:</p>
+<p>The IP address of the board must be specified in one file:</p>
 <ul>
-<li>Line 1 of <code>js/main.js</code>, the variable <code>boardIp</code>;</li>
 <li>At the beginning of <code>browserinterface.py</code>, the variable <code>bi_board_ip</code>.</li>
 </ul>
-<h3 id="launch_1">Launch</h3>
+<h3 id="launch">Launch</h3>
 <ol>
 <li>You first have to launch the Python daemon: <code>python code-server.py</code>;</li>
-<li>Then you just have to open the file <code>client.html</code> in your browser;</li>
+<li>Then you just have to open your browser and access <code>http://ip.of.the.board:8081</code>;</li>
 <li>Finally you can write code:<ul>
-<li>You can write code directly in the browser, where a basic example is provided;</li>
+<li>You can write code directly in the browser, where basics examples are provided;</li>
 <li>Or you can write a Python script with your favorite editor and launch it like any Python script:<pre><code>import browserinterface
 import random
-
-# If that case, you have to inform the browser of your existence,
-# to be able to use it for display
-browserinterface.inform_browser = True
 
 print "Simple program"
 

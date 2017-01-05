@@ -122,12 +122,16 @@ This connection is only one-way: the webapp sends new audio configuration to WSC
 
 This conenction is two-ways: the webapp can send new Python code to execute, and the daemon can send back the status of the program.
 
-#### Connection
+#### Connection (server: Python Daemon)
 
 * Protocol: WebSocket;
 * Port: 7320.
 
 #### Messages: Webapp > Python Daemon
+
+* IP address of the board.
+    * Message type: text;
+    * Message format: JSON: `{"board": (string)}`
 
 * Python code to execute: this message contains new Python code to insert into `base-program.py` and to execute.
     * Message type: text;
@@ -162,6 +166,27 @@ This conenction is two-ways: the webapp can send new Python code to execute, and
 * New script: this message indicates to the webapp that a Python script is running and would like to use the webapp for display, and specify on which port the Python program listens for its WebSocket.
     * Message type: text;
     * Message format: JSON: `{"script": (integer)}`.
+
+
+## Python Daemon <> final-program.py
+
+#### Connection (server: Python Daemon)
+
+* Protocol: WebSocket;
+* Port: 7320.
+
+#### Messages: Python Daemon > final-program.py
+
+* IP address of the board.
+    * Message type: text;
+    * Message format: `(string)`
+
+#### Messages: final-program.py > Python Daemon
+
+* New script: this message indicates to the Python Daemon that a Python script is running and would like to use the webapp for display, and specify on which port the Python program listens for its WebSocket. The Python Daemon will then inform the browser.
+    * Message type: text;
+    * Message format: JSON: `{"script": (string)}`.
+
 
 ## final-program.py > Webapp
 

@@ -16,8 +16,7 @@ lineIdentifier = '#####INSERT: Here insert code';
 
 def runCode(message, client, q):
     data = message.data
-    print client
-    print "start"
+    print "runCode"
     with open('base-program.py', 'r') as baseFile:
         baseCode = baseFile.read()
     lines = baseCode.split('\n')
@@ -67,21 +66,17 @@ def sendErr(popen, client):
     stderr_lines = iter(popen.stderr.readline, "")
     for stderr_line in stderr_lines:
         client.send(json.dumps({'error': stderr_line}), False)
-    print "laaa - error"
     popen.stderr.close()
-    print "fini - error"
 
 def execute(popen):
     stdout_lines = iter(popen.stdout.readline, "")
     for stdout_line in stdout_lines:
         yield stdout_line
-    print "laaa"
     popen.stdout.close()
     return_code = popen.wait()
-    # print return_code
-    print "fini"
 
 clients = []
+board_ip = ''
 
 class PythonDaemon(WebSocket):
     def opened(self):
@@ -89,15 +84,22 @@ class PythonDaemon(WebSocket):
         clients.append(self)
 
     def received_message(self, message):
-        print self
+        global board_ip
         try:
             data = json.loads(message.data)
-            if data['script']:
+            print "New JSON"
+            if 'script' in data:
                 # Send a message to every connected client so it knows
                 for c in clients:
                     if c != self:
                         c.send(json.dumps(data))
-                return
+                # Send the board IP
+                if board_ip != '':
+                    self.send(board_ip)
+            if 'board' in data:
+                # The browser inform us of the IP address of the board
+                board_ip = data['board']
+            return
         except ValueError, e:
             doNothing = True
         print "New message"

@@ -15,8 +15,7 @@ import json
 import datetime
 import numpy as np
 
-# bi_board_ip = '192.168.7.2'
-bi_board_ip = '192.168.1.151'
+bi_board_ip = '192.168.7.2'
 
 # Buffer for audio reception
 bi_buffer = 0
@@ -247,7 +246,14 @@ def start_server(port):
 class PythonDaemonClient(WebSocketClient):
     def opened(self):
         self.send(json.dumps({'script': 9001}))
+
+    def received_message(self, message):
+        global bi_board_ip
+        # We should receive the IP address of the board
+        bi_board_ip = message.data
         self.close()
+        start_client_thread()
+
 
 def inform_browser_query():
     python_daemon = PythonDaemonClient('ws://127.0.0.1:7320/', protocols=['http-only', 'chat'])
@@ -260,6 +266,11 @@ def start_client():
 
     ws.run_forever()
 
+def start_client_thread():
+    clientThread = Thread(target = start_client)
+    clientThread.daemon = True
+    clientThread.start()
+
 def start():
     serverThread = Thread(target = start_server, args = (9001, ))
     serverThread.daemon = True
@@ -267,10 +278,8 @@ def start():
 
     if inform_browser:
         inform_browser_query()
-
-    clientThread = Thread(target = start_client)
-    clientThread.daemon = True
-    clientThread.start()
+    else:
+        start_client_thread()
 
 def loop_callbacks():
     global r_calls

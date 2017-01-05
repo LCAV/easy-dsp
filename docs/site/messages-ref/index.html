@@ -83,6 +83,8 @@
                 
                     <li><a class="toctree-l4" href="#python-daemon-webapp">Python Daemon &lt;&gt; Webapp</a></li>
                 
+                    <li><a class="toctree-l4" href="#python-daemon-final-programpy">Python Daemon &lt;&gt; final-program.py</a></li>
+                
                     <li><a class="toctree-l4" href="#final-programpy-webapp">final-program.py &gt; Webapp</a></li>
                 
             
@@ -278,13 +280,20 @@ If it's four integers then it is a configuration information, else it is audio d
 </ul>
 <h2 id="python-daemon-webapp">Python Daemon &lt;&gt; Webapp</h2>
 <p>This conenction is two-ways: the webapp can send new Python code to execute, and the daemon can send back the status of the program.</p>
-<h4 id="connection_4">Connection</h4>
+<h4 id="connection-server-python-daemon">Connection (server: Python Daemon)</h4>
 <ul>
 <li>Protocol: WebSocket;</li>
 <li>Port: 7320.</li>
 </ul>
 <h4 id="messages-webapp-python-daemon">Messages: Webapp &gt; Python Daemon</h4>
 <ul>
+<li>
+<p>IP address of the board.</p>
+<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON: <code>{"board": (string)}</code></li>
+</ul>
+</li>
 <li>
 <p>Python code to execute: this message contains new Python code to insert into <code>base-program.py</code> and to execute.</p>
 <ul>
@@ -345,9 +354,31 @@ If it's four integers then it is a configuration information, else it is audio d
 </ul>
 </li>
 </ul>
+<h2 id="python-daemon-final-programpy">Python Daemon &lt;&gt; final-program.py</h2>
+<h4 id="connection-server-python-daemon_1">Connection (server: Python Daemon)</h4>
+<ul>
+<li>Protocol: WebSocket;</li>
+<li>Port: 7320.</li>
+</ul>
+<h4 id="messages-python-daemon-final-programpy">Messages: Python Daemon &gt; final-program.py</h4>
+<ul>
+<li>IP address of the board.<ul>
+<li>Message type: text;</li>
+<li>Message format: <code>(string)</code></li>
+</ul>
+</li>
+</ul>
+<h4 id="messages-final-programpy-python-daemon">Messages: final-program.py &gt; Python Daemon</h4>
+<ul>
+<li>New script: this message indicates to the Python Daemon that a Python script is running and would like to use the webapp for display, and specify on which port the Python program listens for its WebSocket. The Python Daemon will then inform the browser.<ul>
+<li>Message type: text;</li>
+<li>Message format: JSON: <code>{"script": (string)}</code>.</li>
+</ul>
+</li>
+</ul>
 <h2 id="final-programpy-webapp">final-program.py &gt; Webapp</h2>
 <p>This connection is one-way only: the new Python program can send various outputs to the webapp.</p>
-<h4 id="connection_5">Connection</h4>
+<h4 id="connection_4">Connection</h4>
 <ul>
 <li>Protocol: WebSocket;</li>
 <li>Port: just over 7320 (choosen and specified by the Python daemon).</li>
