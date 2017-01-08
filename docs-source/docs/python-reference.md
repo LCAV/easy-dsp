@@ -129,6 +129,14 @@ browserinterface.record_audio(15000, my_function) # my_function will be called a
 ```
 
 
+## Sending audio
+
+It is possible to send a new audio stream to the browser so it will play it.
+The configuration must be exactly the same as the input buffer (same number of channels, same rate, same number of frames per buffer).
+
+The method `send_audio(buffer)` accepts a 2D Numpy array, following the same format as the input.
+
+
 ## Using the data handlers
 
 After you performed some algorithms on the audio streams, you may want to display some outputs, like charts, histograms or new audio streams.

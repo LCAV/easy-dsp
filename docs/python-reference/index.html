@@ -96,6 +96,8 @@
                 
                     <li><a class="toctree-l4" href="#recording-audio">Recording audio</a></li>
                 
+                    <li><a class="toctree-l4" href="#sending-audio">Sending audio</a></li>
+                
                     <li><a class="toctree-l4" href="#using-the-data-handlers">Using the data handlers</a></li>
                 
             
@@ -243,6 +245,10 @@ browserinterface.record_audio(5000, my_function) # my_function will be called af
 browserinterface.record_audio(15000, my_function) # my_function will be called after 15 seconds
 </code></pre>
 
+<h2 id="sending-audio">Sending audio</h2>
+<p>It is possible to send a new audio stream to the browser so it will play it.
+The configuration must be exactly the same as the input buffer (same number of channels, same rate, same number of frames per buffer).</p>
+<p>The method <code>send_audio(buffer)</code> accepts a 2D Numpy array, following the same format as the input.</p>
 <h2 id="using-the-data-handlers">Using the data handlers</h2>
 <p>After you performed some algorithms on the audio streams, you may want to display some outputs, like charts, histograms or new audio streams.
 What you have to do is to send the data you want to display to a <strong>data handler</strong> of the webapp.

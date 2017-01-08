@@ -40,6 +40,8 @@ The WSAudio daemon connects to the main daemon using the UNIX socket `/tmp/micro
 It also listens on the port 7321 using WebSocket.
 It will send the audio streams it receives to every connected client as binary messages.
 It doesn't keep in memory the frames: each time it receives new data from the main daemon, it sends it to the connected clients.
+However, the buffer sent by the main daemon through the UNIX socket may be fragmented (if the number of frames in one buffer is too large).
+WSAudio will rebuild the initial buffer from the multiple packets it received, before sending it to the WebSocket clients (the WebSocket protocol taking care of the fragmentation).
 When a new client arrives, it starts to receive the audio streams from this moment.
 
 ### WSConfig

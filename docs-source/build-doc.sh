@@ -1,3 +1,2 @@
 #!/bin/sh
-mkdocs build
-mv site ../docs
+mkdocs build --site-dir ../docs
