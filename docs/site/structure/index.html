@@ -186,8 +186,9 @@ The main daemon will then interrupt its connection with ALSA, set the new config
 <p>In the webapp, there is an editor where the user can write some Python code.
 When he/she clicks on <em>Execute</em> the code is sent to the local Python daemon.
 Then the Python daemon includes the code to an existing Python program, <code>base-program.py</code> (at the end, it replaces the line <code>#####INSERT: Here insert code</code> with the code from the user), and executes it.</p>
-<p>This new Python program will then connect to <code>ws-audio</code>, so it will receive the audio streams in live (and executes the code from the user on it), and it will also listens on a WebSocket (on a port around 7320 specified by the Python daemon, which communicated it to the webapp) to which the webapp will connect.
-So this new Python program will have the possibility to work on the audio streams and to send the output (which can be plots data or a new audio stream) directly to the webapp.</p>
+<p>This new Python program will then connect to <code>ws-audio</code>, so it will receive the audio streams in live (and executes the code from the user on it), and it will also listen on a WebSocket (on a port around 7320 specified by the Python daemon, which communicated it to the webapp) to which the webapp will connect.
+So this new Python program will have the possibility to work on the audio streams and to send the output (which can be plots data or a new audio stream) directly to the webapp.
+The webapp also uses this connection to send the IP address of the board, so the Python script know how to connect to WSAudio.</p>
 <p>More precisely, the user is invited to write his/her code inside a function (for example <code>my_handle_data(buffer)</code>) and to register it as a callback (using <code>browserinterface.register_handle_data(my_handle_data)</code>) so it will be called every time a new audio buffer is received from the <code>ws-audio</code> daemon.</p>
 <p>The Python daemon will also catch the <code>stdout</code> and <code>stderr</code> streams and redirect them to the browser, so the user can easily access it.</p>
 <p><img alt="Overview client" src="../img/overview-client.svg" /></p>

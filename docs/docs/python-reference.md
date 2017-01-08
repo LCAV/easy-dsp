@@ -5,7 +5,7 @@ This part explains how to get the audio streams in Python code and how to send r
 ## How it works
 
 When your write code in the webapp editor and click "Execute", it will be executed as a new Python script.
-So either you use the browser or write directly a Python script that you launch from your terminal, the working is similar.
+So either you use the browser or write directly a Python script that you launch from your terminal, the way it works is similar.
 
 To easily access the audio streams, and display something in the webapp, we provide a Python module `browserinterface`.
 
@@ -19,9 +19,6 @@ import browserinterface
 def handle(buffer):
     print "Buffer received", len(buffer)
 
-# If you run a Python script directly from your terminal, and you want to display something in the browser, you need to set `inform_browser` to True
-# If you write this code directly in the webapp, you must remove this line (or set `inform_browser` to False, which is its default value).
-browserinterface.inform_browser = True
 
 # Finally you register your function, so browserinterface will call it every time a new audio buffer is received,
 browserinterface.register_handle_data(handle)
@@ -36,6 +33,19 @@ browserinterface.loop_callbacks()
 ```
 
 In the following, when we talk about functions and variables, they all come from the module `browserinterface`, so you must prefixe them with `browserinterface.`.
+
+
+## If the browser is not needed
+
+If you run your own Python script and don't need the browser (to display the output), you have to set the variable `inform_browser` to false.
+In that case, you also have to specify the IP address of the board, using the variable `board_ip` (when you use the browser, it directly communicate to your script the IP address of the board, so you don't need to specify it).
+
+```python
+browserinterface.inform_browser = False
+browserinterface.board_ip = '10.1.2.3'
+```
+
+This must be done at the very beginning, before you `start()` the module.
 
 
 ## Reading the configuration

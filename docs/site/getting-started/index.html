@@ -160,15 +160,11 @@
 <li>Install <a href="https://ws4py.readthedocs.io/en/latest/">ws4py</a>;</li>
 <li>Numpy.</li>
 </ul>
-<h3 id="configuration">Configuration</h3>
-<p>The IP address of the board must be specified in one file:</p>
-<ul>
-<li>At the beginning of <code>browserinterface.py</code>, the variable <code>bi_board_ip</code>.</li>
-</ul>
 <h3 id="launch">Launch</h3>
 <ol>
-<li>You first have to launch the Python daemon: <code>python code-server.py</code>;</li>
+<li>You first have to launch the Python daemon on your computer: <code>python code-server.py</code>;</li>
 <li>Then you just have to open your browser and access <code>http://ip.of.the.board:8081</code>;</li>
+<li>Using the buttons on the interface, you can easily start the C daemons on the board;</li>
 <li>Finally you can write code:<ul>
 <li>You can write code directly in the browser, where basics examples are provided;</li>
 <li>Or you can write a Python script with your favorite editor and launch it like any Python script:<pre><code>import browserinterface

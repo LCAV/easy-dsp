@@ -62,8 +62,9 @@ In the webapp, there is an editor where the user can write some Python code.
 When he/she clicks on *Execute* the code is sent to the local Python daemon.
 Then the Python daemon includes the code to an existing Python program, `base-program.py` (at the end, it replaces the line `#####INSERT: Here insert code` with the code from the user), and executes it.
 
-This new Python program will then connect to `ws-audio`, so it will receive the audio streams in live (and executes the code from the user on it), and it will also listens on a WebSocket (on a port around 7320 specified by the Python daemon, which communicated it to the webapp) to which the webapp will connect.
+This new Python program will then connect to `ws-audio`, so it will receive the audio streams in live (and executes the code from the user on it), and it will also listen on a WebSocket (on a port around 7320 specified by the Python daemon, which communicated it to the webapp) to which the webapp will connect.
 So this new Python program will have the possibility to work on the audio streams and to send the output (which can be plots data or a new audio stream) directly to the webapp.
+The webapp also uses this connection to send the IP address of the board, so the Python script know how to connect to WSAudio.
 
 More precisely, the user is invited to write his/her code inside a function (for example `my_handle_data(buffer)`) and to register it as a callback (using `browserinterface.register_handle_data(my_handle_data)`) so it will be called every time a new audio buffer is received from the `ws-audio` daemon.
 

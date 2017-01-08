@@ -1,4 +1,10 @@
-# Acknowledgements
+# Python examples
+
+The webapp includes several cool Python examples (for direction of arrival or speech detection among others).
+They are not from me, but come from Eric Bezzam and Robin Scheibler (LCAV, EPFL, Lausanne).
+
+
+# Vendors
 
 To have something plug-and-play, some libraries are directly included in the repository:
 

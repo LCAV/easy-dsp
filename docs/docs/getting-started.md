@@ -25,17 +25,12 @@
 * Numpy.
 
 
-### Configuration
-
-The IP address of the board must be specified in one file:
-
-* At the beginning of `browserinterface.py`, the variable `bi_board_ip`.
-
 ### Launch
 
-1. You first have to launch the Python daemon: `python code-server.py`;
+1. You first have to launch the Python daemon on your computer: `python code-server.py`;
 2. Then you just have to open your browser and access `http://ip.of.the.board:8081`;
-3. Finally you can write code:
+3. Using the buttons on the interface, you can easily start the C daemons on the board;
+4. Finally you can write code:
     - You can write code directly in the browser, where basics examples are provided;
     - Or you can write a Python script with your favorite editor and launch it like any Python script:
 
