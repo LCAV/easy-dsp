@@ -46,9 +46,9 @@ for i in range(5, 40):
 This handler can be used to draw line charts, histograms.
 There are always 2D charts, with an x axis and an y axis.
 
-<img src="/img/handler-ex1.png" style="height: 100px !important;" />
-<img src="/img/handler-ex2.png" style="height: 100px !important;" />
-<img src="/img/handler-ex3.png" style="height: 100px !important;" />
+<img src="../img/handler-ex1.png" style="height: 100px !important;" />
+<img src="../img/handler-ex2.png" style="height: 100px !important;" />
+<img src="../img/handler-ex3.png" style="height: 100px !important;" />
 
 ### Types
 
@@ -117,8 +117,8 @@ You can also replace all the points of all the series:
 
 This handler can draw polar charts.
 
-<img src="/img/handler-polar-ex2.png" style="height: 200px !important;" />
-<img src="/img/handler-polar-ex1.png" style="height: 200px !important;" />
+<img src="../img/handler-polar-ex2.png" style="height: 200px !important;" />
+<img src="../img/handler-polar-ex1.png" style="height: 200px !important;" />
 
 ### Types
 
@@ -174,7 +174,7 @@ The size of the array must be the number of series (specified during the creatio
 
 This handler can draw heatmaps.
 
-<img src="/img/handler-heatmap-ex1.png" style="display: block; height: 200px !important; margin: 0 auto;" />
+<img src="../img/handler-heatmap-ex1.png" style="display: block; height: 200px !important; margin: 0 auto;" />
 
 ### Types
 
