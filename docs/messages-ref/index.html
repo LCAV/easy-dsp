@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Messages reference - Beaglebone Board Web Interface</title>
+  <title>Messages reference - Audio Acquisition Web Interface</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -35,7 +35,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> Beaglebone Board Web Interface</a>
+        <a href=".." class="icon icon-home"> Audio Acquisition Web Interface</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -124,7 +124,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">Beaglebone Board Web Interface</a>
+        <a href="..">Audio Acquisition Web Interface</a>
       </nav>
 
       
@@ -147,7 +147,7 @@
             <div class="section">
               
                 <h1 id="intro">Intro</h1>
-<p>Here you will find the different messages that can be exchanged between the different parts, inside the UNIX Sockets or the WebSockets.
+<p>Here you will find the different messages that can be exchanged between the different components, inside the UNIX Sockets or the WebSockets.
 The titles are always server &lt;&gt; client.</p>
 <h2 id="main-daemon">Main Daemon</h2>
 <h3 id="main-daemon-wsaudio">Main Daemon &gt; WSAudio</h3>
@@ -160,7 +160,7 @@ The titles are always server &lt;&gt; client.</p>
 </ul>
 <h4 id="messages">Messages</h4>
 <ul>
-<li>Audio configuration: this message allows WSAudio to know the audio configuration choosed, so especially it can allocate the right buffer size.<ul>
+<li>Audio configuration: this message allows WSAudio to know the audio configuration choosed, so that it can allocate the correct buffer size.<ul>
 <li>Length in <strong>bytes</strong>: <code>4*sizeof(int)</code>;</li>
 <li>Payload: four integer: <code>{buffer_frames}{rate}{channels}{volume}</code>:<ul>
 <li><code>buffer_frames</code>: number of audio frames in one buffer;</li>
@@ -221,7 +221,7 @@ If it's four integers then it is a configuration information, else it is audio d
 <h4 id="messages_2">Messages</h4>
 <ul>
 <li>
-<p>Audio configuration: this message allows the client to know the audio configuration choosed.</p>
+<p>Audio configuration: this message allows the client to know the audio configuration chosen.</p>
 <ul>
 <li>Message type: text;</li>
 <li>
@@ -235,7 +235,7 @@ If it's four integers then it is a configuration information, else it is audio d
 </code></pre>
 </li>
 <li>
-<p>So the size of the audio buffer is <code>m.buffer_frames * m.channels * 16 / 8</code> in <strong>bytes</strong> (16 because a frame is encoded using a 16-bits little-endian integer), where <code>m</code> is the JSON received message.</p>
+<p>So the size of the audio buffer is <code>m.buffer_frames * m.channels * 16 / 8</code> in <strong>bytes</strong> (16 because a frame is encoded using a 16-bits little-endian integer), where <code>m</code> is the received JSON message.</p>
 </li>
 </ul>
 </li>
@@ -413,7 +413,7 @@ If it's four integers then it is a configuration information, else it is audio d
 </ul>
 </li>
 <li>
-<p>Creation of a new data handler: this message asks the webapp to create a new data handler, that will be then complete with new data.</p>
+<p>Creation of a new data handler: this message asks the webapp to create a new data handler, that will be then filled with new data.</p>
 <ul>
 <li>Message type: text;</li>
 <li>Message format: JSON:<pre><code>{

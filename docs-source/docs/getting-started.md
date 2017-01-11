@@ -12,11 +12,22 @@
 
 #### Setup
 
-* Clone the repository in `/var/bbb-sta321mp`: `cd /var && git clone https://git.epfl.ch/repo/bbb-sta321mp.git`;
-* Create a file `/var/bbb-sta321mp/browser-interface/logs.txt` and set the owner to `www-data`: `cd /var/bbb-sta321mp/browser-interface/ && touch logs.txt && chown www-data:www-data logs.txt`;
-* Copy the virtualhost configuration file and enable it: `cp /var/bbb-sta321mp/browser-interface/microphones.virtualhost /etc/apache2/sites-available/microphones && a2ensite microphones`;
-* Compile the C daemons: `cd /var/bbb-sta321mp/browser-interface/ && make`
+* Clone the repository in `/var/easy-dsp`;
+* Create a file `/var/easy-dsp/logs.txt` and set the owner to `www-data`;
+* Copy the virtualhost configuration file and enable it;
+* Compile the C daemons.
 
+In root, it resumes to:
+```bash
+cd /var
+git clone https://github.com/LCAV/easy-dsp
+cd easy-dsp
+touch logs.txt
+chown www-data:www-data logs.txt
+cp microphones.virtualhost /etc/apache2/sites-available/microphones
+a2ensite microphones
+make
+```
 ## On the computer
 
 ### Prerequisites
@@ -27,13 +38,15 @@
 
 ### Launch
 
-1. You first have to launch the Python daemon on your computer: `python code-server.py`;
-2. Then you just have to open your browser and access `http://ip.of.the.board:8081`;
-3. Using the buttons on the interface, you can easily start the C daemons on the board;
-4. Finally you can write code:
+1. Launch the Python daemon on your computer: `python code-server.py`;
+2. Open your browser and access `http://ip.of.the.board:8081`;
+3. Using the buttons on the interface, start the C daemons on the board;
+4. Finally write some code:
     - You can write code directly in the browser, where basics examples are provided;
     - Or you can write a Python script with your favorite editor and launch it like any Python script:
 
+            # The module browserinterface provides methods to access the audio streams in real-time,
+            # change the configuration, record audio, and create data visualizations in the browser
             import browserinterface
             import random
 
@@ -47,6 +60,8 @@
 
             i = 4
 
+            # This function will be called everytime a new audio buffer is available
+            # buffer is a 2D-numpy array, described in the part Python Reference
             def handle_buffer(buffer):
                 # print "New buffer", len(buffer)
                 global i

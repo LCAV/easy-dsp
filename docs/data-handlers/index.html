@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Data Handlers - Beaglebone Board Web Interface</title>
+  <title>Data Handlers - Audio Acquisition Web Interface</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -35,7 +35,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> Beaglebone Board Web Interface</a>
+        <a href=".." class="icon icon-home"> Audio Acquisition Web Interface</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -123,7 +123,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">Beaglebone Board Web Interface</a>
+        <a href="..">Audio Acquisition Web Interface</a>
       </nav>
 
       
@@ -149,7 +149,7 @@
 <p>A data handler is an object in the webapp which can be used to handle some data.</p>
 <p>Typically, they are used to vizualise the output of the program written by the user, which takes into input the audio streams, and could want to draw some charts as a result.
 Several data handlers come with the project, but you can also easily write your own, as explained.</p>
-<p>There are two main parts when using a data handler:</p>
+<p>There are two main steps when using a data handler:</p>
 <ol>
 <li>You create it, with some configuration information;</li>
 <li>You send data to it.</li>
@@ -312,7 +312,7 @@ Each array corresponds to a row and contains numbers.</p>
 </code></pre>
 
 <h2 id="write-your-own-data-handler">Write your own data handler</h2>
-<p>From a code point of view, a data handler is a class, from which instances are created when asking.
+<p>From a code point of view, a data handler is a class, from which instances are created on demand.
 Because we are talking about JavaScript, we are not working with a real class, but with a function returning an object.</p>
 <h3 id="defining-your-data-handler">Defining your data handler</h3>
 <p>When instantiated, two parameters will be given to your function:
@@ -339,7 +339,7 @@ Because we are talking about JavaScript, we are not working with a real class, b
 <pre><code class="js">dataHandlers.registerNewType('customtype', myDataHandler);
 </code></pre>
 
-<p>You can write this code in the file <code>js/myHandlers.js</code></p>
+<p>The data handler can be registered by adding the above line to the file <code>js/myHandlers.js</code>.</p>
 <h3 id="using-it">Using it</h3>
 <p>You can use it from the Python code like any other data handler:</p>
 <pre><code class="python">import browserinterface

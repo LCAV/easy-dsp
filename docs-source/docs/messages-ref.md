@@ -1,6 +1,6 @@
 # Intro
 
-Here you will find the different messages that can be exchanged between the different parts, inside the UNIX Sockets or the WebSockets.
+Here you will find the different messages that can be exchanged between the different components, inside the UNIX Sockets or the WebSockets.
 The titles are always server <> client.
 
 ## Main Daemon
@@ -17,7 +17,7 @@ This connection is only one-way: the main daemon sends messages to WSAudio.
 
 #### Messages
 
-* Audio configuration: this message allows WSAudio to know the audio configuration choosed, so especially it can allocate the right buffer size.
+* Audio configuration: this message allows WSAudio to know the audio configuration choosed, so that it can allocate the correct buffer size.
     * Length in **bytes**: `4*sizeof(int)`;
     * Payload: four integer: `{buffer_frames}{rate}{channels}{volume}`:
         * `buffer_frames`: number of audio frames in one buffer;
@@ -72,7 +72,7 @@ This connection is only one-way: WSAudio sends messages to the webapp or the Pyt
 
 #### Messages
 
-* Audio configuration: this message allows the client to know the audio configuration choosed.
+* Audio configuration: this message allows the client to know the audio configuration chosen.
     * Message type: text;
     * Message format: JSON:
 
@@ -83,7 +83,7 @@ This connection is only one-way: WSAudio sends messages to the webapp or the Pyt
               "volume": (integer) // the volume of all microphones, between 0 and 100
             }
 
-    * So the size of the audio buffer is `m.buffer_frames * m.channels * 16 / 8` in **bytes** (16 because a frame is encoded using a 16-bits little-endian integer), where `m` is the JSON received message.
+    * So the size of the audio buffer is `m.buffer_frames * m.channels * 16 / 8` in **bytes** (16 because a frame is encoded using a 16-bits little-endian integer), where `m` is the received JSON message.
 
 * Audio buffer: this message contains new audio data.
     * Message type: binary;
@@ -218,7 +218,7 @@ This connection is one-way only: the new Python program can send various outputs
                 "latency": (float)
             }
 
-* Creation of a new data handler: this message asks the webapp to create a new data handler, that will be then complete with new data.
+* Creation of a new data handler: this message asks the webapp to create a new data handler, that will be then filled with new data.
     * Message type: text;
     * Message format: JSON:
 

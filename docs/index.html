@@ -8,7 +8,7 @@
   <meta name="description" content="None">
   
   <link rel="shortcut icon" href="./img/favicon.ico">
-  <title>Home - Beaglebone Board Web Interface</title>
+  <title>Home - Audio Acquisition Web Interface</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="./css/theme.css" type="text/css" />
@@ -35,7 +35,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="." class="icon icon-home"> Beaglebone Board Web Interface</a>
+        <a href="." class="icon icon-home"> Audio Acquisition Web Interface</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -112,7 +112,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href=".">Beaglebone Board Web Interface</a>
+        <a href=".">Audio Acquisition Web Interface</a>
       </nav>
 
       
@@ -135,7 +135,25 @@
             <div class="section">
               
                 <h1 id="welcome">Welcome</h1>
-<p>You will find explanations about how to use the project (how to start, the different commands available), and how to develop on it (the global structure, the different components, their interactions and details about the C and Javascript code).</p>
+<p>This project is a browser based interface for prototyping real-time processing algorithms using embedded multi channel audio acquisition platforms.
+The interface allows to interact in an easy manner with a GNU/Linux enabled single board computer and to run algorithms in real-time on distant audio streams from a host computer.
+It creates a bridge between the user's computer and the audio acquisition board.</p>
+<p>More precisely, the interface permit to:</p>
+<ul>
+<li>change the board configuration;</li>
+<li>write Python code;</li>
+<li>execute it in real-time on the audio streams;</li>
+<li>visualize data (typically outputs of the algorithm).</li>
+</ul>
+<p>The project is composed of three main components, communicating together using WebSockets:</p>
+<ul>
+<li>daemons in C running on the board: they transmit the audio streams and listen for configuration changes;</li>
+<li>a Python daemon: it executes Python code sent by the interface;</li>
+<li>the interface itself.</li>
+</ul>
+<p>Finally, a Python module helps the user to access the audio streams, the configuration, and to create data visualizations.
+This module connects to the C daemons (to receive the streams and the configuration) and to the browser to send data in real-time for visualizations.</p>
+<p>The repository of the project is here: <a href="https://github.com/LCAV/easy-dsp">https://github.com/LCAV/easy-dsp</a>.</p>
               
             </div>
           </div>
@@ -182,5 +200,5 @@
 
 <!--
 MkDocs version : 0.16.0
-Build Date UTC : 2017-01-09 18:20:23
+Build Date UTC : 2017-01-11 15:33:09
 -->

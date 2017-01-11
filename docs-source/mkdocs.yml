@@ -1,4 +1,4 @@
-site_name: Beaglebone Board Web Interface
+site_name: Audio Acquisition Web Interface
 theme: readthedocs
 pages:
     - Home: index.md

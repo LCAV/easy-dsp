@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Structure - Beaglebone Board Web Interface</title>
+  <title>Structure - Audio Acquisition Web Interface</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -35,7 +35,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> Beaglebone Board Web Interface</a>
+        <a href=".." class="icon icon-home"> Audio Acquisition Web Interface</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -70,9 +70,9 @@
                 
                     <li><a class="toctree-l4" href="#overview">Overview</a></li>
                 
-                    <li><a class="toctree-l4" href="#on-the-board">On the Board</a></li>
+                    <li><a class="toctree-l4" href="#audio-distribution">Audio Distribution</a></li>
                 
-                    <li><a class="toctree-l4" href="#on-the-client">On the client</a></li>
+                    <li><a class="toctree-l4" href="#interface-and-code-execution">Interface and code execution</a></li>
                 
             
             </ul>
@@ -118,7 +118,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">Beaglebone Board Web Interface</a>
+        <a href="..">Audio Acquisition Web Interface</a>
       </nav>
 
       
@@ -145,28 +145,28 @@
 <h2 id="overview">Overview</h2>
 <p>The system is divided in three parts:</p>
 <ol>
-<li>Daemons in C running on the board;</li>
-<li>A Python daemon running on the client computer;</li>
-<li>A webapp executed on the client computer.</li>
+<li>Daemons in C running on the board: they give access to the audio streams and listen for new configuration;</li>
+<li>A Python daemon running on the client computer: it executes the Python code sent by the browser;</li>
+<li>A webapp executed on the client computer: the interface itself.</li>
 </ol>
 <p>These three parts communicate using <a href="https://en.wikipedia.org/wiki/WebSocket">WebSockets</a> (basically a TCP connection, that you can use easily in Javascript, in browsers).</p>
 <p><img alt="Large overview" src="../img/overview-large.svg" /></p>
-<h2 id="on-the-board">On the Board</h2>
-<p>There are three daemons running on the board, all in C:</p>
+<h2 id="audio-distribution">Audio Distribution</h2>
+<p>There are three daemons running on the board, all in C (which form the first part):</p>
 <ol>
-<li>The <code>main-daemon</code> is the main part of the system, and the only one interacting with the microphones through ALSA API;</li>
-<li>The <code>ws-audio</code> is a first bridge between the main daemon and a WebSocket, allowing external clients to access the audio streams;</li>
-<li>The <code>ws-config</code> is a second bridge between the main daemon and a WebSocket, allowing external clients to change the configuration of the microphones.</li>
+<li>The <code>main-daemon</code> is the main part of the system, and the only one interacting with the microphones through ALSA API. It reads audio buffers and send them to WSAudio through a UNIX socket;</li>
+<li>The WSAudio is a first bridge between the main daemon and a WebSocket, allowing external clients to access the audio streams;</li>
+<li>The WSConfig is a second bridge between the main daemon and a WebSocket, allowing external clients to change the configuration of the microphones.</li>
 </ol>
 <p>These three daemons communicate together using TCP connections over UNIX sockets.</p>
 <p><img alt="Overview board" src="../img/overview-board.svg" /></p>
 <h3 id="the-main-daemon">The Main daemon</h3>
-<p>This daemon can receive in live the audio streams from the microphones using ALSA API, and can also send a new configuration using the same API.
+<p>This daemon can receive in real-time the audio streams from the microphones using ALSA API, and can also send a new configuration using the same API.
 Then it listens on two UNIX sockets using TCP: <code>/tmp/micros-audio.socket</code> and <code>/tmp/micros-control.socket</code>.</p>
 <p>It sends the audio stream to every client connected to the first socket, and can receive a new audio configuration from the second socket.
 The idea is to provide the most basic functionnalities with this daemon, that can be extended using other programs which communicate with it using these two UNIX sockets.</p>
 <h3 id="wsaudio">WSAudio</h3>
-<p>The WSAudio daemon connects to the main daemon using the UNIX socket <code>/tmp/micros-audio.socket</code>, so it receives the audio streams in live.
+<p>The WSAudio daemon connects to the main daemon using the UNIX socket <code>/tmp/micros-audio.socket</code>, so it receives the audio streams in real-time.
 It also listens on the port 7321 using WebSocket.
 It will send the audio streams it receives to every connected client as binary messages.
 It doesn't keep in memory the frames: each time it receives new data from the main daemon, it sends it to the connected clients.
@@ -178,29 +178,27 @@ When a new client arrives, it starts to receive the audio streams from this mome
 It also listens on the port 7322 using WebSocket.
 When a client sends to it a configuration (using a text message containing JSON), it reads the JSON and sends the new information (using an array of integers) to the main daemon.
 The main daemon will then interrupt its connection with ALSA, set the new configuration it just received and start again to receive the audio stream.</p>
-<h2 id="on-the-client">On the client</h2>
-<p>There are two components on the client(s):</p>
-<ol>
-<li>A Python daemon <code>code-server.py</code> that listens on a WebSocket and executes the Python code it receives on it;</li>
-<li>The webapp <code>client.html</code>, which connects to <code>ws-audio</code> and <code>ws-config</code> so the user can listen to the audio streams and change the configuration, and also to the local Python daemon to which it can send Python code written by the user.</li>
-</ol>
+<h2 id="interface-and-code-execution">Interface and code execution</h2>
+<p>For code execution, a Python daemon <code>code-server.py</code> listens on a WebSocket and executes the Python code it receives on it. The daemon can either run on the user's computer or on the board (if enough powerful), or even on a server.</p>
+<p>The interface reduces to the page <code>client.html</code>, which connects to WSAudio and WSConfig so the user can listen to the audio streams and change the configuration, and also to the Python daemon to which it can send Python code written by the user.
+This code, once executed, may connect to the browser so it can send it data for visualization.</p>
 <h3 id="execution-of-python-code-from-the-browser">Execution of Python code from the browser</h3>
 <p>In the webapp, there is an editor where the user can write some Python code.
 When he/she clicks on <em>Execute</em> the code is sent to the local Python daemon.
 Then the Python daemon includes the code to an existing Python program, <code>base-program.py</code> (at the end, it replaces the line <code>#####INSERT: Here insert code</code> with the code from the user), and executes it.</p>
-<p>This new Python program will then connect to <code>ws-audio</code>, so it will receive the audio streams in live (and executes the code from the user on it), and it will also listen on a WebSocket (on a port around 7320 specified by the Python daemon, which communicated it to the webapp) to which the webapp will connect.
+<p>This new Python program will then connect to WSAudio, so it will receive the audio streams in real-time (and executes the code from the user on it), and it will also listen on a WebSocket (on a port around 7320 specified by the Python daemon, which communicated it to the webapp) to which the webapp will connect.
 So this new Python program will have the possibility to work on the audio streams and to send the output (which can be plots data or a new audio stream) directly to the webapp.
-The webapp also uses this connection to send the IP address of the board, so the Python script know how to connect to WSAudio.</p>
-<p>More precisely, the user is invited to write his/her code inside a function (for example <code>my_handle_data(buffer)</code>) and to register it as a callback (using <code>browserinterface.register_handle_data(my_handle_data)</code>) so it will be called every time a new audio buffer is received from the <code>ws-audio</code> daemon.</p>
+The webapp also uses this connection to send the IP address of the board, so the Python script knows how to connect to WSAudio.</p>
+<p>More precisely, the user is invited to write her code inside a function (for example <code>my_handle_data(buffer)</code>) and to register it as a callback (using <code>browserinterface.register_handle_data(my_handle_data)</code>) so it will be called every time a new audio buffer is received from the WSAudio daemon.</p>
 <p>The Python daemon will also catch the <code>stdout</code> and <code>stderr</code> streams and redirect them to the browser, so the user can easily access it.</p>
 <p><img alt="Overview client" src="../img/overview-client.svg" /></p>
 <h3 id="execution-of-a-python-script">Execution of a Python script</h3>
 <p>It is also possible to write a Python script, that will use the library of the project to easily receive the audio, and to send output to the browser (if wanted).
 In that cas the browser is just used as a vizualisation tool.
-Just as previously, the script will connect to <code>ws-audio</code> and receive in live the audio streams.</p>
+Just as previously, the script will connect to WSAudio and receive in real-time the audio streams.</p>
 <p>However, this time, the outputs are not redirected, so you will be able to see them directly in your console, like any Python script.
 The library will also choose a port around 7320 by itself, and will communicate it to the Python daemon, which will send it to the browser, so this last one can connects to the Python script and receive the output (plots or new audio stream).</p>
-<p>So can also decide you don't need the browser and just use the connection to the audio stream, and any vizualisation library you want.</p>
+<p>You can also decide you don't need the browser and just use the connection to the audio stream, and any vizualisation library you want.</p>
 <p><img alt="Overview script" src="../img/overview-client-script.svg" /></p>
               
             </div>

@@ -5,7 +5,7 @@ A data handler is an object in the webapp which can be used to handle some data.
 Typically, they are used to vizualise the output of the program written by the user, which takes into input the audio streams, and could want to draw some charts as a result.
 Several data handlers come with the project, but you can also easily write your own, as explained.
 
-There are two main parts when using a data handler:
+There are two main steps when using a data handler:
 
 1. You create it, with some configuration information;
 2. You send data to it.
@@ -205,7 +205,7 @@ Each array corresponds to a row and contains numbers.
 
 ## Write your own data handler
 
-From a code point of view, a data handler is a class, from which instances are created when asking.
+From a code point of view, a data handler is a class, from which instances are created on demand.
 Because we are talking about JavaScript, we are not working with a real class, but with a function returning an object.
 
 ### Defining your data handler
@@ -240,7 +240,7 @@ Then, you have to choose a type for your data handler and to register it:
 dataHandlers.registerNewType('customtype', myDataHandler);
 ```
 
-You can write this code in the file `js/myHandlers.js`
+The data handler can be registered by adding the above line to the file `js/myHandlers.js`.
 
 ### Using it
 

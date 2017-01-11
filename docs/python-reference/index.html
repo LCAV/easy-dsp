@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Python reference - Beaglebone Board Web Interface</title>
+  <title>Python reference - Audio Acquisition Web Interface</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -35,7 +35,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> Beaglebone Board Web Interface</a>
+        <a href=".." class="icon icon-home"> Audio Acquisition Web Interface</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -130,7 +130,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">Beaglebone Board Web Interface</a>
+        <a href="..">Audio Acquisition Web Interface</a>
       </nav>
 
       
@@ -155,7 +155,7 @@
                 <h1 id="intro">Intro</h1>
 <p>This part explains how to get the audio streams in Python code and how to send results to the webapp, so it can display them in live.</p>
 <h2 id="how-it-works">How it works</h2>
-<p>When your write code in the webapp editor and click "Execute", it will be executed as a new Python script.
+<p>When you write code in the webapp editor and click "Execute", it will be executed as a new Python script.
 So either you use the browser or write directly a Python script that you launch from your terminal, the way it works is similar.</p>
 <p>To easily access the audio streams, and display something in the webapp, we provide a Python module <code>browserinterface</code>.</p>
 <p>The minimum Python code is the following:</p>
@@ -174,12 +174,12 @@ browserinterface.start()
 
 # Finally you start the callbacks blocking infinite loop
 # All code below will not be executed
-# This mecanism ensure the callbacks you specified to be called from the main thread
+# This mecanism ensures the callbacks you specified are called from the main thread
 # If you forget this call, your callbacks will never be called!
 browserinterface.loop_callbacks()
 </code></pre>
 
-<p>In the following, when we talk about functions and variables, they all come from the module <code>browserinterface</code>, so you must prefixe them with <code>browserinterface.</code>.</p>
+<p>In the following, when we talk about functions and variables, they all come from the module <code>browserinterface</code>, so you must prefix them with <code>browserinterface.</code>.</p>
 <h2 id="if-the-browser-is-not-needed">If the browser is not needed</h2>
 <p>If you run your own Python script and don't need the browser (to display the output), you have to set the variable <code>inform_browser</code> to false.
 In that case, you also have to specify the IP address of the board, using the variable <code>board_ip</code> (when you use the browser, it directly communicate to your script the IP address of the board, so you don't need to specify it).</p>
@@ -196,7 +196,7 @@ browserinterface.board_ip = '10.1.2.3'
 <li><code>buffer_frames</code>: the number of audio frames contained in one buffer;</li>
 <li><code>volume</code>: the volume between 0 and 100.</li>
 </ul>
-<p>These are read-only, and you must not change them!</p>
+<p>These are read-only, and you must not change them.</p>
 <h2 id="receiving-configuration-changes">Receiving configuration changes</h2>
 <p>When you start your script, the four previous variables will still be uninitialized, because the module did not received the configuration yet.
 Plus, sometimes, a configuration change can happen.</p>

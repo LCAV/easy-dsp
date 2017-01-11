@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Getting started - Beaglebone Board Web Interface</title>
+  <title>Getting started - Audio Acquisition Web Interface</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -35,7 +35,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> Beaglebone Board Web Interface</a>
+        <a href=".." class="icon icon-home"> Audio Acquisition Web Interface</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -116,7 +116,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">Beaglebone Board Web Interface</a>
+        <a href="..">Audio Acquisition Web Interface</a>
       </nav>
 
       
@@ -149,11 +149,22 @@
 </ul>
 <h4 id="setup">Setup</h4>
 <ul>
-<li>Clone the repository in <code>/var/bbb-sta321mp</code>: <code>cd /var &amp;&amp; git clone https://git.epfl.ch/repo/bbb-sta321mp.git</code>;</li>
-<li>Create a file <code>/var/bbb-sta321mp/browser-interface/logs.txt</code> and set the owner to <code>www-data</code>: <code>cd /var/bbb-sta321mp/browser-interface/ &amp;&amp; touch logs.txt &amp;&amp; chown www-data:www-data logs.txt</code>;</li>
-<li>Copy the virtualhost configuration file and enable it: <code>cp /var/bbb-sta321mp/browser-interface/microphones.virtualhost /etc/apache2/sites-available/microphones &amp;&amp; a2ensite microphones</code>;</li>
-<li>Compile the C daemons: <code>cd /var/bbb-sta321mp/browser-interface/ &amp;&amp; make</code></li>
+<li>Clone the repository in <code>/var/easy-dsp</code>;</li>
+<li>Create a file <code>/var/easy-dsp/logs.txt</code> and set the owner to <code>www-data</code>;</li>
+<li>Copy the virtualhost configuration file and enable it;</li>
+<li>Compile the C daemons.</li>
 </ul>
+<p>In root, it resumes to:</p>
+<pre><code class="bash">cd /var
+git clone https://github.com/LCAV/easy-dsp
+cd easy-dsp
+touch logs.txt
+chown www-data:www-data logs.txt
+cp microphones.virtualhost /etc/apache2/sites-available/microphones
+a2ensite microphones
+make
+</code></pre>
+
 <h2 id="on-the-computer">On the computer</h2>
 <h3 id="prerequisites_1">Prerequisites</h3>
 <ul>
@@ -162,12 +173,14 @@
 </ul>
 <h3 id="launch">Launch</h3>
 <ol>
-<li>You first have to launch the Python daemon on your computer: <code>python code-server.py</code>;</li>
-<li>Then you just have to open your browser and access <code>http://ip.of.the.board:8081</code>;</li>
-<li>Using the buttons on the interface, you can easily start the C daemons on the board;</li>
-<li>Finally you can write code:<ul>
+<li>Launch the Python daemon on your computer: <code>python code-server.py</code>;</li>
+<li>Open your browser and access <code>http://ip.of.the.board:8081</code>;</li>
+<li>Using the buttons on the interface, start the C daemons on the board;</li>
+<li>Finally write some code:<ul>
 <li>You can write code directly in the browser, where basics examples are provided;</li>
-<li>Or you can write a Python script with your favorite editor and launch it like any Python script:<pre><code>import browserinterface
+<li>Or you can write a Python script with your favorite editor and launch it like any Python script:<pre><code># The module browserinterface provides methods to access the audio streams in real-time,
+# change the configuration, record audio, and create data visualizations in the browser
+import browserinterface
 import random
 
 print "Simple program"
@@ -180,6 +193,8 @@ c1.send_data({'add': [{'x': [1, 2, 3, 4], 'y': [89, 70, 40, 2, 3]}, {'x': [1, 2,
 
 i = 4
 
+# This function will be called everytime a new audio buffer is available
+# buffer is a 2D-numpy array, described in the part Python Reference
 def handle_buffer(buffer):
     # print "New buffer", len(buffer)
     global i

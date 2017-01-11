@@ -1,9 +1,9 @@
 <VirtualHost *:8081>
 	ServerAdmin webmaster@localhost
 
-	DocumentRoot /var/bbb-sta321mp/browser-interface
+	DocumentRoot /var/easy-dsp
 
-	<Directory /var/bbb-sta321mp/browser-interface>
+	<Directory /var/easy-dsp>
 		Options Indexes FollowSymLinks MultiViews
 		AllowOverride None
 		Order allow,deny

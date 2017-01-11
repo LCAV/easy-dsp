@@ -4,7 +4,7 @@ This part explains how to get the audio streams in Python code and how to send r
 
 ## How it works
 
-When your write code in the webapp editor and click "Execute", it will be executed as a new Python script.
+When you write code in the webapp editor and click "Execute", it will be executed as a new Python script.
 So either you use the browser or write directly a Python script that you launch from your terminal, the way it works is similar.
 
 To easily access the audio streams, and display something in the webapp, we provide a Python module `browserinterface`.
@@ -27,12 +27,12 @@ browserinterface.start()
 
 # Finally you start the callbacks blocking infinite loop
 # All code below will not be executed
-# This mecanism ensure the callbacks you specified to be called from the main thread
+# This mecanism ensures the callbacks you specified are called from the main thread
 # If you forget this call, your callbacks will never be called!
 browserinterface.loop_callbacks()
 ```
 
-In the following, when we talk about functions and variables, they all come from the module `browserinterface`, so you must prefixe them with `browserinterface.`.
+In the following, when we talk about functions and variables, they all come from the module `browserinterface`, so you must prefix them with `browserinterface.`.
 
 
 ## If the browser is not needed
@@ -57,7 +57,7 @@ Four variables contain the configuration:
 * `buffer_frames`: the number of audio frames contained in one buffer;
 * `volume`: the volume between 0 and 100.
 
-These are read-only, and you must not change them!
+These are read-only, and you must not change them.
 
 
 ## Receiving configuration changes
