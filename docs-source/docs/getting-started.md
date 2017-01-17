@@ -15,6 +15,8 @@
 * Clone the repository in `/var/easy-dsp`;
 * Create a file `/var/easy-dsp/logs.txt` and set the owner to `www-data`;
 * Copy the virtualhost configuration file and enable it;
+* Make Apache listening on the port 8081;
+* Give rights on audio devices to `www-data`;
 * Compile the C daemons.
 
 In root, it resumes to:
@@ -26,6 +28,11 @@ touch logs.txt
 chown www-data:www-data logs.txt
 cp microphones.virtualhost /etc/apache2/sites-available/microphones
 a2ensite microphones
+echo "Listen 8081" >> /etc/apache2/ports.conf
+usermod -aG audio www-data
+setfacl -m u:www-data:rw /dev/snd/*
+rm /tmp/micros-audio.socket /tmp/micros-control.socket
+service apache2 restart
 make
 ```
 ## On the computer
