@@ -1,10 +1,8 @@
+import numpy as np
 import sys
 sys.path.append('..')
-sys.path.append('examples')
 import browserinterface
-import numpy as np
 
-import _mypath
 import realtimeaudio as rt
 from math import ceil
 

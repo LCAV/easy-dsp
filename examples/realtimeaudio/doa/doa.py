@@ -327,6 +327,8 @@ class DOA(object):
             self.azimuth_recon = self.grid.azimuth[self.src_idx]
             self.colatitude_recon = self.grid.colatitude[self.src_idx]
 
+        self.grid.values /= np.max(self.grid.values)
+
     def polar_plt_dirac(self, phi_ref=None, alpha_ref=None, save_fig=False,
                         file_name=None, plt_dirty_img=True):
         """
