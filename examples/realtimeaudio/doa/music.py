@@ -47,24 +47,82 @@ class MUSIC(DOA):
         spectrum.
         """
 
-        # compute steered response
         self.Pssl = np.zeros((self.num_freq,self.grid.n_points))
-        num_freq = self.num_freq
 
-        C_hat = self._compute_correlation_matrices(X)
+        # estimate cross correlation
+        # C_hat = self._compute_correlation_matrices(X)
+        CC = []
+        for k in self.freq_bins:
+            X_k = X[:,k,:]
+            CC.append( np.dot(X[:,k,:], np.conj(X[:,k,:]).T) )
 
+        # compute response for each frequency
         for i in range(self.num_freq):
             k = self.freq_bins[i]
 
             # subspace decomposition
-            Es, En, ws, wn = self._subspace_decomposition(C_hat[i,:,:])
+            # Es, En, ws, wn = self._subspace_decomposition(C_hat[i,:,:])
+            # Es, En, ws, wn = self._subspace_decomposition(CC[i])
+
+            w,v = np.linalg.eig(CC[i])
+            eig_order = np.flipud(np.argsort(abs(w)))
+            noise_space = eig_order[self.num_src:]
+            En = v[:,noise_space]
 
             # compute spatial spectrum
-            # cross = np.dot(En,np.conjugate(En).T)
-            cross = np.identity(self.M) - np.dot(Es, np.conjugate(Es).T) 
-            self.Pssl[i,:] = self._compute_spatial_spectrum(cross,k)
+            self.Pssl[i,:] = self._compute_spatial_spectrum(En,k)
 
-        self.grid.set_values(np.sum(self.Pssl, axis=0)/num_freq)
+        self.grid.set_values(np.sum(self.Pssl, axis=0)/self.num_freq)
+
+
+    def _compute_spatial_spectrum(self, space, k):
+
+        A = self.mode_vec[k,:,:]
+        
+        # using signal space
+        # A_pow = np.sum(A*A.conj(), axis=0).real
+        # music_test = np.dot(space.conj().T, A)
+        # music_pow = np.sum(music_test*music_test.conj(), axis=0).real
+        # music_pow -= A_pow
+
+        # using noise space
+        music_test = np.dot(space.conj().T, A)
+        music_pow = np.sum(music_test*music_test.conj(), axis=0).real
+
+        return 1/music_pow
+
+
+    def _compute_correlation_matrices(self, X):
+        C_hat = np.zeros([self.num_freq,self.M,self.M], dtype=complex)
+        for i in range(self.num_freq):
+            k = self.freq_bins[i]
+            X_k = X[:,k,:]
+            C_hat[i,:,:] = np.dot(X_k,X_k.T.conj())
+        return C_hat/self.num_snap
+
+
+    def _subspace_decomposition(self, R):
+
+        # eigenvalue decomposition!
+        w,v = np.linalg.eig(R)
+
+        # sort out signal and noise subspace
+        # Signal comprises the leading eigenvalues
+        # Noise takes the rest
+        eig_order = np.flipud(np.argsort(abs(w)))
+        sig_space = eig_order[:self.num_src]
+        noise_space = eig_order[self.num_src:]
+
+        # eigenvalues
+        ws = w[sig_space]
+        wn = w[noise_space]
+
+        # eigenvectors
+        Es = v[:,sig_space]
+        En = v[:,noise_space]
+
+        return Es, En, ws, wn
+
 
     def plot_individual_spectrum(self):
         """
@@ -96,47 +154,4 @@ class MUSIC(DOA):
             plt.xlim(min(azimuth),max(azimuth))
             plt.title('Steering Response Spectrum - ' + str(freq) + ' Hz')
             plt.grid(True)
-
-    def _compute_spatial_spectrum(self,cross,k):
-
-        P = np.zeros(self.grid.n_points)
-
-        for n in range(self.grid.n_points):
-            Dc = np.array(self.mode_vec[k,:,n],ndmin=2).T
-            Dc_H = np.conjugate(np.array(self.mode_vec[k,:,n],ndmin=2))
-            denom = np.dot(np.dot(Dc_H,cross),Dc)
-            P[n] = 1/abs(denom)
-
-        return P
-
-    def _compute_correlation_matrices(self, X):
-        C_hat = np.zeros([self.num_freq,self.M,self.M], dtype=complex)
-        for i in range(self.num_freq):
-            k = self.freq_bins[i]
-            for s in range(self.num_snap):
-                C_hat[i,:,:] = C_hat[i,:,:] + np.outer(X[:,k,s], 
-                    np.conjugate(X[:,k,s]))
-        return C_hat/self.num_snap
-
-    def _subspace_decomposition(self, R):
-
-        # eigenvalue decomposition!
-        w,v = np.linalg.eig(R)
-
-        # sort out signal and noise subspace
-        # Signal comprises the leading eigenvalues
-        # Noise takes the rest
-        eig_order = np.flipud(np.argsort(abs(w)))
-        sig_space = eig_order[:self.num_src]
-        noise_space = eig_order[self.num_src:]
-
-        # eigenvalues
-        ws = w[sig_space]
-        wn = w[noise_space]
-
-        # eigenvectors
-        Es = v[:,sig_space]
-        En = v[:,noise_space]
-
-        return Es, En, ws, wn
 

@@ -6,6 +6,19 @@ import browserinterface
 import realtimeaudio as rt
 from math import ceil
 
+
+
+"""Check for LED Ring"""
+try:
+    from neopixels import NeoPixels
+    import matplotlib.cm as cm
+    led_ring = NeoPixels(usb_port='/dev/cu.usbmodem1411',
+        colormap=cm.afmhot)
+    print("LED ring ready to use!")
+except:
+    print("No LED ring available...")
+    led_ring = False
+
 f = 100
 
 def when_config(buffer_frames, rate, channels, volume):
@@ -24,8 +37,8 @@ browserinterface.register_when_new_config(when_config)
 
 i = 0
 # perform VAD
-def new_buffer(buffer):
-    global chart, fs, buffer_size, d, vad, i, f, nothing
+def apply_vad(buffer):
+    global chart, fs, buffer_size, d, vad, i, f, nothing, led_ring
     # grab slice and take DFT to feed to VAD
     sig = buffer[:,0]  # only one channel
     X = d.analysis(sig)
@@ -39,11 +52,13 @@ def new_buffer(buffer):
     o2 = {'x': t[::f].tolist(), 'y': sig[::f].tolist()}
     if decision:
         chart.send_data({'add':[o2, o1]})
+        if led_ring: led_ring.lightify_mono(rgb=[0,255,0],realtime=True)
     else:
         chart.send_data({'add':[o1, o2]})
+        if led_ring: led_ring.lightify_mono(rgb=[255,0,0],realtime=True)
 
     i += 1
 
-browserinterface.register_handle_data(new_buffer)
+browserinterface.register_handle_data(apply_vad)
 browserinterface.start()
 browserinterface.loop_callbacks()

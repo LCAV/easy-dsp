@@ -37,9 +37,7 @@ class NeoPixels(object):
 
         if realtime is True:    # cannot update every frame
             self.frame_count += 1
-            if (self.frame_count%self.update) == 0:
-                print("Updating LEDs")
-            else:
+            if (self.frame_count%self.update) != 0:
                 return
 
         if vals is None:
@@ -61,9 +59,7 @@ class NeoPixels(object):
 
         if realtime is True:    # cannot update every frame
             self.frame_count += 1
-            if (self.frame_count%self.update) == 0:
-                print("Updating LEDs")
-            else:
+            if (self.frame_count%self.update) != 0:
                 return
 
         pixel_values = np.array(rgb)/255
