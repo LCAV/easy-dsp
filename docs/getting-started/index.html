@@ -152,6 +152,8 @@
 <li>Clone the repository in <code>/var/easy-dsp</code>;</li>
 <li>Create a file <code>/var/easy-dsp/logs.txt</code> and set the owner to <code>www-data</code>;</li>
 <li>Copy the virtualhost configuration file and enable it;</li>
+<li>Make Apache listening on the port 8081;</li>
+<li>Give rights on audio devices to <code>www-data</code>;</li>
 <li>Compile the C daemons.</li>
 </ul>
 <p>In root, it resumes to:</p>
@@ -162,6 +164,11 @@ touch logs.txt
 chown www-data:www-data logs.txt
 cp microphones.virtualhost /etc/apache2/sites-available/microphones
 a2ensite microphones
+echo &quot;Listen 8081&quot; &gt;&gt; /etc/apache2/ports.conf
+usermod -aG audio www-data
+setfacl -m u:www-data:rw /dev/snd/*
+rm /tmp/micros-audio.socket /tmp/micros-control.socket
+service apache2 restart
 make
 </code></pre>
 
