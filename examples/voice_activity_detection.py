@@ -9,7 +9,7 @@ from math import ceil
 
 """ Board parameters """
 buffer_size = 4096
-sampling_freq = 48000
+sampling_freq = 44100
 
 """Check for LED Ring"""
 try:
@@ -66,6 +66,6 @@ browserinterface.register_handle_data(apply_vad)
 
 """START"""
 browserinterface.change_config(channels=2, buffer_frames=buffer_size,
-    rate=sampling_freq, volume=100)
+    rate=sampling_freq, volume=80)
 browserinterface.start()
 browserinterface.loop_callbacks()

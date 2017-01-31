@@ -13,7 +13,6 @@ Number of snapshots for DOA will be: ~2*buffer_size/nfft
 """
 buffer_size = 4096
 nfft = 512
-sampling_freq = 44100
 num_angles = 60
 
 """Select appropriate microphone array"""

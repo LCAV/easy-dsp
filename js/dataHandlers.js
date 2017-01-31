@@ -143,12 +143,21 @@ function plotPolarType(type) {
         geometry: type,
         groupId: 0
       };
-      for (var i = parameters.legend.from; i < parameters.legend.to; i += parameters.legend.step) {
+      var stepSize = 360.0/parameters.numPoints;
+      for (var i = 0.0; i < 360.0+stepSize; i +=stepSize) {
         d.t.push(i);
       }
+
       data.push(d);
     });
 
+    
+    if (parameters.orientation !== undefined) {
+      var orient = parameters.orientation;
+    }
+    else {
+      var orient = 0.0
+    }
     var c = {
       data: data,
       layout: {
@@ -158,15 +167,18 @@ function plotPolarType(type) {
         margin: { left: 30, right: 30, top: 30, bottom: 30, pad: 0 },
         angularAxis: { domain: null },
         font: { family: 'Arial, sans-serif', size: 12, color: 'grey' },
-        direction: 'clockwise',
-        orientation: 270,
+        direction: 'counterclockwise',
+        orientation: orient,
         barmode: 'stack',
         backgroundColor: 'ghostwhite',
         showLegend: false
       }
     };
-    if (parameters.rmin !== undefined && parameters.rmax !== undefined) {
-      c.layout.radialAxis = {domain: [parameters.rmin, parameters.rmax]};
+    if (parameters.rmax !== undefined) {
+      c.layout.radialAxis = {domain: [0.0, parameters.rmax]};
+    }
+    else {
+      c.layout.radialAxis = {domain: [0.0, 1.0]};
     }
     var m = micropolar.Axis();
     m.config(c);

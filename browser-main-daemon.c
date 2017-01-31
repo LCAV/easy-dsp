@@ -121,7 +121,7 @@ void* handle_audio(void* nothing) {
     exit (1);
   }
 
-  fprintf(stdout, "hw_params access setted\n");
+  fprintf(stdout, "hw_params access set\n");
 
   if ((err = snd_pcm_hw_params_set_format (capture_handle, hw_params, format)) < 0) {
     fprintf (stderr, "cannot set sample format (%s)\n",
@@ -129,7 +129,7 @@ void* handle_audio(void* nothing) {
     exit (1);
   }
 
-  fprintf(stdout, "hw_params format setted\n");
+  fprintf(stdout, "hw_params format set\n");
 
   if ((err = snd_pcm_hw_params_set_rate_near (capture_handle, hw_params, rate, 0)) < 0) {
     fprintf (stderr, "cannot set sample rate (%s)\n",
@@ -137,7 +137,7 @@ void* handle_audio(void* nothing) {
     exit (1);
   }
 
-  fprintf(stdout, "hw_params rate setted\n");
+  fprintf(stdout, "hw_params rate set\n");
 
   if ((err = snd_pcm_hw_params_set_channels (capture_handle, hw_params, *channels)) < 0) {
     fprintf (stderr, "cannot set channel count (%s)\n",
@@ -145,7 +145,7 @@ void* handle_audio(void* nothing) {
     exit (1);
   }
 
-  fprintf(stdout, "hw_params channels setted\n");
+  fprintf(stdout, "hw_params channels set\n");
 
   if ((err = snd_pcm_hw_params (capture_handle, hw_params)) < 0) {
     fprintf (stderr, "cannot set parameters (%s)\n",
@@ -153,7 +153,7 @@ void* handle_audio(void* nothing) {
     exit (1);
   }
 
-  fprintf(stdout, "hw_params setted\n");
+  fprintf(stdout, "hw_params set\n");
 
   snd_pcm_hw_params_free (hw_params);
 
