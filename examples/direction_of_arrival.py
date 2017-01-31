@@ -13,11 +13,12 @@ Number of snapshots for DOA will be: ~2*buffer_size/nfft
 """
 buffer_size = 4096
 nfft = 512
-sampling_freq = 48000
+sampling_freq = 44100
+num_angles = 60
 
 """Select appropriate microphone array"""
-# mic_array = rt.bbb_arrays.R_compactsix_random
-mic_array = rt.bbb_arrays.R_compactsix_circular_1
+mic_array = rt.bbb_arrays.R_compactsix_random
+# mic_array = rt.bbb_arrays.R_compactsix_circular_1
 
 """Check for LED Ring"""
 try:
@@ -32,7 +33,7 @@ except:
 
 """Initialization block"""
 def init(buffer_frames, rate, channels, volume):
-    global doa, dft, vad, nfft, buffer_size, mic_array
+    global doa, dft, vad, nfft, buffer_size, mic_array, num_angles
 
     if channels != 6:
         browserinterface.change_config(channels=6, 
@@ -41,8 +42,8 @@ def init(buffer_frames, rate, channels, volume):
     # dft = rt.transforms.DFT(nfft=buffer_size)
     # vad = rt.VAD(buffer_size, rate, 10, 40e-3, 3, 1.2)
 
-    # doa = rt.doa.SRP(mic_array, rate, nfft, n_grid=36)
-    doa = rt.doa.MUSIC(mic_array, rate, nfft, n_grid=36)
+    # doa = rt.doa.SRP(mic_array, rate, nfft, n_grid=num_angles)
+    doa = rt.doa.MUSIC(mic_array, rate, nfft, n_grid=num_angles)
 
 """Callback"""
 def apply_doa(audio):
@@ -74,7 +75,12 @@ def apply_doa(audio):
 """Interface features"""
 browserinterface.register_when_new_config(init)
 browserinterface.register_handle_data(apply_doa)
-polar_chart = browserinterface.add_handler("Directions", 'base:polar:line', {'title': 'Direction', 'series': ['Intensity'], 'rmin': 0, 'rmax': 1.25, 'legend': {'from': 0, 'to': 370, 'step': 10}})
+
+
+polar_chart = browserinterface.add_handler(name="Directions", 
+    type='base:polar:line', 
+    parameters={'title': 'Direction', 'series': ['Intensity'], 
+    'numPoints': num_angles} )
 
 browserinterface.change_config(channels=6, buffer_frames=buffer_size,
     rate=sampling_freq, volume=100)

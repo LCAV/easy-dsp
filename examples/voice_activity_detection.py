@@ -7,6 +7,9 @@ import realtimeaudio as rt
 from math import ceil
 
 
+""" Board parameters """
+buffer_size = 4096
+sampling_freq = 48000
 
 """Check for LED Ring"""
 try:
@@ -33,8 +36,6 @@ def when_config(buffer_frames, rate, channels, volume):
     d = rt.transforms.DFT(nfft=buffer_size)
     vad = rt.VAD(buffer_size, fs, 10, 40e-3, 3, 1.2)
 
-browserinterface.register_when_new_config(when_config)
-
 i = 0
 # perform VAD
 def apply_vad(buffer):
@@ -56,9 +57,15 @@ def apply_vad(buffer):
     else:
         chart.send_data({'add':[o1, o2]})
         if led_ring: led_ring.lightify_mono(rgb=[255,0,0],realtime=True)
-
     i += 1
 
+
+"""Interface features"""
+browserinterface.register_when_new_config(when_config)
 browserinterface.register_handle_data(apply_vad)
+
+"""START"""
+browserinterface.change_config(channels=2, buffer_frames=buffer_size,
+    rate=sampling_freq, volume=100)
 browserinterface.start()
 browserinterface.loop_callbacks()
