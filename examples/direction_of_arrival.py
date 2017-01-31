@@ -16,8 +16,10 @@ nfft = 512
 num_angles = 60
 
 """Select appropriate microphone array"""
-mic_array = rt.bbb_arrays.R_compactsix_random
-# mic_array = rt.bbb_arrays.R_compactsix_circular_1
+# mic_array = rt.bbb_arrays.R_compactsix_random
+# sampling_freq = 44100
+mic_array = rt.bbb_arrays.R_compactsix_circular_1
+sampling_freq = 48000
 
 """Check for LED Ring"""
 try:
