@@ -43,8 +43,8 @@ main (int argc, char *argv[])
   channels = malloc(sizeof(*channels));
   volume = malloc(sizeof(*volume));
   audio_thread = malloc(sizeof(*audio_thread));
-  *buffer_frames = 256*30;
-  *rate = 44100;
+  *buffer_frames = 4096;
+  *rate = 48000;
   *channels = 6;
   *volume = 80;
   clients = NULL;
