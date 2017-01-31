@@ -9,7 +9,6 @@ from math import ceil
 
 """ Board parameters """
 buffer_size = 4096
-sampling_freq = 44100
 
 """Check for LED Ring"""
 try:
