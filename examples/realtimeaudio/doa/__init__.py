@@ -8,3 +8,4 @@ sys.path.insert(0,parentdir)
 from .doa import *
 from .srp import *
 from .music import *
+from .frida import *

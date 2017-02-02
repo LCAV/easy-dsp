@@ -9,8 +9,12 @@ from math import ceil
 
 """ Board parameters """
 buffer_size = 4096
-# sampling_freq = 44100
-sampling_freq = 48000
+sampling_freq = 44100
+# sampling_freq = 48000
+
+""" Visualization parameters """
+under = 100  # undersample otherwise too many points
+num_sec = 5
 
 """Check for LED Ring"""
 try:
@@ -23,47 +27,48 @@ except:
     print("No LED ring available...")
     led_ring = False
 
-f = 100
 
 def when_config(buffer_frames, rate, channels, volume):
-    global chart, fs, buffer_size, d, vad, f, nothing
-    if channels != 2 or buffer_frames != 4096:
-        browserinterface.change_config(channels=2, buffer_frames=4096)
-        return
-    chart = browserinterface.add_handler("Speech", 'base:graph:line', {'xName': 'Duration', 'min': -10000, 'max': 10000, 'xLimitNb': (rate/f*10), 'series': [{'name': 'Voice', 'color': 'green'}, {'name': 'Other', 'color': 'red'}]})
-    fs = rate
-    buffer_size = buffer_frames
-    nothing = np.zeros(int(ceil(buffer_frames/float(f)))).tolist()
-    d = rt.transforms.DFT(nfft=buffer_size)
-    vad = rt.VAD(buffer_size, fs, 10, 40e-3, 3, 1.2)
+    global dft, vad
 
-i = 0
+    dft = rt.transforms.DFT(nfft=buffer_frames)
+    vad = rt.VAD(buffer_size, rate, 10, 40e-3, 3, 1.2)
+
 # perform VAD
+frame_num = 0
 def apply_vad(buffer):
-    global chart, fs, buffer_size, d, vad, i, f, nothing, led_ring
-    # grab slice and take DFT to feed to VAD
-    sig = buffer[:,0]  # only one channel
-    X = d.analysis(sig)
+    global dft, vad, frame_num
 
-    # perform VAD
+    if (browserinterface.buffer_frames != buffer_size 
+        or browserinterface.channels != 2):
+        print("Did not receive expected audio!")
+        return
+
+    # only one channel needed
+    sig = buffer[:,0]
+    X = dft.analysis(sig)
     decision = vad.decision(X)
     # decision = vad.decision_energy(sig, 4)
-    t = np.linspace(i*buffer_size,(i+1)*buffer_size,buffer_size)/float(fs)
-    # o1 = {'x': t[::f].tolist(), 'y': nothing}
-    o1 = {'x': [], 'y': []}
-    o2 = {'x': t[::f].tolist(), 'y': sig[::f].tolist()}
+
+    # visualization
+    t = np.linspace(frame_num*buffer_size,(frame_num+1)*buffer_size,buffer_size)/float(sampling_freq)
+    s1 = {'x': [0,0], 'y': [0,0]}
+    s2 = {'x': t[::under].tolist(), 'y': sig[::under].tolist()}
+
     if decision:
-        chart.send_data({'add':[o2, o1]})
+        # first is voiced, second is unvoiced
+        chart.send_data({'add':[s2, s1]})
         if led_ring: led_ring.lightify_mono(rgb=[0,255,0],realtime=True)
     else:
-        chart.send_data({'add':[o1, o2]})
+        chart.send_data({'add':[s1, s2]})
         if led_ring: led_ring.lightify_mono(rgb=[255,0,0],realtime=True)
-    i += 1
+    frame_num += 1
 
 
 """Interface features"""
 browserinterface.register_when_new_config(when_config)
 browserinterface.register_handle_data(apply_vad)
+chart = browserinterface.add_handler("Speech Detection", 'base:graph:line', {'xName': 'Duration', 'min': -10000, 'max': 10000, 'xLimitNb': (sampling_freq/under*num_sec), 'series': [{'name': 'Voice', 'color': 'green'}, {'name': 'Unvoiced', 'color': 'red'}]})
 
 """START"""
 browserinterface.change_config(channels=2, buffer_frames=buffer_size,
