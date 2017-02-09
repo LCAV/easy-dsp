@@ -36,6 +36,7 @@ var dataHandlers = new (function() {
   };
 })();
 
+
 function graphRickshaw(renderer) {
   return function graphRickshawLine(html, parameters) {
     var series = [];
@@ -104,6 +105,10 @@ function graphRickshaw(renderer) {
         _.forEach(serie.x, function (x, j) {
           series[i].data.push({x: x, y: serie.y[j]});
         });
+
+        if (serie.color) {
+          series[i].color = serie.color;
+        }
       });
 
       if (xLimitNb != -1) {
@@ -131,6 +136,9 @@ function graphRickshaw(renderer) {
     }
   }
 }
+
+
+
 
 function plotPolarType(type) {
   return function plotPolar(html, parameters) {
@@ -213,7 +221,7 @@ function heatmap(html, parameters) {
     heat.max(parameters.max);
   }
 
-  heat.radius(1, 0);
+  heat.radius(2, 0);
 
   function newData(data) {
     // data = [ [1, 2, 0, 3, 4], [0, 2, 2, 1, 1], [5, 2, 6, 5, 4]]
@@ -245,6 +253,7 @@ function heatmap(html, parameters) {
     newData: newData
   };
 }
+
 
 dataHandlers.registerNewType('base:graph:line', graphRickshaw('line'));
 dataHandlers.registerNewType('base:graph:area', graphRickshaw('area'));

@@ -7,7 +7,6 @@ import browserinterface
 import realtimeaudio as rt
 
 
-
 """
 Number of snapshots for DOA will be: ~2*buffer_size/nfft
 """
@@ -16,10 +15,19 @@ nfft = 512
 num_angles = 60
 
 """Select appropriate microphone array"""
-# mic_array = rt.bbb_arrays.R_compactsix_random
-# sampling_freq = 44100
-mic_array = rt.bbb_arrays.R_compactsix_circular_1
-sampling_freq = 48000
+mic_array = rt.bbb_arrays.R_compactsix_random
+sampling_freq = 44100
+# mic_array = rt.bbb_arrays.R_compactsix_circular_1
+# sampling_freq = 48000
+
+"""
+Select frequency range
+"""
+n_bands = 5
+freq_range = [100., 4500.]
+f_min = int(np.round(freq_range[0]/sampling_freq*nfft))
+f_max = int(np.round(freq_range[1]/sampling_freq*nfft))
+range_bins = np.arange(f_min, f_max+1)
 
 """Check for LED Ring"""
 try:
@@ -34,21 +42,23 @@ except:
 
 """Initialization block"""
 def init(buffer_frames, rate, channels, volume):
-    global doa, dft, vad, nfft, buffer_size, mic_array, num_angles
+    global doa
 
-    if channels != 6:
-        browserinterface.change_config(channels=6, 
-            buffer_frames=buffer_frames)
+    doa_args = {
+            'L': mic_array,
+            'fs': rate,
+            'nfft': nfft,
+            'num_src': 1,
+            'n_grid': num_angles
+            }
 
-    # dft = rt.transforms.DFT(nfft=buffer_size)
-    # vad = rt.VAD(buffer_size, rate, 10, 40e-3, 3, 1.2)
-
-    # doa = rt.doa.SRP(mic_array, rate, nfft, n_grid=num_angles)
-    doa = rt.doa.MUSIC(mic_array, rate, nfft, n_grid=num_angles)
+    # doa = rt.doa.SRP(**doa_args)
+    doa = rt.doa.MUSIC(**doa_args)
+    # doa = rt.doa.FRIDA(max_four=5, signal_type='visibility', G_iter=1, **doa_args)
 
 """Callback"""
 def apply_doa(audio):
-    global doa, dft, vad, nfft, buffer_size, led_ring
+    global doa, nfft, buffer_size, led_ring
 
     if (browserinterface.buffer_frames != buffer_size 
         or browserinterface.channels != 6):
@@ -61,10 +71,14 @@ def apply_doa(audio):
     X_stft = rt.utils.compute_snapshot_spec(audio, nfft, 
         n_snapshots, hop_size)
 
-    # perform direction of arrival
-    doa.locate_sources(X_stft)
+    # pick bands with most energy and perform DOA
+    bands_pwr = np.mean(np.sum(np.abs(X_stft[:,range_bins,:])**2, axis=0), axis=1)
+    freq_bins = np.argsort(bands_pwr)[-n_bands:] + f_min
+    doa.locate_sources(X_stft, freq_bins=freq_bins)
 
     # send to browser for visualization
+    if doa.grid.values.max() > 1:
+        doa.grid.values /= doa.grid.values.max()
     to_send = doa.grid.values.tolist()
     to_send.append(to_send[0])
     polar_chart.send_data([{ 'replace': to_send }])
@@ -77,13 +91,13 @@ def apply_doa(audio):
 browserinterface.register_when_new_config(init)
 browserinterface.register_handle_data(apply_doa)
 
-
 polar_chart = browserinterface.add_handler(name="Directions", 
     type='base:polar:line', 
     parameters={'title': 'Direction', 'series': ['Intensity'], 
     'numPoints': num_angles} )
 
+"""START"""
 browserinterface.change_config(channels=6, buffer_frames=buffer_size,
-    rate=sampling_freq, volume=100)
+    rate=sampling_freq, volume=80)
 browserinterface.start()
 browserinterface.loop_callbacks()
