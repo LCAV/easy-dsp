@@ -27,14 +27,17 @@ struct client {
 void* handle_connections_audio(void* nothing);
 void* handle_connections_control(void* nothing);
 void* handle_audio(void* nothing);
-int* last_client;
+
+struct client* clients;
+pthread_t* audio_thread;
+
+// alsa parameters
+snd_pcm_t *capture_handle;
 int* buffer_frames;
 unsigned int* rate;
-int* channels;
-struct client* clients;
 int* volume;
-pthread_t* audio_thread;
-snd_pcm_t *capture_handle;
+int* channels;
+
 
 main (int argc, char *argv[])
 {
@@ -58,7 +61,6 @@ main (int argc, char *argv[])
   pthread_t connections_control_thread;
 
 
-
   if( pthread_create(&connections_audio_thread, NULL, handle_connections_audio, NULL) < 0) {
       perror("could not create thread to handle connections audio");
       return 1;
@@ -73,7 +75,6 @@ main (int argc, char *argv[])
   }
 
   while (1) {
-
   }
 
   exit (0);

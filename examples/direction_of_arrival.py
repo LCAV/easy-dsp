@@ -3,7 +3,6 @@ import numpy as np
 
 sys.path.append('..')
 import browserinterface
-
 import realtimeaudio as rt
 
 
@@ -23,7 +22,7 @@ sampling_freq = 44100
 """
 Select frequency range
 """
-n_bands = 5
+n_bands = 25
 freq_range = [100., 4500.]
 f_min = int(np.round(freq_range[0]/sampling_freq*nfft))
 f_max = int(np.round(freq_range[1]/sampling_freq*nfft))
@@ -54,7 +53,7 @@ def init(buffer_frames, rate, channels, volume):
 
     # doa = rt.doa.SRP(**doa_args)
     doa = rt.doa.MUSIC(**doa_args)
-    # doa = rt.doa.FRIDA(max_four=5, signal_type='visibility', G_iter=1, **doa_args)
+    # doa = rt.doa.FRIDA(max_four=2, signal_type='visibility', G_iter=1, **doa_args)
 
 """Callback"""
 def apply_doa(audio):
@@ -74,7 +73,8 @@ def apply_doa(audio):
     # pick bands with most energy and perform DOA
     bands_pwr = np.mean(np.sum(np.abs(X_stft[:,range_bins,:])**2, axis=0), axis=1)
     freq_bins = np.argsort(bands_pwr)[-n_bands:] + f_min
-    doa.locate_sources(X_stft, freq_bins=freq_bins)
+    # doa.locate_sources(X_stft, freq_bins=freq_bins)
+    doa.locate_sources(X_stft, freq_range=freq_range)
 
     # send to browser for visualization
     if doa.grid.values.max() > 1:

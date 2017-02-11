@@ -43,7 +43,7 @@ var Recorder = exports.Recorder = (function () {
 
         this.config = {
             bufferLen: 4096,
-            numChannels: 2,
+            numChannels: 6,
             mimeType: 'audio/wav'
         };
         this.recording = false;
