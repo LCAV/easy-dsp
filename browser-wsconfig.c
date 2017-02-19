@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <jansson.h>
+#include <unistd.h>
 
 int
 onmessage(libwebsock_client_state *state, libwebsock_message *msg)
@@ -35,7 +36,7 @@ onmessage(libwebsock_client_state *state, libwebsock_message *msg)
 
   printf("New config: %d %d %d %d\n", config[0], config[1], config[2], config[3]);
 
-  int s, t, len, i;
+  int s, len;
   struct sockaddr_un remote;
   const char *SOCKNAME = "/tmp/micros-control.socket";
 

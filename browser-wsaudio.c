@@ -27,7 +27,7 @@ pthread_mutex_t ws_client_lock;
 
 int main(void)
 {
-  int s, t, len, i;
+  int s, t, len;
   struct sockaddr_un remote;
   char *buffer;
   char *buffer_temp;
@@ -169,6 +169,8 @@ send_config(libwebsock_client_state *state)
   char* c = conf;
   sprintf(conf, "{\"buffer_frames\":%d,\"rate\":%d,\"channels\":%d,\"volume\":%d}", config[0], config[1], config[2], config[3]);
   libwebsock_send_text(state, c);
+
+  return NULL;
 }
 
 int
@@ -206,4 +208,6 @@ void* main_ws(void* nothing) {
   ctx->onopen = onopen;
   ctx->onclose = onclose;
   libwebsock_wait(ctx);
+
+  return NULL;
 }
