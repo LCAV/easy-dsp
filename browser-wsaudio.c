@@ -78,17 +78,17 @@ int main(void)
   struct ws_client* c;
 
   while(1) {
-    printf("ok\n");
+    // printf("ok\n");
     if ((t=recv(s, buffer_temp, buffer_frames, 0)) > 0) {
       if (t == config_size) {
-        printf("New config\n");
+        // printf("New config\n");
         int* temp = (int*) buffer_temp;
         config[0] = temp[0];
         config[1] = temp[1];
         config[2] = temp[2];
         config[3] = temp[3];
         buffer_frames = config[0]*config[2]*2;
-        printf("New config %d %d %d %d\n", config[0], config[1], config[2], config[3]);
+        // printf("New config %d %d %d %d\n", config[0], config[1], config[2], config[3]);
         free(buffer);
         free(buffer_temp);
         buffer = malloc(buffer_frames);
@@ -99,7 +99,7 @@ int main(void)
         }
         continue;
       }
-      printf("%d %d %d", buffer_pos, t, buffer_frames);
+      // printf("%d %d %d", buffer_pos, t, buffer_frames);
       // We must fill completly buffer with buffer_frames length before sending it
       memcpy((buffer + buffer_pos), buffer_temp, t);
       if ((buffer_pos + t) < buffer_frames) {
@@ -107,7 +107,7 @@ int main(void)
         continue;
       }
       buffer_pos = 0;
-      printf("ok2\n");
+      // printf("ok2\n");
       struct ws_client* previous = NULL;
       pthread_mutex_lock(&ws_client_lock);
       for (c = ws_clients; c != NULL; c = c->next) {
@@ -152,7 +152,7 @@ onmessage(libwebsock_client_state *state, libwebsock_message *msg)
 int
 onopen(libwebsock_client_state *state)
 {
-  printf("open\n");
+  // printf("open\n");
   send_config(state);
   struct ws_client* new_client = malloc(sizeof(struct ws_client));
   new_client->next = ws_clients;
