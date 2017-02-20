@@ -254,6 +254,103 @@ function heatmap(html, parameters) {
   };
 }
 
+function spectrogram(html, parameters) {
+
+  // store the current canvas size [x, y]
+  var size = [800, 600];
+  if (parameters.width) {
+    size[0] = parameters.width;
+  }
+  if (parameters.height) {
+    size[1] = parameters.height;
+  }
+
+  // Set min and max for the data value
+  var zmin = 0;
+  if (parameters.min) {
+    zmin = parameters.min;
+  }
+  var zmax = 150;
+  if (parameters.max) {
+    zmax = parameters.max;
+  }
+
+  var update_rate = 20;
+  if (parameters.update_rate) {
+    update_rate = parameters.update_rate;
+  }
+
+  var delta_freq = 1;
+  if (parameters.delta_freq) {
+    delta_freq = parameters.delta_freq;
+  }
+
+  // store the values in an array
+  hdata = []
+  for (row = 0 ; row < size[1] ; row++) {
+    hdata.push([]);
+    for (col = 0 ; col < size[0] ; col++) {
+      hdata[row].push(0);
+    }
+  }
+
+  // Create the HTML object
+  var canvas = $('<div id="specgram"><!-- chart will be drawn here --></div>');
+  $(html).append(canvas);
+
+  // The graph layout config
+  var layout = {
+    title: 'Spectrogram',
+    xaxis: {
+      showticklabels: false,
+      ticks: ''
+    },
+    yaxis: {
+      title: 'Frequency [Hz]'
+    }
+  };
+
+  // The graph data
+  var pdata = [
+    {
+      z: hdata,
+      zmax: parameters.max,
+      zmin: parameters.min,
+      type: 'heatmap',
+      colorscale: 'Viridis',
+      showscale: false,
+      y0: 0,
+      dy: delta_freq,
+    }
+  ];
+
+  Plotly.newPlot('specgram', pdata, layout);
+
+  var colCounter = 0;
+
+  function newData(data) {
+    var plotDiv = document.getElementById('specgram');
+    var plotData = plotDiv.data;
+
+    for (row = 0 ; row < size[1] ; row++) {
+      plotData[0].z[row].shift();
+      plotData[0].z[row].push(data[row]);
+    }
+
+    colCounter = (colCounter + 1) % size[0];
+
+    if (colCounter % update_rate == 0) {
+      Plotly.redraw(plotDiv);
+    }
+    
+
+  }
+
+  return {
+    newData: newData
+  };
+}
+
 
 dataHandlers.registerNewType('base:graph:line', graphRickshaw('line'));
 dataHandlers.registerNewType('base:graph:area', graphRickshaw('area'));
@@ -262,6 +359,7 @@ dataHandlers.registerNewType('base:graph:plot', graphRickshaw('scatterplot'));
 dataHandlers.registerNewType('base:polar:area', plotPolarType('AreaChart'));
 dataHandlers.registerNewType('base:polar:line', plotPolarType('LinePlot'));
 dataHandlers.registerNewType('base:heatmap', heatmap);
+dataHandlers.registerNewType('base:spectrogram', spectrogram);
 
 // dataHandlers.registerNewType('customtype', function (html, parameters) {
 //   $(html).append(JSON.stringify(parameters) + '<br />');

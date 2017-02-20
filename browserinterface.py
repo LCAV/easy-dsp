@@ -34,10 +34,10 @@ r_messages = Queue()
 r_calls = Queue()
 
 # Configuration parameters
-rate = -1
-channels = 0
-buffer_frames = -1
-volume = -1
+rate = 48000
+channels = 6
+buffer_frames = 4096
+volume = 80
 
 # Callbacks functions
 handle_data = 0

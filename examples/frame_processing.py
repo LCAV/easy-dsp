@@ -6,25 +6,30 @@ import numpy as np
 
 sys.path.append('..')
 import browserinterface
-
 import realtimeaudio as rt
 
-
+"""Board Parameters"""
 buffer_size = 8192
-num_windows = 3
 sampling_freq = 44100
 # sampling_freq = 48000
+
+"""STFT Parameters"""
+num_samples = 4096 # determines frequency resolution
+num_windows = int(float(buffer_size)/num_samples*2-1)
+
+""" Visualization parameters """
+under = 100 # undersample otherwise too many points
+num_sec = 5
 
 def init(buffer_frames, rate, channels, volume):
     global stft
 
     # parameters (block size, number of signals, hop size)
-    num_samples = browserinterface.buffer_frames/num_windows
     hop = int(np.floor(num_samples/2))
 
     # filter (moving average --> low pass) and necessary zero padding
     filter_length = 50
-    h = rt.windows.rect(filter_length)/(filter_length*1.0)
+    h = rt.windows.rect(filter_length)/(filter_length*1.)
     zf = filter_length/2
     zb = filter_length/2
 
@@ -41,8 +46,9 @@ def visualize_spectrum(handle):
     sig.append({'x': freq, 'y': np.floor(abs(stft.X)).tolist()[::5]})
     handle.send_data({'replace': sig})
 
-def handle_data(buffer):
-    global stft
+frame_num = 0
+def handle_data(audio):
+    global stft, frame_num
 
     if (browserinterface.buffer_frames != buffer_size 
         or browserinterface.channels != 2):
@@ -53,18 +59,27 @@ def handle_data(buffer):
     for i in range(num_windows):
 
         # perform analysis and visualize the frame
-        stft.analysis(buffer[stft.hop*i:stft.hop*(i+1),0])
+        stft.analysis(audio[stft.hop*i:stft.hop*(i+1),0])
         visualize_spectrum(c_magnitude)
 
         # apply filtering and visualize results
         stft.process()
         visualize_spectrum(c_magnitude_f)
 
+    # time plot
+    sig = np.array(audio[:,0], dtype=np.float32)/20000
+    t = np.linspace(frame_num*buffer_size,(frame_num+1)*buffer_size,buffer_size)/float(sampling_freq)
+    sig = {'x': t[::under].tolist(), 'y': sig[::under].tolist()}
+    time_plot.send_data({'add':[sig]})
+    frame_num += 1
+
 """Interface functions"""
 browserinterface.register_when_new_config(init)
 browserinterface.register_handle_data(handle_data)
-c_magnitude = browserinterface.add_handler("Magnitude", 'base:graph:line', {'min': 0, 'max': 100000, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
-c_magnitude_f = browserinterface.add_handler("Magnitude Filtered", 'base:graph:line', {'min': 0, 'max': 100000, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
+time_plot = browserinterface.add_handler("Time domain", 'base:graph:line', {'xName': 'Duration', 'min': -1, 'max': 1, 'xLimitNb': (sampling_freq/under*num_sec), 'series': [{'name': 'Signal', 'color': 'blue'}]})
+c_magnitude = browserinterface.add_handler("Frequency Magnitude", 'base:graph:line', {'min': 0, 'max': 100000, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
+c_magnitude_f = browserinterface.add_handler("Frequency Magnitude (Filtered)", 'base:graph:line', {'min': 0, 'max': 100000, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
+
 
 
 """START"""
