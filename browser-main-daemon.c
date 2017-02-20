@@ -11,6 +11,8 @@
 #include <sys/un.h>
 #include <pthread.h>
 #include <signal.h>
+#include <unistd.h>
+
 
 void sig_handler(int signo)
 {
@@ -74,8 +76,11 @@ main (int argc, char *argv[])
       return 1;
   }
 
-  while (1) {
-  }
+    while (true) {
+        // Sleep for a long time to not take CPU cycles. ANY constant could work
+        // here.
+        sleep(10);
+    }
 
   exit (0);
 }
