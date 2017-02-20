@@ -5,6 +5,7 @@
 #include <websock/websock.h>
 #include <pthread.h>
 #include <signal.h>
+#include <unistd.h>
 
 void sig_handler(int signo)
 {
