@@ -35,7 +35,7 @@ int main(void)
   char *buffer_temp;
   int buffer_pos = 0;
   int buffer_frames;
-  const char *SOCKNAME = "/tmp/micros-audio.socket";
+  const char *SOCKNAME = EASY_DSP_AUDIO_SOCKET;
   ws_clients = NULL;
   int config_size = sizeof(int) * 4;
   config = malloc(config_size);

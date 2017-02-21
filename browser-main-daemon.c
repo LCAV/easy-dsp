@@ -249,7 +249,7 @@ void* handle_audio(void* nothing) {
 }
 
 void* handle_connections_control(void* nothing) {
-  const char *SOCKNAMEC = "/tmp/micros-control.socket";
+  const char *SOCKNAMEC = EASY_DSP_CONTROL_SOCKET;
   unlink(SOCKNAMEC);
   int sfd, s2;
   struct sockaddr_un addr, remote;
@@ -313,7 +313,7 @@ void* handle_connections_control(void* nothing) {
 }
 
 void* handle_connections_audio(void* nothing) {
-  const char *SOCKNAME = "/tmp/micros-audio.socket";
+  const char *SOCKNAME = EASY_DSP_AUDIO_SOCKET;
   unlink(SOCKNAME);
   int sfd, s2;
   struct sockaddr_un addr, remote;

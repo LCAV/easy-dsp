@@ -4,6 +4,7 @@
 // Local sockets
 #define EASY_DSP_CONTROL_SOCKET      "/tmp/micros-control.socket"
 #define EASY_DSP_AUDIO_SOCKET        "/tmp/micros-audio.socket"
+#define EASY_DSP_STREAM_CONTROL_SOCKET  "/tmp/micros-stream-control.socket"
 
 // Server configurations
 #define EASY_DSP_WSAUDIO_IP_ADDR      "0.0.0.0" // 0.0.0.0 = all IPv4 addresses on the local machine

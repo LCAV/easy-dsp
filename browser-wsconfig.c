@@ -38,7 +38,7 @@ onmessage(libwebsock_client_state *state, libwebsock_message *msg)
 
   int s, len;
   struct sockaddr_un remote;
-  const char *SOCKNAME = "/tmp/micros-control.socket";
+  const char *SOCKNAME = EASY_DSP_CONTROL_SOCKET;
 
   if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
       perror("socket");
