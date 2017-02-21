@@ -1,11 +1,20 @@
-default: program
+CC = gcc
+CFLAGS = -g -Wall -Wextra -O0 -std=gnu99
 
-program:
-	gcc -o browser-main-daemon -lasound browser-main-daemon.c
-	LD_LIBRARY_PATH=/usr/local/lib gcc -g -O2 -o browser-wsconfig browser-wsconfig.c -lwebsock -ljansson
-	gcc -g -O2 -o browser-wsaudio browser-wsaudio.c -lwebsock
+default: all
+
+all: browser-main-daemon browser-wsaudio browser-wsconfig
+
+browser-main-daemon: browser-main-daemon.c
+	$(CC) $(CFLAGS) browser-main-daemon.c -o browser-main-daemon -lasound -lpthread
+
+browser-wsaudio: browser-wsaudio.c
+	$(CC) $(CFLAGS) browser-wsaudio.c     -o browser-wsaudio     -lwebsock   -lpthread
+
+browser-wsconfig: browser-wsconfig.c
+	$(CC) $(CFLAGS) browser-wsconfig.c    -o browser-wsconfig    -lwebsock   -ljansson
 
 clean:
 	-rm -f browser-main-daemon
-	-rm -f browser-wsconfig
 	-rm -f browser-wsaudio
+	-rm -f browser-wsconfig
