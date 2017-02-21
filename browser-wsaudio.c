@@ -39,7 +39,7 @@ int main(void)
   int buffer_frames;
   const char *SOCKNAME = EASY_DSP_AUDIO_SOCKET;
   ws_clients = NULL;
-  int config_size = sizeof(int) * 4;
+  size_t config_size = sizeof(int) * 4;
   config = malloc(config_size);
 
   if (signal(SIGPIPE, sig_handler) == SIG_ERR) {
@@ -81,7 +81,7 @@ int main(void)
   buffer_temp = malloc(buffer_frames);
   struct ws_client* c;
 
-  while(1) {
+  while(true) {
     // printf("ok\n");
     if ((t=recv(s, buffer_temp, buffer_frames, 0)) > 0) {
       if (t == config_size) {

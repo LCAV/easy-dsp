@@ -20,4 +20,8 @@
 #define EASY_DSP_AUDIO_FORMAT_BYTES         (EASY_DSP_AUDIO_FORMAT_BITS / 8)
 #define EASY_DSP_BUFFER_SIZE_BYTES          (4096)
 
+// Stream magic header
+#define EASY_DSP_HDR_AUDIO                  (0x0)
+#define EASY_DSP_HDR_CONFIG                 (0x1)
+
 #endif /* _BROWSER_CONFIG_H_ */

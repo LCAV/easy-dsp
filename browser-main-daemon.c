@@ -44,6 +44,10 @@ unsigned int* rate;
 int* volume;
 int* channels;
 
+// a few flags
+audio_thread_active_flag = 0;
+new_config_received_flag = 0;
+
 
 int main (int argc, char *argv[])
 {
@@ -75,6 +79,9 @@ int main (int argc, char *argv[])
       perror("could not create thread to handle audio ALSA");
       return 1;
   }
+  else
+    audio_thread_active_flag = 1;  // Let the world know we are active
+
   if( pthread_create(&connections_control_thread, NULL, handle_connections_control, NULL) < 0) {
       perror("could not create thread to handle connections control");
       return 1;
@@ -209,7 +216,7 @@ void* handle_audio(void* nothing) {
     // snd_mixer_close(handle);
   }
 
-  while (true) {
+  while (!new_config_received_flag) {
     fprintf(stdout, "000 %d %d\n", i, *buffer_frames);
 
     if ((err = snd_pcm_readi (capture_handle, buffer, *buffer_frames)) != *buffer_frames) {
@@ -237,6 +244,12 @@ void* handle_audio(void* nothing) {
           (*previous).next = (*c).next;
         }
       }
+
+      // Give a warning if we wrote less bytes than we thought...
+      if (re != buffer_size)
+        fprintf(stdout, "Warning: less than buffer_size was written to socket.\n");
+
+      // move on to next client
       previous = c;
       c = (*c).next;
     }
@@ -248,6 +261,9 @@ void* handle_audio(void* nothing) {
 
   snd_pcm_close (capture_handle);
   fprintf(stdout, "audio interface closed\n");
+
+  // we are done here
+  audio_thread_active_flag = 0;
 }
 
 void* handle_connections_control(void* nothing) {
@@ -287,13 +303,15 @@ void* handle_connections_control(void* nothing) {
 
     recv(s2, c, sizeof(config), 0);
     fprintf(stdout, "111\n");
-    pthread_cancel(*audio_thread);
-    fprintf(stdout, "222\n");
-    sleep(2);
-    snd_pcm_close (capture_handle);
-    fprintf(stdout, "333\n");
-    sleep(1);
 
+    // Let the audio thread know that new config has been received
+    new_config_received_flag = 1;
+
+    // Wait for the audio thread to stop
+    while (audio_thread_active_flag)
+      ;
+
+    // Send the new config to clients
     *buffer_frames = config[0];
     *rate = config[1];
     *channels = config[2];
@@ -306,10 +324,15 @@ void* handle_connections_control(void* nothing) {
 
     fprintf(stdout, "New configuration: %d %d %d %d", *buffer_frames, *rate, *channels, *volume);
 
+    // Wait for a new configuration
+    new_config_received_flag = 0;
+
     if( pthread_create(audio_thread, NULL, handle_audio, NULL) < 0) {
         perror("could not create thread to handle audio ALSA");
         return;
     }
+    else
+      audio_thread_active_flag = 1;
 
   }
 }
@@ -349,6 +372,7 @@ void* handle_connections_audio(void* nothing) {
 
     fprintf(stdout, "New client audio\n");
 
+    // Send initial stream configuration
     config[0] = *buffer_frames;
     config[1] = *rate;
     config[2] = *channels;
