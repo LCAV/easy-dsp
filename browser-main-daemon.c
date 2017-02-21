@@ -11,6 +11,7 @@
 #include <sys/un.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <unistd.h>
 
 
@@ -41,7 +42,7 @@ int* volume;
 int* channels;
 
 
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
   buffer_frames = malloc(sizeof(*buffer_frames));
   rate = malloc(sizeof(*rate));
@@ -250,7 +251,7 @@ void* handle_audio(void* nothing) {
 void* handle_connections_control(void* nothing) {
   const char *SOCKNAMEC = "/tmp/micros-control.socket";
   unlink(SOCKNAMEC);
-  int sfd, t, s2;
+  int sfd, s2;
   struct sockaddr_un addr, remote;
   int config[4];
   int* c = config;
@@ -274,7 +275,7 @@ void* handle_connections_control(void* nothing) {
   fprintf (stdout, "Bind successful control\n");
   while (1) {
     fprintf(stdout, "Waiting for a connection...\n");
-    t = sizeof(remote);
+    socklen_t t = sizeof(remote);
     if ((s2 = accept(sfd, (struct sockaddr *)&remote, &t)) == -1) {
       fprintf (stderr, "cannot accept the connection control\n");
       continue;
@@ -314,7 +315,7 @@ void* handle_connections_control(void* nothing) {
 void* handle_connections_audio(void* nothing) {
   const char *SOCKNAME = "/tmp/micros-audio.socket";
   unlink(SOCKNAME);
-  int sfd, t, s2;
+  int sfd, s2;
   struct sockaddr_un addr, remote;
   int config[4];
   int* c = config;
@@ -338,7 +339,7 @@ void* handle_connections_audio(void* nothing) {
   fprintf (stdout, "Bind successful audio\n");
   while (1) {
     fprintf(stdout, "Waiting for a connection...\n");
-    t = sizeof(remote);
+    socklen_t t = sizeof(remote);
     if ((s2 = accept(sfd, (struct sockaddr *)&remote, &t)) == -1) {
       fprintf (stderr, "cannot accept the connection audio\n");
       continue;
