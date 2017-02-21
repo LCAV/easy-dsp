@@ -13,12 +13,11 @@
 #define EASY_DSP_WSCONFIG_SERVER_PORT "7322"
 
 // Audio configuration
-#define EASY_DSP_VOLUME                     (100)
-#define EASY_DSP_NUM_CHANNELS               (48)
+#define EASY_DSP_VOLUME                     (80)
+#define EASY_DSP_NUM_CHANNELS               (6)
 #define EASY_DSP_AUDIO_FREQ_HZ              (48000)
 #define EASY_DSP_AUDIO_FORMAT_BITS          (16) // NOT changeable!
 #define EASY_DSP_AUDIO_FORMAT_BYTES         (EASY_DSP_AUDIO_FORMAT_BITS / 8)
-#define EASY_DSP_HALF_BUFFER_LENGTH_SECONDS (1)
-#define EASY_DSP_HALF_BUFFER_SIZE_BYTES     (EASY_DSP_NUM_CHANNELS * EASY_DSP_AUDIO_FREQ_HZ * EASY_DSP_AUDIO_FORMAT_BYTES * EASY_DSP_HALF_BUFFER_LENGTH_SECONDS)
+#define EASY_DSP_BUFFER_SIZE_BYTES          (4096)
 
 #endif /* _BROWSER_CONFIG_H_ */

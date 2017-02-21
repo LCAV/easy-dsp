@@ -13,6 +13,9 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <stdint.h>
+
+#include "browser-config.h"
 
 
 void sig_handler(int signo)
@@ -49,10 +52,10 @@ int main (int argc, char *argv[])
   channels = malloc(sizeof(*channels));
   volume = malloc(sizeof(*volume));
   audio_thread = malloc(sizeof(*audio_thread));
-  *buffer_frames = 4096;
-  *rate = 48000;
-  *channels = 6;
-  *volume = 80;
+  *buffer_frames = EASY_DSP_BUFFER_SIZE_BYTES;
+  *rate = EASY_DSP_AUDIO_FREQ_HZ;
+  *channels = EASY_DSP_NUM_CHANNELS;
+  *volume = EASY_DSP_VOLUME;
   clients = NULL;
 
   // "catch" SIGPIPE we get when we try to send data to a disconnected client
@@ -91,9 +94,7 @@ void* handle_audio(void* nothing) {
   int i, j;
   int err;
   char *buffer;
-  // int buffer_frames = 176400/10;
   int buffer_size;
-  // unsigned int rate = 176400;
   snd_pcm_hw_params_t *hw_params;
 	snd_pcm_format_t format = SND_PCM_FORMAT_S16_LE;
 
@@ -199,26 +200,27 @@ void* handle_audio(void* nothing) {
     snd_mixer_selem_id_set_name(sid, selem_name);
     snd_mixer_elem_t* elem = snd_mixer_find_selem(handle, sid);
     snd_mixer_selem_get_capture_volume_range(elem, &min, &max);
-    printf("Min max %d %d\n", min, max);
+    printf("Min max %ld %ld\n", min, max);
     int ee = snd_mixer_selem_set_capture_volume_all(elem, (*volume) * (max - min) / 100);
     printf("Error: %d\n", ee);
     long vv;
     snd_mixer_selem_get_capture_volume(elem, 1, &vv);
-    printf("New volume: %d\n", vv);
+    printf("New volume: %ld\n", vv);
     // snd_mixer_close(handle);
   }
 
-  for (i = 0; i < 10000000; ++i) {
+  while (true) {
     fprintf(stdout, "000 %d %d\n", i, *buffer_frames);
+
     if ((err = snd_pcm_readi (capture_handle, buffer, *buffer_frames)) != *buffer_frames) {
-      fprintf (stderr, "read from audio interface failed (%s)\n",
+      fprintf (stderr, "read from audio interface failed %d (%s)\n",
                err, snd_strerror (err));
       exit (1);
     }
     // fprintf(stdout, "001\n");
 
     // printf("Received %d %d %d %d\n", buffer[0], buffer[1], buffer[2], buffer[3]);
-    short* t = buffer;
+    uint8_t* t = buffer;
     // printf("Received %d %d %d\n", buffer[0], buffer[1], t[0]);
     // fprintf(stdout, "read %d done\n", i);
     struct client* c = clients;
@@ -353,6 +355,7 @@ void* handle_connections_audio(void* nothing) {
     config[3] = *volume;
     write(s2, c, sizeof(config));
 
+    // Create new client and add to the linked list
     struct client* new_client = malloc(sizeof(struct client));
     (*new_client).addr = s2;
     (*new_client).next = clients;

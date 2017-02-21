@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+#include "browser-config.h"
+
 void sig_handler(int signo)
 {
   if (signo == SIGPIPE) {

@@ -8,6 +8,8 @@
 #include <jansson.h>
 #include <unistd.h>
 
+#include "browser-config.h"
+
 int
 onmessage(libwebsock_client_state *state, libwebsock_message *msg)
 {
