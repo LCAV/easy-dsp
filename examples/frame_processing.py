@@ -12,8 +12,7 @@ import realtimeaudio as rt
 
 buffer_size = 8192
 num_windows = 3
-sampling_freq = 44100
-# sampling_freq = 48000
+sampling_freq = 48000
 
 def init(buffer_frames, rate, channels, volume):
     global stft
@@ -23,7 +22,7 @@ def init(buffer_frames, rate, channels, volume):
     hop = int(np.floor(num_samples/2))
 
     # filter (moving average --> low pass) and necessary zero padding
-    filter_length = 50
+    filter_length = 200
     h = rt.windows.rect(filter_length)/(filter_length*1.0)
     zf = filter_length/2
     zb = filter_length/2
@@ -35,10 +34,13 @@ def visualize_spectrum(handle):
     global stft
 
     freq = np.linspace(0,sampling_freq/2,len(stft.X))
-    freq = np.ceil(freq).tolist()[::5]
+    freq = np.ceil(freq).tolist()
+    spectrum = np.floor(20. * np.log10( np.maximum( 1e-5, np.abs( stft.X ) ) )).tolist()
     sig = []
 
-    sig.append({'x': freq, 'y': np.floor(abs(stft.X)).tolist()[::5]})
+    #sig.append({'x': freq, 'y': np.floor(abs(stft.X)).tolist()[::5]})
+    lim = 333
+    sig.append({'x': freq[:lim], 'y': spectrum[:lim] })
     handle.send_data({'replace': sig})
 
 def handle_data(buffer):
@@ -63,8 +65,8 @@ def handle_data(buffer):
 """Interface functions"""
 browserinterface.register_when_new_config(init)
 browserinterface.register_handle_data(handle_data)
-c_magnitude = browserinterface.add_handler("Magnitude", 'base:graph:line', {'min': 0, 'max': 100000, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
-c_magnitude_f = browserinterface.add_handler("Magnitude Filtered", 'base:graph:line', {'min': 0, 'max': 100000, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
+c_magnitude = browserinterface.add_handler("Magnitude", 'base:graph:line', {'min': 0, 'max': 200, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
+c_magnitude_f = browserinterface.add_handler("Magnitude Filtered", 'base:graph:line', {'min': 0, 'max': 200, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
 
 
 """START"""
