@@ -19,7 +19,7 @@ void sig_handler(int signo)
 }
 
 void* main_ws(void* nothing);
-config_t audioCfg;
+config_t audio_cfg;
 void* send_config(libwebsock_client_state *state);
 
 struct ws_client {
@@ -42,8 +42,8 @@ int main(void)
   ws_clients = NULL;
 
   easy_dsp_hdr_t magic_byte;  // magic number for audio/config
-  config_t audioCfg_local;
-  audioCfg_local.config.buffer_frames = 0;
+  config_t audio_cfg_local;
+  audio_cfg_local.config.buffer_frames = 0;
 
   if (signal(SIGPIPE, sig_handler) == SIG_ERR) {
     printf("\ncan't catch SIGPIPE\n");
@@ -96,15 +96,15 @@ int main(void)
     if (magic_byte == EASY_DSP_HDR_CONFIG)
     {
       // Get a new configuration
-      t = recv(s, &audioCfg_local, sizeof(config_t), MSG_WAITALL);
+      t = recv(s, &audio_cfg_local, sizeof(config_t), MSG_WAITALL);
       if (t != sizeof(config_t))
           goto close_connection;
 
       // copy to global config
-      audioCfg = audioCfg_local;
+      audio_cfg = audio_cfg_local;
 
       // new audio buffer size in bytes
-      int new_buffer_frames = audioCfg.config.buffer_frames * audioCfg.config.channels * EASY_DSP_AUDIO_FORMAT_BYTES;
+      int new_buffer_frames = audio_cfg.config.buffer_frames * audio_cfg.config.channels * EASY_DSP_AUDIO_FORMAT_BYTES;
       
       // if the buffer size has changed, update the malloc
       if (new_buffer_frames != buffer_frames)
@@ -125,7 +125,7 @@ int main(void)
       }
 
       fprintf(stdout, "wsaudio: Sending new configuration buffer_frames=%d rate=%d channels=%d volume=%d.\n",
-          audioCfg.config.buffer_frames, audioCfg.config.rate, audioCfg.config.channels, audioCfg.config.volume);
+          audio_cfg.config.buffer_frames, audio_cfg.config.rate, audio_cfg.config.channels, audio_cfg.config.volume);
       fprintf(stdout, "The buffer size is: %d\n", buffer_frames);
      
       // Send the new configuration to clients
@@ -213,7 +213,7 @@ send_config(libwebsock_client_state *state)
   char conf[100];
   char* c = conf;
   sprintf(conf, "{\"buffer_frames\":%d,\"rate\":%d,\"channels\":%d,\"volume\":%d}", 
-      audioCfg.config.buffer_frames, audioCfg.config.rate, audioCfg.config.channels, audioCfg.config.volume); 
+      audio_cfg.config.buffer_frames, audio_cfg.config.rate, audio_cfg.config.channels, audio_cfg.config.volume); 
   libwebsock_send_text(state, c);
 
   return NULL;

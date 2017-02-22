@@ -282,7 +282,7 @@ void *handle_connections_control(void* nothing)
   int sfd, s2;
   ssize_t len;
   struct sockaddr_un addr, remote;
-  config_t audioCfg;
+  config_t audio_cfg;
 
   sfd = socket(AF_UNIX, SOCK_STREAM, 0);            /* Create socket */
   if (sfd == -1) {
@@ -313,7 +313,7 @@ void *handle_connections_control(void* nothing)
     fprintf(stdout, "New client control\n");
 
     // Get the config
-    len = recv(s2, &audioCfg, sizeof(config_t), MSG_WAITALL);
+    len = recv(s2, &audio_cfg, sizeof(config_t), MSG_WAITALL);
     if (len != sizeof(config_t))
     {
       // If there is an error, just ignore it
@@ -329,10 +329,10 @@ void *handle_connections_control(void* nothing)
       ;
 
     // Save the new config
-    *buffer_frames = audioCfg.config.buffer_frames;
-    *rate = audioCfg.config.rate;
-    *channels = audioCfg.config.channels;
-    *volume = audioCfg.config.volume;
+    *buffer_frames = audio_cfg.config.buffer_frames;
+    *rate = audio_cfg.config.rate;
+    *channels = audio_cfg.config.channels;
+    *volume = audio_cfg.config.volume;
 
     // Send the new config to clients
     struct client* client;
@@ -343,7 +343,7 @@ void *handle_connections_control(void* nothing)
       write((*client).addr, &magic_byte, sizeof(magic_byte));
 
       // then send the config
-      write((*client).addr, &audioCfg, sizeof(config_t));
+      write((*client).addr, &audio_cfg, sizeof(config_t));
 
     }
 
@@ -369,7 +369,7 @@ void* handle_connections_audio(void* nothing) {
   unlink(SOCKNAME);
   int sfd, s2;
   struct sockaddr_un addr, remote;
-  config_t audioCfg;
+  config_t audio_cfg;
 
   sfd = socket(AF_UNIX, SOCK_STREAM, 0);            /* Create socket */
   if (sfd == -1) {
@@ -399,14 +399,14 @@ void* handle_connections_audio(void* nothing) {
     fprintf(stdout, "New client audio\n");
 
     // Send initial stream configuration
-    audioCfg.config.buffer_frames = *buffer_frames;
-    audioCfg.config.rate = *rate;
-    audioCfg.config.channels = *channels;
-    audioCfg.config.volume = *volume;
+    audio_cfg.config.buffer_frames = *buffer_frames;
+    audio_cfg.config.rate = *rate;
+    audio_cfg.config.channels = *channels;
+    audio_cfg.config.volume = *volume;
 
     easy_dsp_hdr_t magic_byte = EASY_DSP_HDR_CONFIG;
     write(s2, &magic_byte, sizeof(easy_dsp_hdr_t));
-    write(s2, &audioCfg, sizeof(config_t));
+    write(s2, &audio_cfg, sizeof(config_t));
 
     // Create new client and add to the linked list
     struct client* new_client = malloc(sizeof(struct client));
