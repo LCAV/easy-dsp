@@ -117,12 +117,7 @@ var Recorder = exports.Recorder = (function () {
                 for (var channel = 0; channel < numChannels; channel++) {
                     buffers.push(mergeBuffers(recBuffers[channel], recLength));
                 }
-                var interleaved = undefined;
-                if (numChannels === 2) {
-                    interleaved = interleave(buffers[0], buffers[1]);
-                } else {
-                    interleaved = buffers[0];
-                }
+                var interleaved = interleave(buffers);
                 var dataview = encodeWAV(interleaved);
                 var audioBlob = new Blob([dataview], { type: type });
 
@@ -159,16 +154,16 @@ var Recorder = exports.Recorder = (function () {
                 return result;
             }
 
-            function interleave(inputL, inputR) {
-                var length = inputL.length + inputR.length;
+            function interleave(inputs) {
+                var length = inputs.length * inputs[0].length
                 var result = new Float32Array(length);
 
                 var index = 0,
                     inputIndex = 0;
 
                 while (index < length) {
-                    result[index++] = inputL[inputIndex];
-                    result[index++] = inputR[inputIndex];
+                    for (var i = 0; i < numChannels; i++)
+                      result[index++] = inputs[i][inputIndex];
                     inputIndex++;
                 }
                 return result;
