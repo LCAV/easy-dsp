@@ -51,10 +51,10 @@ class DFT(object):
 
     """
 
-    def __init__(self, nfft, D=1, fs=1.0, analysis_window=None, synthesis_window=None, transform='numpy'):
+    def __init__(self, nfft, num_sig=1, fs=1.0, analysis_window=None, synthesis_window=None, transform='numpy'):
 
         self.nfft = nfft
-        self.D = D
+        self.D = num_sig
         self.analysis_window = analysis_window
         self.synthesis_window = synthesis_window
         self.nbin = int(self.nfft/2+1)

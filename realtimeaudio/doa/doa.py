@@ -1,4 +1,4 @@
-# Author: Eric Bezzam
+# Author: Eric Bezzam, Robin Scheibler
 # Date: Feb 15, 2016
 from __future__ import division, print_function
 
