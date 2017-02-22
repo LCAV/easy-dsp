@@ -9,3 +9,4 @@ import bbb_arrays
 # submodules
 import doa
 import transforms
+import beamformers

@@ -1,8 +1,28 @@
 [
   {
-    "name": "Spectrum and low-pass filter",
+    "name": "Simple example",
+    "description": "Playback two channels",
+    "file": "playback.py"
+  },
+  {
+    "name": "DFT and low-pass filter",
     "description": "Display the spectrum in real time",
     "file": "frame_processing.py"
+  },
+  {
+    "name": "Spectogram",
+    "description": "Display accumulating spectrogram in real time",
+    "file": "spectrogram.py"
+  },
+  {
+    "name": "Speech detection",
+    "description": "Visualize the audio stream with speech detection in real time",
+    "file": "voice_activity_detection.py"
+  },
+  {
+    "name": "Beamforming",
+    "description": "Beamforming in a particular direction",
+    "file": "beamform_das.py"
   },
   {
     "name": "Direction of arrival",
@@ -10,8 +30,8 @@
     "file": "direction_of_arrival.py"
   },
   {
-    "name": "Speech detection",
-    "description": "Visualize the audio stream with speech detection in real time",
-    "file": "voice_activity_detection.py"
+    "name": "Direction of arrival (offline)",
+    "description": "Visualize the direction of the sound from a recent recording",
+    "file": "direction_of_arrival_recording.py"
   }
 ]

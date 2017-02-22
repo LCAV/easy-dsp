@@ -1,6 +1,5 @@
 import sys
 import numpy as np
-from scipy.io import wavfile
 import matplotlib.pyplot as plt
 
 sys.path.append('..')
@@ -22,7 +21,6 @@ n_frames = 10       # how many times to apply DOA
 hop_size = int(nfft/2)                       # in number of sample
 frame_length = (n_snapshots+1)*hop_size      # in number of sample
 recording_duration = float(frame_length*n_frames)/sampling_freq   # in sec
-print(recording_duration)
 
 """Check for LED Ring"""
 try:

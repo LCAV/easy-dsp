@@ -437,12 +437,12 @@ def cart2polar(cart):
     Parameters
     -----------
     cart : numpy array (float)
-        Cartesian coordinates (x,y) where each row is a point.
+        Cartesian coordinates (x,y) where each column is a point.
 
     Returns
     -----------
     polar : numpy array
-        Polar coordinates (distance, angle) where each row is a point.
+        Polar coordinates (distance, angle) where each column is a point.
 
     """
 
@@ -461,19 +461,19 @@ def cart2polar(cart):
         polar = np.array([r, theta])
     else:
         # obtain coordinates
-        x = cart[:,0]
-        y = cart[:,1]
+        x = cart[0,:]
+        y = cart[1,:]
         # convert to polar
         r = np.sqrt(x**2 + y**2)    # distance
         theta = np.arctan2(y,x)
         # store in output
         polar = np.zeros([cart.shape[0], cart.shape[1]])
-        polar[:,0] = r
-        polar[:,1] = theta
-        for i in range(len(polar[:,0])):
-            if abs(polar[i,0]) < tol:
-                polar[i,0] = 0
-            if abs(polar[i,1]) < tol:
-                polar2cart[i,1] = 0
+        polar[0,:] = r
+        polar[1,:] = theta
+        for i in range(len(polar[0,:])):
+            if abs(polar[0,i]) < tol:
+                polar[0,i] = 0
+            if abs(polar[1,i]) < tol:
+                polar[1,i] = 0
 
     return polar
