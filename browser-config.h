@@ -20,8 +20,23 @@
 #define EASY_DSP_AUDIO_FORMAT_BYTES         (EASY_DSP_AUDIO_FORMAT_BITS / 8)
 #define EASY_DSP_BUFFER_SIZE_BYTES          (4096)
 
-// Stream magic header
-#define EASY_DSP_HDR_AUDIO                  (0x0)
-#define EASY_DSP_HDR_CONFIG                 (0x1)
+// Stream magic header (uint16_t)
+typedef uint16_t easy_dsp_hdr_t;
+#define EASY_DSP_HDR_AUDIO                  (0xA3B4)
+#define EASY_DSP_HDR_CONFIG                 (0x1C2D)
+
+// Define a union to access config in different ways
+typedef union
+{
+  uint8_t bytes[4*sizeof(uint32_t)];
+  uint32_t words[4];
+  struct {
+    int buffer_frames;
+    int rate;
+    int channels;
+    int volume;
+  } config;
+}
+config_t;
 
 #endif /* _BROWSER_CONFIG_H_ */

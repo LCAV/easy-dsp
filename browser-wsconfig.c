@@ -28,15 +28,16 @@ onmessage(libwebsock_client_state *state, libwebsock_message *msg)
   rate = json_object_get(root, "rate");
   buffer_frames = json_object_get(root, "buffer_frames");
   volume = json_object_get(root, "volume");
-  int config[4];
-  int* c = config;
 
-  config[0] = json_integer_value(buffer_frames);
-  config[1] = json_integer_value(rate);
-  config[2] = json_integer_value(channels);
-  config[3] = json_integer_value(volume);
+  config_t audio_cfg;
 
-  printf("New config: %d %d %d %d\n", config[0], config[1], config[2], config[3]);
+  audio_cfg.config.buffer_frames = json_integer_value(buffer_frames);
+  audio_cfg.config.rate = json_integer_value(rate);
+  audio_cfg.config.channels = json_integer_value(channels);
+  audio_cfg.config.volume = json_integer_value(volume);
+
+  printf("New config: %d %d %d %d\n", 
+      audio_cfg.config.buffer_frames, audio_cfg.config.rate, audio_cfg.config.channels, audio_cfg.config.volume);
 
   int s, len;
   struct sockaddr_un remote;
@@ -59,7 +60,7 @@ onmessage(libwebsock_client_state *state, libwebsock_message *msg)
 
   printf("Connected.\n");
 
-  write(s, c, sizeof(config));
+  write(s, &audio_cfg, sizeof(config_t));
   printf("Config sent\n");
 
   close(s);
