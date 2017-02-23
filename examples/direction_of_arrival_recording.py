@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 sys.path.append('..')
 import browserinterface
 import realtimeaudio as rt
+import time
 
 """Select appropriate microphone array"""
 mic_array = rt.bbb_arrays.R_compactsix_random; sampling_freq = 44100
@@ -75,11 +76,25 @@ def apply_doa(audio):
             print('Selected frequencies: {0} Hertz'.format(freq_hz))
             doa.locate_sources(X_stft, freq_bins=freq_bins)
 
-        doa.polar_plt_dirac()
-        plt.show()
+        # send to browser for visualization
+        if doa.grid.values.max() > 1:
+            doa.grid.values /= doa.grid.values.max()
+        to_send = doa.grid.values.tolist()
+        to_send.append(to_send[0])
+        polar_chart.send_data([{ 'replace': to_send }])
+
+        # send to lights if available
+        if led_ring:
+            led_ring.lightify(vals=doa.grid.values, realtime=True)
+
+        time.sleep(float(frame_length)/sampling_freq)
     
 
 browserinterface.record_audio(recording_duration*1000, apply_doa)
+polar_chart = browserinterface.add_handler(name="Directions", 
+    type='base:polar:line', 
+    parameters={'title': 'Direction', 'series': ['Intensity'], 
+    'numPoints': num_angles} )
 
 """START"""
 browserinterface.change_config(buffer_frames=frame_length, channels=6, rate=sampling_freq, volume=80)
