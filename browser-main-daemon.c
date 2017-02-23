@@ -11,6 +11,12 @@
 #include <sys/un.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <stdint.h>
+
+#include "browser-config.h"
+
 
 void sig_handler(int signo)
 {
@@ -27,26 +33,34 @@ struct client {
 void* handle_connections_audio(void* nothing);
 void* handle_connections_control(void* nothing);
 void* handle_audio(void* nothing);
-int* last_client;
+
+struct client* clients;
+pthread_t* audio_thread;
+pthread_mutex_t audio_client_lock;
+
+// alsa parameters
+snd_pcm_t *capture_handle;
 int* buffer_frames;
 unsigned int* rate;
-int* channels;
-struct client* clients;
 int* volume;
-pthread_t* audio_thread;
-snd_pcm_t *capture_handle;
+int* channels;
 
-main (int argc, char *argv[])
+// a few flags
+int audio_thread_active_flag = 0;
+int new_config_received_flag = 0;
+
+
+int main (int argc, char *argv[])
 {
   buffer_frames = malloc(sizeof(*buffer_frames));
   rate = malloc(sizeof(*rate));
   channels = malloc(sizeof(*channels));
   volume = malloc(sizeof(*volume));
   audio_thread = malloc(sizeof(*audio_thread));
-  *buffer_frames = 256*30;
-  *rate = 44100;
-  *channels = 6;
-  *volume = 80;
+  *buffer_frames = EASY_DSP_BUFFER_SIZE_BYTES;
+  *rate = EASY_DSP_AUDIO_FREQ_HZ;
+  *channels = EASY_DSP_NUM_CHANNELS;
+  *volume = EASY_DSP_VOLUME;
   clients = NULL;
 
   // "catch" SIGPIPE we get when we try to send data to a disconnected client
@@ -58,7 +72,6 @@ main (int argc, char *argv[])
   pthread_t connections_control_thread;
 
 
-
   if( pthread_create(&connections_audio_thread, NULL, handle_connections_audio, NULL) < 0) {
       perror("could not create thread to handle connections audio");
       return 1;
@@ -67,26 +80,29 @@ main (int argc, char *argv[])
       perror("could not create thread to handle audio ALSA");
       return 1;
   }
+  else
+    audio_thread_active_flag = 1;  // Let the world know we are active
+
   if( pthread_create(&connections_control_thread, NULL, handle_connections_control, NULL) < 0) {
       perror("could not create thread to handle connections control");
       return 1;
   }
 
-  while (1) {
-
-  }
+    while (true) {
+        // Sleep for a long time to not take CPU cycles. ANY constant could work
+        // here.
+        sleep(10);
+    }
 
   exit (0);
 }
 
-void* handle_audio(void* nothing) {
+void* handle_audio(void* nothing)
+{
 
-  int i, j;
   int err;
   char *buffer;
-  // int buffer_frames = 176400/10;
   int buffer_size;
-  // unsigned int rate = 176400;
   snd_pcm_hw_params_t *hw_params;
 	snd_pcm_format_t format = SND_PCM_FORMAT_S16_LE;
 
@@ -192,33 +208,38 @@ void* handle_audio(void* nothing) {
     snd_mixer_selem_id_set_name(sid, selem_name);
     snd_mixer_elem_t* elem = snd_mixer_find_selem(handle, sid);
     snd_mixer_selem_get_capture_volume_range(elem, &min, &max);
-    printf("Min max %d %d\n", min, max);
     int ee = snd_mixer_selem_set_capture_volume_all(elem, (*volume) * (max - min) / 100);
-    printf("Error: %d\n", ee);
+    if (ee != 0)
+      printf("Error when setting the volume: %d\n", ee);
     long vv;
     snd_mixer_selem_get_capture_volume(elem, 1, &vv);
-    printf("New volume: %d\n", vv);
+    printf("Ch%d --- New volume %ld (range %ld to %ld)\n", iii, vv, min, max);
     // snd_mixer_close(handle);
   }
 
-  for (i = 0; i < 10000000; ++i) {
-    fprintf(stdout, "000 %d %d\n", i, *buffer_frames);
+  while (!new_config_received_flag) {
+
     if ((err = snd_pcm_readi (capture_handle, buffer, *buffer_frames)) != *buffer_frames) {
-      fprintf (stderr, "read from audio interface failed (%s)\n",
+      fprintf (stderr, "read from audio interface failed %d (%s)\n",
                err, snd_strerror (err));
       exit (1);
     }
-    // fprintf(stdout, "001\n");
 
-    // printf("Received %d %d %d %d\n", buffer[0], buffer[1], buffer[2], buffer[3]);
-    short* t = buffer;
-    // printf("Received %d %d %d\n", buffer[0], buffer[1], t[0]);
-    // fprintf(stdout, "read %d done\n", i);
+
+    pthread_mutex_lock(&audio_client_lock);
+    //char* t = buffer;
     struct client* c = clients;
     struct client* previous = NULL;
     while (c != NULL) {
-      fprintf(stdout, "Send to client %d %d %d %d\n", buffer[0], buffer[1], buffer[2], buffer[3]);
-      int re = write((*c).addr, buffer, buffer_size);
+
+      // Send out the audio packet header
+      easy_dsp_hdr_t header_audio = EASY_DSP_HDR_AUDIO;
+      int re = write((*c).addr, &header_audio, sizeof(easy_dsp_hdr_t));
+
+      // Now send the actual samples
+      re = write((*c).addr, buffer, buffer_size);
+
+      // Check for errors
       if (re == -1) {
         // This client is gone
         // We remove it
@@ -228,9 +249,17 @@ void* handle_audio(void* nothing) {
           (*previous).next = (*c).next;
         }
       }
+
+      // Give a warning if we wrote less bytes than we thought...
+      if (re != buffer_size)
+        fprintf(stdout, "Warning: less than buffer_size was written to socket.\n");
+
+      // move on to next client
       previous = c;
       c = (*c).next;
     }
+    pthread_mutex_unlock(&audio_client_lock);
+
   }
 
   free(buffer);
@@ -239,20 +268,26 @@ void* handle_audio(void* nothing) {
 
   snd_pcm_close (capture_handle);
   fprintf(stdout, "audio interface closed\n");
+
+  // we are done here
+  audio_thread_active_flag = 0;
+
+  return NULL;
 }
 
-void* handle_connections_control(void* nothing) {
-  const char *SOCKNAMEC = "/tmp/micros-control.socket";
+void *handle_connections_control(void* nothing) 
+{
+  const char *SOCKNAMEC = EASY_DSP_CONTROL_SOCKET;
   unlink(SOCKNAMEC);
-  int sfd, t, s2;
+  int sfd, s2;
+  ssize_t len;
   struct sockaddr_un addr, remote;
-  int config[4];
-  int* c = config;
+  config_t audio_cfg;
 
   sfd = socket(AF_UNIX, SOCK_STREAM, 0);            /* Create socket */
   if (sfd == -1) {
     fprintf (stderr, "cannot create the socket control\n");
-    return;
+    return NULL;
   }
 
   memset(&addr, 0, sizeof(struct sockaddr_un));     /* Clear structure */
@@ -261,14 +296,15 @@ void* handle_connections_control(void* nothing) {
 
   if (bind(sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1) {
     fprintf (stderr, "cannot bind the socket control\n");
-    return;
+    return NULL;
   }
 
   listen(sfd, 3);
   fprintf (stdout, "Bind successful control\n");
+
   while (1) {
     fprintf(stdout, "Waiting for a connection...\n");
-    t = sizeof(remote);
+    socklen_t t = sizeof(remote);
     if ((s2 = accept(sfd, (struct sockaddr *)&remote, &t)) == -1) {
       fprintf (stderr, "cannot accept the connection control\n");
       continue;
@@ -276,47 +312,69 @@ void* handle_connections_control(void* nothing) {
 
     fprintf(stdout, "New client control\n");
 
-    recv(s2, c, sizeof(config), 0);
-    fprintf(stdout, "111\n");
-    pthread_cancel(*audio_thread);
-    fprintf(stdout, "222\n");
-    sleep(2);
-    snd_pcm_close (capture_handle);
-    fprintf(stdout, "333\n");
-    sleep(1);
+    // Get the config
+    len = recv(s2, &audio_cfg, sizeof(config_t), MSG_WAITALL);
+    if (len != sizeof(config_t))
+    {
+      // If there is an error, just ignore it
+      fprintf(stderr, "Error when receiving new config.\n");
+      continue;
+    }
 
-    *buffer_frames = config[0];
-    *rate = config[1];
-    *channels = config[2];
-    *volume = config[3];
+    // Let the audio thread know that new config has been received
+    new_config_received_flag = 1;
 
+    // Wait for the audio thread to stop
+    while (audio_thread_active_flag)
+      ;
+
+    // Save the new config
+    *buffer_frames = audio_cfg.config.buffer_frames;
+    *rate = audio_cfg.config.rate;
+    *channels = audio_cfg.config.channels;
+    *volume = audio_cfg.config.volume;
+
+    // Send the new config to clients
     struct client* client;
     for (client = clients; client != NULL; client = (*client).next) {
-      write((*client).addr, c, sizeof(config));
+
+      // First write the config magic byte
+      easy_dsp_hdr_t magic_byte = EASY_DSP_HDR_CONFIG;
+      write((*client).addr, &magic_byte, sizeof(magic_byte));
+
+      // then send the config
+      write((*client).addr, &audio_cfg, sizeof(config_t));
+
     }
 
     fprintf(stdout, "New configuration: %d %d %d %d", *buffer_frames, *rate, *channels, *volume);
 
+    // Wait for a new configuration
+    new_config_received_flag = 0;
+
     if( pthread_create(audio_thread, NULL, handle_audio, NULL) < 0) {
         perror("could not create thread to handle audio ALSA");
-        return;
+        return NULL;
     }
+    else
+      audio_thread_active_flag = 1;
 
   }
+
+  return NULL;
 }
 
 void* handle_connections_audio(void* nothing) {
-  const char *SOCKNAME = "/tmp/micros-audio.socket";
+  const char *SOCKNAME = EASY_DSP_AUDIO_SOCKET;
   unlink(SOCKNAME);
-  int sfd, t, s2;
+  int sfd, s2;
   struct sockaddr_un addr, remote;
-  int config[4];
-  int* c = config;
+  config_t audio_cfg;
 
   sfd = socket(AF_UNIX, SOCK_STREAM, 0);            /* Create socket */
   if (sfd == -1) {
     fprintf (stderr, "cannot create the socket audio\n");
-    return;
+    return NULL;
   }
 
   memset(&addr, 0, sizeof(struct sockaddr_un));     /* Clear structure */
@@ -325,14 +383,14 @@ void* handle_connections_audio(void* nothing) {
 
   if (bind(sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1) {
     fprintf (stderr, "cannot bind the socket\n");
-    return;
+    return NULL;
   }
 
   listen(sfd, 3);
   fprintf (stdout, "Bind successful audio\n");
   while (1) {
     fprintf(stdout, "Waiting for a connection...\n");
-    t = sizeof(remote);
+    socklen_t t = sizeof(remote);
     if ((s2 = accept(sfd, (struct sockaddr *)&remote, &t)) == -1) {
       fprintf (stderr, "cannot accept the connection audio\n");
       continue;
@@ -340,15 +398,22 @@ void* handle_connections_audio(void* nothing) {
 
     fprintf(stdout, "New client audio\n");
 
-    config[0] = *buffer_frames;
-    config[1] = *rate;
-    config[2] = *channels;
-    config[3] = *volume;
-    write(s2, c, sizeof(config));
+    // Send initial stream configuration
+    audio_cfg.config.buffer_frames = *buffer_frames;
+    audio_cfg.config.rate = *rate;
+    audio_cfg.config.channels = *channels;
+    audio_cfg.config.volume = *volume;
 
+    easy_dsp_hdr_t magic_byte = EASY_DSP_HDR_CONFIG;
+    write(s2, &magic_byte, sizeof(easy_dsp_hdr_t));
+    write(s2, &audio_cfg, sizeof(config_t));
+
+    // Create new client and add to the linked list
     struct client* new_client = malloc(sizeof(struct client));
+    pthread_mutex_lock(&audio_client_lock);
     (*new_client).addr = s2;
     (*new_client).next = clients;
     clients = new_client;
+    pthread_mutex_unlock(&audio_client_lock);
   }
 }

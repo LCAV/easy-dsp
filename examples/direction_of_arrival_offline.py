@@ -3,6 +3,7 @@ import numpy as np
 from scipy.io import wavfile
 import matplotlib.pyplot as plt
 
+sys.path.append('..')
 import realtimeaudio as rt
 
 
@@ -12,10 +13,6 @@ Number of snapshots for DOA will be: ~2*buffer_size/nfft
 buffer_size = 4096
 nfft = 512
 num_angles = 360
-
-"""Select appropriate microphone array"""
-mic_array = rt.bbb_arrays.R_compactsix_random
-# mic_array = rt.bbb_arrays.R_compactsix_circular_1
 
 """Check for LED Ring"""
 try:
@@ -31,6 +28,10 @@ except:
 # read recording
 sampling_freq, x = wavfile.read('out.wav')
 
+"""Select appropriate microphone array"""
+mic_array = rt.bbb_arrays.R_compactsix_random
+# mic_array = rt.bbb_arrays.R_compactsix_circular_1
+
 # create DOA object
 doa_args = {
         'L': mic_array,
@@ -41,6 +42,9 @@ doa_args = {
         }
 # doa = rt.doa.SRP(**doa_args)
 # doa = rt.doa.MUSIC(**doa_args)
+# doa = rt.doa.CSSM(num_iter=1, **doa_args)
+# doa = rt.doa.WAVES(num_iter=1, **doa_args)
+# doa = rt.doa.TOPS(**doa_args)
 doa = rt.doa.FRIDA(max_four=5, signal_type='visibility', G_iter=1, **doa_args)
 
 # choose frequency range
@@ -59,9 +63,16 @@ for i in range(n_frames):
     signals = x[buffer_size*i:buffer_size*(i+1),:]
     X_stft = rt.utils.compute_snapshot_spec(signals, nfft, n_snapshots, hop_size)
 
-    bands_pwr = np.mean(np.sum(np.abs(X_stft[:,range_bins,:])**2, axis=0), axis=1)
-    freq_bins = np.argsort(bands_pwr)[-n_bands:] + f_min
+    if isinstance(doa, rt.doa.TOPS):
+        print('Frequency range: {0}'.format(freq_range))
+        doa.locate_sources(X_stft, freq_range=freq_range)
+    else:
+        bands_pwr = np.mean(np.sum(np.abs(X_stft[:,range_bins,:])**2, axis=0), axis=1)
+        freq_bins = np.argsort(bands_pwr)[-n_bands:] + f_min
+        freq_hz = np.array(freq_bins, dtype=np.float32)/nfft*sampling_freq
+        print('Selected frequency bins: {0}'.format(freq_bins))
+        print('Selected frequencies: {0} Hertz'.format(freq_hz))
+        doa.locate_sources(X_stft, freq_bins=freq_bins)
 
-    doa.locate_sources(X_stft, freq_bins=freq_bins)
     doa.polar_plt_dirac()
     plt.show()

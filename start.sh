@@ -1,14 +1,19 @@
-#!/bin/sh
-export LD_LIBRARY_PATH=/usr/local/lib
+#!/bin/bash
 
-killall browser-main-daemon >> /dev/null 2>&1
-killall browser-wsaudio >> /dev/null 2>&1
-killall browser-wsconfig >> /dev/null 2>&1
+if [ "${#}" -eq 0 ]; then
+    echo 'Error: ${1} must be the name of a log file.' 2>&1
+    exit 1
+fi
 
-nohup ./browser-main-daemon >> $1 2>&1 &
-sleep 4
-nohup ./browser-wsaudio >> $1 2>&1 &
-nohup ./browser-wsconfig >> $1 2>&1 &
-sleep 2
+log_file="${1}"
 
-echo "Daemons started!"
+./stop.sh > /dev/null
+
+echo -n 'Starting daemons '
+nohup ./browser-main-daemon >> "${log_file}" 2>&1 &
+sleep 4; echo -n '.'
+nohup ./browser-wsaudio     >> "${log_file}" 2>&1 &
+sleep 1; echo -n '.'
+nohup ./browser-wsconfig    >> "${log_file}" 2>&1 &
+sleep 1; echo -n '.'
+echo " done"

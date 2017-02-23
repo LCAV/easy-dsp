@@ -1,9 +1,10 @@
 import numpy as np
 import sys
+
 sys.path.append('..')
 import browserinterface
-
 import realtimeaudio as rt
+
 from math import ceil
 
 

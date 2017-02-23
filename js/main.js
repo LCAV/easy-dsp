@@ -150,7 +150,7 @@ var recordingTimer;
 var recordingStart;
 btnRecording.click(function() {
   if (!inRecording) {
-    recording = new Recorder(inputStream.source, {wokerPath: 'vendors/recorder.js'});
+    recording = new Recorder(inputStream.source, {workerPath: 'vendors/recorder.js', numChannels: config.channels});
     recording.record();
     inRecording = true;
     btnRecording.removeClass('btn-danger');
@@ -365,10 +365,13 @@ function onWSAudioMessage(e) {
     config = conf;
     console.log("Config received:", config);
     displayConfig();
+
+    // If the audio was playing, we need to recreate
+    // the stream using the new configuration
     if (inputStream) {
       inputStream.destroyAudio();
+      inputStream = new sourceAudio(audioCt, conf);
     }
-    // inputStream = new sourceAudio(audioCt, conf);
     return;
   }
   b = e;
@@ -498,7 +501,7 @@ function handleOutput(port) {
 // This function should also manage the play/stop buttons
 function sourceAudio(audioCtx, config) {
   var audioData, channelData, audioPos, source, buffer_size;
-  buffer_size = 2 * config.rate; // we want two seconds
+  buffer_size = 2 * config.rate; // Fix at two seconds
   audioData = audioCtx.createBuffer(config.channels, buffer_size, config.rate); // channels - size of the buffer - frameRate
   channelData = [];
   for (var i = 0; i < config.channels; i++) {
