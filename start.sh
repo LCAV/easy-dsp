@@ -7,6 +7,9 @@ fi
 
 log_file="${1}"
 
+touch ${log_file}
+chown www-data:www-data ${log_file}
+
 ./stop.sh > /dev/null
 
 echo -n 'Starting daemons '
