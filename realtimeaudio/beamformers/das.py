@@ -43,6 +43,8 @@ class DAS(object):
 
         self.dft = transforms.DFT(nfft=self.nfft)
 
+        self.Y_buffer = np.zeros(len(self.frequencies), dtype=complex)
+
 
     def beamform(self, X):
 
@@ -51,8 +53,8 @@ class DAS(object):
         :type X: numpy array
         """
 
-        Y = np.diag(np.dot(X, self.weights))
-        return self.dft.synthesis(Y)
+        self.Y_buffer[:] = np.sum(X * self.weights.T, axis=1)
+        return self.dft.synthesis(self.Y_buffer)
 
 
     def compute_mode(self, freq, phi):

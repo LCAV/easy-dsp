@@ -7,11 +7,11 @@ import browserinterface
 import realtimeaudio as rt
 
 """Select appropriate microphone array"""
-mic_array = rt.bbb_arrays.R_compactsix_random; sampling_freq = 44100
-# mic_array = rt.bbb_arrays.R_compactsix_circular_1; sampling_freq = 48000
+# mic_array = rt.bbb_arrays.R_compactsix_random; sampling_freq = 44100
+mic_array = rt.bbb_arrays.R_compactsix_circular_1; sampling_freq = 48000
 
 """capture parameters"""
-buffer_size = 4096
+buffer_size = 8192
 num_channels = 6
 
 """Check for LED Ring"""
@@ -51,9 +51,15 @@ def beamform_audio(audio):
     global dft, bf
 
     X = dft.analysis(audio)
+
     y = bf.beamform(X)
 
-    # TODO: means of playing back audio, browserinterface requires same number of channels --> sounddevice?
+    # This should work to send back audio to browser
+    audio[:,0] = y.astype(audio.dtype)
+    audio[:,1] = y.astype(audio.dtype)
+    audio[:,2:] = 0
+
+    browserinterface.send_audio(audio)
 
 
 
