@@ -107,7 +107,7 @@ class STFT:
             self.dft = None
             self.set_filter(h, zb, zf)
         else:
-            self.dft = DFT(nfft=self.nfft,fs=self.fs,D=self.D,
+            self.dft = DFT(nfft=self.nfft,fs=self.fs,num_sig=self.D,
                 analysis_window=self.analysis_window,
                 synthesis_window=self.synthesis_window)
 
@@ -240,7 +240,7 @@ class STFT:
         self.X = np.zeros(self.nfft)
         self.nbin = self.nfft/2+1
         self.freq = np.linspace(0,self.fs/2,self.nbin)
-        self.dft = DFT(nfft=self.nfft,fs=self.fs,D=self.D,
+        self.dft = DFT(nfft=self.nfft,fs=self.fs,num_sig=self.D,
             analysis_window=self.analysis_window,
             synthesis_window=self.synthesis_window)
 
