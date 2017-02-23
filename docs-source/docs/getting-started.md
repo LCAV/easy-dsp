@@ -25,7 +25,8 @@ cd /var
 git clone https://github.com/LCAV/easy-dsp
 cd easy-dsp
 touch logs.txt
-chown www-data:www-data logs.txt
+chown www-data:www-data logs.txt api.php
+chmod 750 api.php
 cp microphones.virtualhost /etc/apache2/sites-available/microphones
 a2ensite microphones
 echo "Listen 8081" >> /etc/apache2/ports.conf
