@@ -26,16 +26,16 @@ def init(buffer_frames, rate, channels, volume):
     """
     nrate = rate/2 # nyquist rate
 
-    # low pass
-    numtaps = 20
-    cutoff_hz = 2000.
-    fir_coeff = signal.firwin(numtaps, float(cutoff_hz)/nrate)
+    # # low pass
+    # numtaps = 20
+    # cutoff_hz = 2000.
+    # fir_coeff = signal.firwin(numtaps, float(cutoff_hz)/nrate)
 
-    # # band pass
-    # numtaps = 50
-    # f1, f2 = 5000., 10000.
-    # fir_coeff = signal.firwin(numtaps, [float(f1)/nrate, float(f2)/nrate], 
-    #     pass_zero=False)
+    # band pass
+    numtaps = 50
+    f1, f2 = 5000., 10000.
+    fir_coeff = signal.firwin(numtaps, [float(f1)/nrate, float(f2)/nrate], 
+        pass_zero=False)
 
     # create STFT object - buffer size will be our hop size
     stft = rt.transforms.STFT(2*buffer_size, rate,
@@ -49,9 +49,9 @@ def visualize_spectrum(handle):
     spectrum = np.floor(20. * np.log10( np.maximum( 1e-5, np.abs( stft.X ) ) )).tolist()
     sig = []
 
-    #sig.append({'x': freq, 'y': np.floor(abs(stft.X)).tolist()[::5]})
-    lim = 333
-    sig.append({'x': freq[:lim], 'y': spectrum[:lim] })
+    # sig.append({'x': freq[::5], 'y': np.floor(abs(stft.X)).tolist()[::5]})
+    # lim = 333
+    sig.append({'x': freq[::5], 'y': spectrum[::5] })
     handle.send_data({'replace': sig})
 
 frame_num = 0
@@ -87,8 +87,8 @@ def handle_data(audio):
 browserinterface.register_when_new_config(init)
 browserinterface.register_handle_data(handle_data)
 time_plot = browserinterface.add_handler("Time domain", 'base:graph:line', {'xName': 'Duration', 'min': -1, 'max': 1, 'xLimitNb': (sampling_freq/under*num_sec), 'series': [{'name': 'Signal', 'color': 'blue'}]})
-c_magnitude = browserinterface.add_handler("Frequency Magnitude", 'base:graph:line', {'min': 0, 'max': 100000, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
-c_magnitude_f = browserinterface.add_handler("Frequency Magnitude (Filtered)", 'base:graph:line', {'min': 0, 'max': 100000, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
+c_magnitude = browserinterface.add_handler("Frequency Magnitude", 'base:graph:line', {'min': 0, 'max': 250, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
+c_magnitude_f = browserinterface.add_handler("Frequency Magnitude (Filtered)", 'base:graph:line', {'min': 0, 'max': 250, 'xName': 'Frequency', 'series': [{'name': '1'}, {'name': '2'}]})
 
 
 """START"""
