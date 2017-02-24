@@ -5,7 +5,7 @@
     "file": "playback.py"
   },
   {
-    "name": "DFT and low-pass filter",
+    "name": "DFT and filtering",
     "description": "Display the spectrum in real time",
     "file": "frame_processing.py"
   },

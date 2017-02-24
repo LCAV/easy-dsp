@@ -3,19 +3,16 @@ Apply processing frame by frame in the STFT domain (overlapping windows).
 """
 import sys
 import numpy as np
+from scipy import signal
 
 sys.path.append('..')
 import browserinterface
 import realtimeaudio as rt
 
 """Board Parameters"""
-buffer_size = 8192
+buffer_size = 4096      # lower gives choppy visualization
 sampling_freq = 44100
 # sampling_freq = 48000
-
-"""STFT Parameters"""
-num_samples = 4096 # determines frequency resolution
-num_windows = int(float(buffer_size)/num_samples*2-1)
 
 """ Visualization parameters """
 under = 100 # undersample otherwise too many points
@@ -24,17 +21,25 @@ num_sec = 5
 def init(buffer_frames, rate, channels, volume):
     global stft
 
-    # parameters (block size, number of signals, hop size)
-    hop = int(np.floor(num_samples/2))
+    """Filter design : 
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.firwin.html 
+    """
+    nrate = rate/2 # nyquist rate
 
-    # filter (moving average --> low pass) and necessary zero padding
-    filter_length = 50
-    h = rt.windows.rect(filter_length)/(filter_length*1.)
-    zf = filter_length/2
-    zb = filter_length/2
+    # low pass
+    numtaps = 20
+    cutoff_hz = 2000.
+    fir_coeff = signal.firwin(numtaps, float(cutoff_hz)/nrate)
 
-    # create STFT object
-    stft = rt.transforms.STFT(num_samples, rate, hop,zf=zf,zb=zb,h=h)
+    # # band pass
+    # numtaps = 50
+    # f1, f2 = 5000., 10000.
+    # fir_coeff = signal.firwin(numtaps, [float(f1)/nrate, float(f2)/nrate], 
+    #     pass_zero=False)
+
+    # create STFT object - buffer size will be our hop size
+    stft = rt.transforms.STFT(2*buffer_size, rate,
+        zf=numtaps/2, zb=numtaps/2, h=fir_coeff)
 
 def visualize_spectrum(handle):
     global stft
@@ -54,23 +59,25 @@ def handle_data(audio):
         or browserinterface.channels != 2):
         print("Did not receive expected audio!")
         return
+    
+    stft.analysis(audio[:,0])
+    visualize_spectrum(c_magnitude)
+    
+    stft.process()
+    visualize_spectrum(c_magnitude_f)
 
-    # apply stft and istft for a few windows
-    for i in range(num_windows):
-
-        # perform analysis and visualize the frame
-        stft.analysis(audio[stft.hop*i:stft.hop*(i+1),0])
-        visualize_spectrum(c_magnitude)
-
-        # apply filtering and visualize results
-        stft.process()
-        visualize_spectrum(c_magnitude_f)
+    ## either viz or playback
+    # xr = stft.synthesis()
+    # audio[:,0] = xr.astype(audio.dtype)
+    # audio[:,1] = xr.astype(audio.dtype)
+    # browserinterface.send_audio(audio)
 
     # time plot
-    sig = np.array(audio[:,0], dtype=np.float32)/20000
+    sig = np.array(audio[:,0], dtype=np.float32)/10000
     t = np.linspace(frame_num*buffer_size,(frame_num+1)*buffer_size,buffer_size)/float(sampling_freq)
     sig = {'x': t[::under].tolist(), 'y': sig[::under].tolist()}
     time_plot.send_data({'add':[sig]})
+
     frame_num += 1
 
 """Interface functions"""
