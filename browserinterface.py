@@ -176,18 +176,13 @@ def send_audio(buffer):
     global client
     if client != -1:
         try:
-            # We need to convert the 2D Numpy array in a binary stream
-            nbuffer = []
-            for buf in buffer:
-                for b in buf:
-                    if b >= 0:
-                        nbuffer.append(min(b%256, 255))
-                        nbuffer.append(min(b/256, 255))
-                    else:
-                        t = max(0, 32768 + b)
-                        nbuffer.append(min(t%256, 255))
-                        nbuffer.append(min(t/256 + 128, 255))
-            client.send(bytearray(nbuffer), True)
+            # Convert to numpy array if necessary
+            if not isinstance(buffer, np.ndarray) or buffer.dtype != np.int16:
+                buffer = np.array(buffer, dtype=np.int16)
+
+            # Send back as a byte array
+            client.send(bytearray(buffer), True)
+
         except socket.error, e:
             print "Error when send_audio: the browser might be disconnected, we remove it"
             client = -1

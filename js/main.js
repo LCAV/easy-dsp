@@ -453,6 +453,7 @@ function handleOutput(port) {
           e.preventDefault();
           $(this).tab('show');
         });
+        $('#output-tab-' + data.id).tab('show');
         dataHandlers.addHandler(data.id, data.type, document.getElementById('graph-' + data.id), data.parameters);
       } else if (data.dataHandler) {
         dataHandlers.addNewData(data.dataHandler, data.data);

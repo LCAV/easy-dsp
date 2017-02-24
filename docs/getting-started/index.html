@@ -154,6 +154,7 @@
 <li>Copy the virtualhost configuration file and enable it;</li>
 <li>Make Apache listening on the port 8081;</li>
 <li>Give rights on audio devices to <code>www-data</code>;</li>
+<li>Make api.php executable and give its ownership to <code>www-data</code>;</li>
 <li>Compile the C daemons.</li>
 </ul>
 <p>In root, it resumes to:</p>
@@ -161,7 +162,8 @@
 git clone https://github.com/LCAV/easy-dsp
 cd easy-dsp
 touch logs.txt
-chown www-data:www-data logs.txt
+chown www-data:www-data logs.txt api.php
+chmod 750 api.php
 cp microphones.virtualhost /etc/apache2/sites-available/microphones
 a2ensite microphones
 echo &quot;Listen 8081&quot; &gt;&gt; /etc/apache2/ports.conf
