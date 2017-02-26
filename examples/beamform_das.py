@@ -7,11 +7,12 @@ import browserinterface
 import realtimeaudio as rt
 
 """Select appropriate microphone array"""
-# mic_array = rt.bbb_arrays.R_compactsix_random; sampling_freq = 44100
-mic_array = rt.bbb_arrays.R_compactsix_circular_1; sampling_freq = 48000
+mic_array = rt.bbb_arrays.R_compactsix_random; sampling_freq = 44100
+# mic_array = rt.bbb_arrays.R_compactsix_circular_1; sampling_freq = 48000
 
 """capture parameters"""
-buffer_size = 8192
+zero_padding = 100
+buffer_size = 8192-zero_padding/2
 num_channels = 6
 
 """Check for LED Ring"""
@@ -28,13 +29,16 @@ except:
 
 """Setup"""
 num_angles = 60 # for directivity
+direction = 70 # degrees
 def init(buffer_frames, rate, channels, volume):
-    global dft, bf
+    global stft, bf
 
-    dft = rt.transforms.DFT(nfft=buffer_frames, num_sig=channels)
+    stft = rt.transforms.STFT(2*buffer_size, rate, num_sig=num_channels)
+    stft.zero_pad_back(zero_padding); stft.reset()
 
     # direction in degrees
-    bf = rt.beamformers.DAS(mic_array, sampling_freq, direction=70., nfft=buffer_frames, num_angles=num_angles)
+    bf = rt.beamformers.DAS(mic_array, sampling_freq, direction=direction, nfft=stft.nfft, num_angles=num_angles)
+    stft.H = bf.weights.T
 
     # visualization
     freq_viz = 2000 # frequency for which to visualize beam pattern
@@ -48,11 +52,11 @@ def init(buffer_frames, rate, channels, volume):
 
 """Defining callback"""
 def beamform_audio(audio):
-    global dft, bf
+    global stft, bf
 
-    X = dft.analysis(audio)
-
-    y = bf.beamform(X)
+    stft.analysis(audio)
+    stft.process()
+    y = np.sum(stft.synthesis(), axis=1)
 
     # This should work to send back audio to browser
     audio[:,0] = y.astype(audio.dtype)
@@ -60,7 +64,6 @@ def beamform_audio(audio):
     audio[:,2:] = 0
 
     browserinterface.send_audio(audio)
-
 
 
 """Interface features"""
