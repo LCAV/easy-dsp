@@ -36,7 +36,6 @@ def init(buffer_frames, rate, channels, volume):
     stft = rt.transforms.STFT(2*buffer_size, rate, num_sig=num_channels)
     stft.zero_pad_back(zero_padding); stft.reset()
 
-    # direction in degrees
     bf = rt.beamformers.DAS(mic_array, sampling_freq, direction=direction, nfft=stft.nfft, num_angles=num_angles)
     stft.H = bf.weights.T
 

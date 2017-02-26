@@ -369,7 +369,7 @@ def polar2cart(polar):
         cart = np.zeros([polar.shape[0], polar.shape[1]])
         cart[0,:] = x
         cart[1,:] = y
-    cart[cart<tol] = 0
+    cart[abs(cart)<tol] = 0
     return cart
 
 def cart2spher(cart):

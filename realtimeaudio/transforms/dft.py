@@ -55,12 +55,25 @@ class DFT(object):
 
         self.nfft = nfft
         self.D = num_sig
-        self.analysis_window = analysis_window
-        self.synthesis_window = synthesis_window
+        
         self.nbin = int(self.nfft/2+1)
         self.fs = float(fs)
         self.freq = np.linspace(0,self.fs/2,self.nbin)
         self.X = np.zeros((self.nbin,self.D),dtype='complex64')
+
+        if self.D==1:
+            self.analysis_window = analysis_window
+            self.synthesis_window = synthesis_window
+        else:
+            if analysis_window is not None:
+                self.analysis_window = np.tile(analysis_window, (self.D,1)).T
+            else:
+                self.analysis_window = None
+            if synthesis_window is not None:
+                self.synthesis_window = np.tile(synthesis_window, (self.D,1)).T
+            else:
+                synthesis_window=None
+
 
         if transform == 'fftw':
             if pyfftw_available:

@@ -4,3 +4,4 @@ browser-wsconfig
 code-program.py
 *.pyc
 *DS_Store
+examples/test_*

@@ -41,21 +41,6 @@ class DAS(object):
         self.compute_weights(direction)
         self.compute_directivity(num_angles)
 
-        self.dft = transforms.DFT(nfft=self.nfft)
-
-        self.Y_buffer = np.zeros(len(self.frequencies), dtype=complex)
-
-
-    def beamform(self, X):
-
-        """
-        :param X: DFT of input signals, where each column is from a different microphone
-        :type X: numpy array
-        """
-
-        self.Y_buffer[:] = np.sum(X * self.weights.T, axis=1)
-        return self.dft.synthesis(self.Y_buffer)
-
 
     def compute_mode(self, freq, phi):
 
@@ -88,10 +73,21 @@ class DAS(object):
         else:
             self.direction = direction
 
-        phi = direction*np.pi/180
+        phi = direction*np.pi/180.
+
+        # for i, f in enumerate(self.frequencies):
+        #     self.weights[:,i] = 1.0/self.M * self.compute_mode(f, phi)
+
+        src = utils.polar2cart(np.array([1, phi]))
+        dist_m = np.linalg.norm(self.L - np.tile(src, (self.M,1)).T, 
+            axis=0)
+        dist_c = np.linalg.norm(self.center-src)
+        dist_cent = dist_m-dist_c
 
         for i, f in enumerate(self.frequencies):
-            self.weights[:,i] = 1.0/self.M * self.compute_mode(f, phi)
+            wavenum = 2*np.pi*f/self.c
+            self.weights[:,i] = 1.0/self.M/dist_c*np.multiply(dist_m, 
+                np.exp(1j * wavenum * dist_cent))
 
 
 
@@ -107,6 +103,25 @@ class DAS(object):
 
         self.direct = np.abs(resp)**2
         self.direct /= self.direct.max()
+
+        ## Tashev method unoptimized
+        # self.angles = np.linspace(0, 2*np.pi, num_angles, endpoint=False)
+        # resp = np.zeros((len(self.frequencies), num_angles), dtype=complex)
+
+        # for j, phi in enumerate(self.angles):
+        #     direc = utils.polar2cart(np.array([1, phi]))
+        #     dist_m = 1/np.linalg.norm(self.L - np.tile(direc, 
+        #         (self.M,1)).T, axis=0)
+        #     dist_c = np.linalg.norm(self.center-direc)
+        #     dist_cent = dist_m-dist_c
+        #     for i, f in enumerate(self.frequencies):
+        #         wavenum = 2*np.pi*f/self.c
+        #         D = dist_c * np.multiply(dist_m, 
+        #             np.exp(-1j*wavenum*dist_cent))
+        #         resp[i,j] = np.dot(H(self.weights[:,i]), D)
+
+        # self.direct = np.abs(resp)**2
+        # self.direct /= self.direct.max()
 
 
     def get_directivity(self, freq):
@@ -129,16 +144,4 @@ class DAS(object):
         resp = np.append(self.direct[freq_bin,:], self.direct[freq_bin,0])
         ax.plot(angl, resp)
         plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
 
