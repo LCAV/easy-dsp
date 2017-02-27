@@ -13,9 +13,10 @@ import sys
 import socket
 import json
 import datetime
+import time
 import numpy as np
 
-bi_board_ip = '192.168.7.2'
+bi_board_ip = None
 
 # Buffer for audio reception
 bi_buffer = 0
@@ -272,8 +273,16 @@ def start():
     serverThread.start()
 
     if inform_browser:
+        # Query the browser for the board address
         inform_browser_query()
+
+        # Wait until we get the board IP from the browser
+        while bi_board_ip is None:
+            time.sleep(0.1)
+
     else:
+        if bi_board_ip is None:
+            raise ValueError('When running without the browser, the board IP needs to be set manually.')
         start_client_thread()
 
 def loop_callbacks():
