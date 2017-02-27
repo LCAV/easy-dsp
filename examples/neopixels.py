@@ -6,7 +6,7 @@ import numpy as np
 class NeoPixels(object):
 
     def __init__(self, usb_port, colormap=None, baud_rate=115200, 
-        x_range=None, num_pixels=60, update=3):
+        x_range=None, num_pixels=60, update=3, normalize=True, vrange=None, range_tracking=0.):
 
         if colormap is None:
             colormap = cm.seismic
@@ -31,6 +31,15 @@ class NeoPixels(object):
         norm = mpl.colors.Normalize(vmin=0, vmax=1)
         self.mapper = cm.ScalarMappable(norm=norm, cmap=colormap)
 
+        # normalization setup
+        self.normalize = normalize
+        self.vrange = vrange if vrange is not None else np.array([0., 1.])
+        self.range_tracking = range_tracking
+        if self.range_tracking > 0:
+            self.vrange[1] = 0.
+        self.norm_start_count = 0
+
+
         self.lightify()
 
     def lightify(self, vals=None, realtime=False):
@@ -43,16 +52,52 @@ class NeoPixels(object):
         if vals is None:
             pixel_values = self.default_values
         else:
-            # interpolate and normalize
-            xvals = np.linspace(self.x_range[0], self.x_range[1], 
-                len(vals), endpoint=False)
-            pixel_values = np.interp(self.positions, xvals, vals)
-            pixel_values = pixel_values-pixel_values.min()
-            pixel_values = pixel_values/pixel_values.max()
+            # First reverse the array since the LED are clockwise,
+            # and the direction of arrivals counterclockwise...
+            vals = vals[::-1]
 
+            # interpolate and normalize
+
+            if len(vals) != self.num_pixels:
+                xvals = np.linspace(self.x_range[0], self.x_range[1], 
+                    len(vals), endpoint=False)
+                pixel_values = np.interp(self.positions, xvals, vals)
+            else:
+                pixel_values = vals
+
+            if self.range_tracking > 0.:
+                new_range = np.array([np.min(vals), np.max(vals)])
+                if self.norm_start_count < 100:
+                    self.norm_start_count += 1
+                    self.vrange = ((self.norm_start_count - 1) * self.vrange + new_range) / self.norm_start_count
+                else:
+                    self.vrange = (
+                            self.range_tracking  * self.vrange
+                            + (1 - self.range_tracking) * new_range
+                            )
+
+            if self.normalize:
+                pixel_values -= self.vrange[0]
+                pixel_values /= self.vrange[1] - self.vrange[0]
+
+            pixel_values[pixel_values < 0.] = 0.
+            pixel_values[pixel_values > 1.] = 1.
+
+        '''
         colors = self.mapper.to_rgba(pixel_values)
         colors = colors[:,:3]
-        colors = np.reshape((colors * 255).round().astype(np.uint8),-1)
+        '''
+
+        # nice map ?
+        # It is good to have slightly less intensity
+        # for lower sound intensity
+        colors = np.zeros((len(pixel_values), 3))
+        colors[:,0] = pixel_values
+        colors[:,1] = 0.05 * (1. - pixel_values)
+        colors[:,2] = 0.1 * (1. - pixel_values)
+        
+        # Send to the arduino
+        colors = np.reshape((colors * 254).round().astype(np.uint8),-1)
         self.arduino.write(colors.tobytes())
 
     def lightify_mono(self, rgb=[255,0,0], realtime=False):
