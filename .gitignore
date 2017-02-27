@@ -2,6 +2,7 @@ browser-main-daemon
 browser-wsaudio
 browser-wsconfig
 code-program.py
+hardware_config.json
 *.pyc
 *DS_Store
 examples/test_*

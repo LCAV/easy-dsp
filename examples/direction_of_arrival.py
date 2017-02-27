@@ -1,29 +1,46 @@
 import sys
 import numpy as np
 
-sys.path.append('..')
+sys.path.append('./examples')
 import browserinterface
-import realtimeaudio as rt
+import algorithms as rt
 
 
 """
 Number of snapshots for DOA will be: ~2*buffer_size/nfft
 """
-buffer_size = 4096
+buffer_size = 1024
 nfft = 512
 num_angles = 60
 
+"""
+Read hardware config from file
+"""
+try:
+    import json
+    with open('./hardware_config.json', 'r') as config_file:
+        config = json.load(config_file)
+        config_file.close()
+    sampling_freq = config['sampling_frequency']
+    array_type = config['array_type']
+    led_ring_address = config['led_ring_address']
+except:
+    # default when no hw config file is present
+    sampling_freq = 44100
+    array_type = 'random'
+    led_ring_address = '/dev/cu.usbmodem1421'
+
 """Select appropriate microphone array"""
-mic_array = rt.bbb_arrays.R_compactsix_random
-sampling_freq = 44100
-# mic_array = rt.bbb_arrays.R_compactsix_circular_1
-# sampling_freq = 48000
+if array_type == 'random':
+    mic_array = rt.bbb_arrays.R_compactsix_random
+elif array_type == 'circular':
+    mic_array = rt.bbb_arrays.R_compactsix_circular_1
 
 """
 Select frequency range
 """
-n_bands = 50
-freq_range = [100., 10000.]
+n_bands = 20
+freq_range = [1000., 3500.]
 f_min = int(np.round(freq_range[0]/sampling_freq*nfft))
 f_max = int(np.round(freq_range[1]/sampling_freq*nfft))
 range_bins = np.arange(f_min, f_max+1)
@@ -31,9 +48,8 @@ use_bin = False
 
 """Check for LED Ring"""
 try:
-    from neopixels import NeoPixels
     import matplotlib.cm as cm
-    led_ring = NeoPixels(usb_port='/dev/cu.usbmodem1411',
+    led_ring = rt.neopixels.NeoPixels(usb_port=led_ring_address,
         colormap=cm.afmhot)
     print("LED ring ready to use!")
 except:
@@ -52,8 +68,8 @@ def init(buffer_frames, rate, channels, volume):
             'n_grid': num_angles
             }
 
-    doa = rt.doa.SRP(**doa_args)
-    # doa = rt.doa.MUSIC(**doa_args)
+    # doa = rt.doa.SRP(**doa_args)
+    doa = rt.doa.MUSIC(**doa_args)
     # doa = rt.doa.FRIDA(max_four=2, signal_type='visibility', G_iter=1, **doa_args)
 
 """Callback"""
@@ -88,7 +104,7 @@ def apply_doa(audio):
 
     # send to lights if available
     if led_ring:
-        led_ring.lightify(vals=doa.grid.values, realtime=True)
+        led_ring.lightify(vals=doa.grid.values[::-1], realtime=True)
 
 """Interface features"""
 browserinterface.register_when_new_config(init)
@@ -100,7 +116,7 @@ polar_chart = browserinterface.add_handler(name="Directions",
     'numPoints': num_angles} )
 
 """START"""
+browserinterface.start()
 browserinterface.change_config(channels=6, buffer_frames=buffer_size,
     rate=sampling_freq, volume=80)
-browserinterface.start()
 browserinterface.loop_callbacks()

@@ -7,6 +7,7 @@ import windows
 import bbb_arrays
 
 # submodules
+import neopixels
 import doa
 import transforms
 import beamformers
