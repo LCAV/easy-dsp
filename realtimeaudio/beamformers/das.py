@@ -36,7 +36,7 @@ class DAS(object):
 
         # compute weights
         self.direction = direction
-        self.weights = np.zeros((self.M, len(self.frequencies)), 
+        self.weights = np.zeros((len(self.frequencies), self.M), 
             dtype=complex)
         self.compute_weights(direction)
         self.compute_directivity(num_angles)
@@ -68,12 +68,10 @@ class DAS(object):
 
     def compute_weights(self, direction=None):
 
-        if direction is None:
-            direction = self.direction
-        else:
+        if direction is not None:
             self.direction = direction
 
-        phi = direction*np.pi/180.
+        phi = self.direction*np.pi/180.
 
         # for i, f in enumerate(self.frequencies):
         #     self.weights[:,i] = 1.0/self.M * self.compute_mode(f, phi)
@@ -86,7 +84,7 @@ class DAS(object):
 
         for i, f in enumerate(self.frequencies):
             wavenum = 2*np.pi*f/self.c
-            self.weights[:,i] = 1.0/self.M/dist_c*np.multiply(dist_m, 
+            self.weights[i,:] = 1.0/self.M/dist_c*np.multiply(dist_m, 
                 np.exp(1j * wavenum * dist_cent))
 
 
@@ -98,7 +96,7 @@ class DAS(object):
         resp = np.zeros((len(self.frequencies), num_angles), dtype=complex)
 
         for i, f in enumerate(self.frequencies):
-            resp[i,:] = np.dot(H(self.weights[:,i]), 
+            resp[i,:] = np.dot(H(self.weights[i,:]), 
                 self.steering_vector_2D(f, self.angles))
 
         self.direct = np.abs(resp)**2

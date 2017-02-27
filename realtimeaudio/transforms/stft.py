@@ -45,7 +45,7 @@ class STFT:
         Plot spectrogram according to object's parameters and given signal.
     """
     def __init__(self, N, fs, hop=None, analysis_window=None, 
-        synthesis_window=None, num_sig=1):
+        synthesis_window=None, num_sig=1, transform='numpy'):
         """
         Constructor for STFT class.
 
@@ -90,12 +90,14 @@ class STFT:
             self.synthesis_window = None
 
         # create DFT object
+        self.transform = transform
         self.nfft = self.N
         self.nbin = self.nfft/2+1
         self.freq = np.linspace(0,self.fs/2,self.nbin)
         self.dft = DFT(nfft=self.nfft,fs=self.fs,num_sig=self.D,
                 analysis_window=self.analysis_window,
-                synthesis_window=self.synthesis_window)
+                synthesis_window=self.synthesis_window,
+                transform=self.transform)
 
         # initialize filter + zero padding --> use set_filter
         self.zf = 0; self.zb = 0
@@ -119,7 +121,8 @@ class STFT:
         self.X = np.squeeze(np.zeros((self.nbin, self.D),  dtype=complex)) 
         self.dft = DFT(nfft=self.nfft,fs=self.fs,num_sig=self.D,
             analysis_window=self.analysis_window,
-            synthesis_window=self.synthesis_window)
+            synthesis_window=self.synthesis_window,
+            transform=self.transform)
 
     def zero_pad_front(self, zf):
         """
@@ -143,7 +146,7 @@ class STFT:
         if self.synthesis_window is not None:
             self.synthesis_window = np.concatenate((self.synthesis_window, np.zeros(zb)))
 
-    def set_filter(self, h, zb=None, zf=None):
+    def set_filter(self, coeff, zb=None, zf=None, freq=False):
         """
         Set time-domain filter with appropriate zero-padding.
 
@@ -152,7 +155,7 @@ class STFT:
 
         Parameters
         -----------
-        h : numpy array 
+        coeff : numpy array 
             Filter in time domain.
         zb : int
             Amount of zero-padding added to back/end of frame.
@@ -160,20 +163,21 @@ class STFT:
             Amount of zero-padding added to front/beginning of frame.
         """
         # apply zero-padding
-        if zb is None:
-            self.zero_pad_back(len(h)/2)
-        else:
+        if zb is not None:
             self.zero_pad_back(zb)
-        if zf is None:
-            self.zero_pad_front(len(h)/2)
+        if zf is not None:
+            self.zero_pad_front(zf)  
+        self.reset()      
+        if not freq:
+            # compute filter magnitude and phase spectrum
+            self.H = np.fft.rfft(coeff, self.nfft)
+            # check for sufficient zero-padding
+            if self.nfft < (self.N+len(coeff)-1):
+                raise ValueError('Insufficient zero-padding for chosen number of samples per frame (L) and filter length (h). Require zero-padding such that new length is at least (L+h-1).')
         else:
-            self.zero_pad_front(zf)
-        # check for sufficient zero-padding
-        if self.nfft < (self.N+len(h)-1):
-            raise ValueError('Insufficient zero-padding for chosen number of samples per frame (L) and filter length (h). Require zero-padding such that new length is at least (L+h-1).')
-        # compute filter magnitude and phase spectrum
-        self.H = np.fft.rfft(h, self.nfft)
-        self.reset()
+            if len(coeff)!=self.nbin:
+                raise ValueError('Invalid length for frequency domain coefficients.')
+            self.H = coeff
 
 
     def analysis(self, x_n):

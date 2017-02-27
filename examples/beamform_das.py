@@ -10,9 +10,10 @@ import realtimeaudio as rt
 mic_array = rt.bbb_arrays.R_compactsix_random; sampling_freq = 44100
 # mic_array = rt.bbb_arrays.R_compactsix_circular_1; sampling_freq = 48000
 
-"""capture parameters"""
+"""define capture parameters accordingly"""
 zero_padding = 100
-buffer_size = 8192-zero_padding/2
+nfft = 16384
+buffer_size = nfft/2-zero_padding/2
 num_channels = 6
 
 """Check for LED Ring"""
@@ -34,10 +35,9 @@ def init(buffer_frames, rate, channels, volume):
     global stft, bf
 
     stft = rt.transforms.STFT(2*buffer_size, rate, num_sig=num_channels)
-    stft.zero_pad_back(zero_padding); stft.reset()
 
-    bf = rt.beamformers.DAS(mic_array, sampling_freq, direction=direction, nfft=stft.nfft, num_angles=num_angles)
-    stft.H = bf.weights.T
+    bf = rt.beamformers.DAS(mic_array, sampling_freq, direction=direction, nfft=nfft, num_angles=num_angles)
+    stft.set_filter(coeff=bf.weights, freq=True, zb=zero_padding)
 
     # visualization
     freq_viz = 2000 # frequency for which to visualize beam pattern

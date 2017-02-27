@@ -31,7 +31,7 @@ fir_coeff = signal.firwin(numtaps, float(cutoff_hz)/nrate)
 #     pass_zero=False)
     
 # ideally pick a buffer size so that length of DFT (buffer_size*2) will be power of two
-buffer_size = 4096-(numtaps/2)
+buffer_size = 2048-(numtaps/2)
 
 """ Visualization parameters """
 under = 100 # undersample otherwise too many points
@@ -42,8 +42,8 @@ def init(buffer_frames, rate, channels, volume):
     global stft
 
     # create STFT object - buffer size will be our hop size
-    stft = rt.transforms.STFT(2*buffer_size, rate)
-    stft.set_filter(h=fir_coeff, zb=numtaps/2, zf=numtaps/2)
+    stft = rt.transforms.STFT(2*buffer_size, rate, transform="fftw")
+    stft.set_filter(coeff=fir_coeff, zb=numtaps/2, zf=numtaps/2)
 
 def visualize_spectrum(handle):
     global stft
