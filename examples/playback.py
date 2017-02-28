@@ -31,7 +31,7 @@ browserinterface.register_handle_data(example_callback)
 
 
 """START"""
+browserinterface.start()
 browserinterface.change_config(buffer_frames=buffer_size, 
     channels=num_channels, rate=sampling_freq, volume=80)
-browserinterface.start()
 browserinterface.loop_callbacks()

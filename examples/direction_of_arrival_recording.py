@@ -97,7 +97,7 @@ polar_chart = browserinterface.add_handler(name="Directions",
     'numPoints': num_angles} )
 
 """START"""
-browserinterface.change_config(buffer_frames=frame_length, channels=6, rate=sampling_freq, volume=80)
 browserinterface.start()
+browserinterface.change_config(buffer_frames=frame_length, channels=6, rate=sampling_freq, volume=80)
 browserinterface.loop_callbacks()
 

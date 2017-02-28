@@ -80,7 +80,7 @@ browserinterface.register_handle_data(apply_vad)
 chart = browserinterface.add_handler("Speech Detection", 'base:graph:line', {'xName': 'Duration', 'min': -10000, 'max': 10000, 'xLimitNb': (sampling_freq/under*num_sec), 'series': [{'name': 'Voice', 'color': 'green'}, {'name': 'Unvoiced', 'color': 'red'}]})
 
 """START"""
+browserinterface.start()
 browserinterface.change_config(channels=2, buffer_frames=buffer_size,
     rate=sampling_freq, volume=80)
-browserinterface.start()
 browserinterface.loop_callbacks()
