@@ -1,4 +1,4 @@
-# Author: Eric Bezzam, Robin Scheibler
+# Author: Eric Bezzam
 # Date: Feb 15, 2016
 from __future__ import division, print_function
 
@@ -8,6 +8,9 @@ import numpy as np
 import math, sys
 import warnings
 from abc import ABCMeta, abstractmethod
+
+# from .detect_peaks import detect_peaks
+# from .tools_fri_doa_plane import extract_off_diag, cov_mtx_est
 
 try:
     import matplotlib as mpl
@@ -22,7 +25,7 @@ if matplotlib_available:
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
-from grid import GridCircle, GridSphere
+from .grid import GridCircle, GridSphere
 
 tol = 1e-14
 
@@ -245,11 +248,10 @@ class DOA(object):
         self.P = None
 
         # build lookup table to candidate locations from r, azimuth, colatitude 
+        from .frida import FRIDA
 
-        # from .fri import FRI
-
-        # if not isinstance(self, FRI):
-        self.mode_vec = ModeVector(self.L, self.fs, self.nfft, self.c, self.grid)
+        if not isinstance(self, FRIDA):
+            self.mode_vec = ModeVector(self.L, self.fs, self.nfft, self.c, self.grid, precompute=True)
 
     def locate_sources(self, X, num_src=None, freq_range=[500.0, 4000.0],
                        freq_bins=None, freq_hz=None):
@@ -314,20 +316,18 @@ class DOA(object):
         self._process(X)
 
         # locate sources
-        # from .fri import FRI
-        # if not isinstance(self, FRI):
+        from .frida import FRIDA
+        if not isinstance(self, FRIDA):
 
-        self.src_idx = self.grid.find_peaks(k=self.num_src)
+            self.src_idx = self.grid.find_peaks(k=self.num_src)
 
-        self.num_src = len(self.src_idx)
+            self.num_src = len(self.src_idx)
 
-        if self.dim == 2:
-            self.azimuth_recon = self.grid.azimuth[self.src_idx]
-        elif self.dim == 3:
-            self.azimuth_recon = self.grid.azimuth[self.src_idx]
-            self.colatitude_recon = self.grid.colatitude[self.src_idx]
-
-        #self.grid.values /= np.max(self.grid.values)
+            if self.dim == 2:
+                self.azimuth_recon = self.grid.azimuth[self.src_idx]
+            elif self.dim == 3:
+                self.azimuth_recon = self.grid.azimuth[self.src_idx]
+                self.colatitude_recon = self.grid.colatitude[self.src_idx]
 
     def polar_plt_dirac(self, phi_ref=None, alpha_ref=None, save_fig=False,
                         file_name=None, plt_dirty_img=True):
@@ -356,20 +356,20 @@ class DOA(object):
         phi_plt = self.grid.azimuth
 
         # determine amplitudes
-        # from .fri import FRI
-        # if not isinstance(self, FRI):  # use spatial spectrum
+        from .fri import FRIDA
+        if not isinstance(self, FRIDA):  # use spatial spectrum
 
-        dirty_img = self.grid.values
-        alpha_recon = self.grid.values[self.src_idx]
-        alpha_ref = alpha_recon
+            dirty_img = self.grid.values
+            alpha_recon = self.grid.values[self.src_idx]
+            alpha_ref = alpha_recon
 
-        # else:  # create dirty image
+        else:  # create dirty image
 
-        #     dirty_img = self._gen_dirty_img()
-        #     alpha_recon = np.mean(np.abs(self.alpha_recon), axis=1)
-        #     alpha_recon /= alpha_recon.max()
-        #     if alpha_ref is None:  # non-simulated case
-        #         alpha_ref = alpha_recon
+            dirty_img = self._gen_dirty_img()
+            alpha_recon = np.mean(np.abs(self.alpha_recon), axis=1)
+            alpha_recon /= alpha_recon.max()
+            if alpha_ref is None:  # non-simulated case
+                alpha_ref = alpha_recon
 
         # plot
         fig = plt.figure(figsize=(5, 4), dpi=90)
@@ -390,7 +390,7 @@ class DOA(object):
                 azimuth_recon = azimuth_recon[sort_idx[:, 0]]
                 alpha_recon = alpha_recon[sort_idx[:, 0]]
                 phi_ref = phi_ref[sort_idx[:, 1]]
-                alpha_ref = alpha_ref[sort_idx[:, 1]]
+                alpha_ref = alpha_ref[sort_idx[:, 0]]  # Robin: not sure why index 0 works here...
             elif phi_ref.shape[0] > 1:  # one detected source
                 alpha_ref[sort_idx[1]] = alpha_recon
 
@@ -450,7 +450,7 @@ class DOA(object):
                   ncol=1, bbox_to_anchor=(0.9, -0.17),
                   handletextpad=.2, columnspacing=1.7, labelspacing=0.1)
 
-        # ax.set_xlabel(r'azimuth $\bm{\varphi}$', fontsize=11)
+        ax.set_xlabel(r'azimuth $\bm{\varphi}$', fontsize=11)
         ax.set_xticks(np.linspace(0, 2 * np.pi, num=12, endpoint=False))
         ax.xaxis.set_label_coords(0.5, -0.11)
         ax.set_yticks(np.linspace(0, 1, 2))
