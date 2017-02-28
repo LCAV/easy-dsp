@@ -74,8 +74,8 @@ def init(buffer_frames, rate, channels, volume):
 def apply_doa(audio):
     global doa, nfft, buffer_size, led_ring
 
-    if (browserinterface.buffer_frames != buffer_size 
-        or browserinterface.channels != 6):
+    if (audio.shape[0] != browserinterface.buffer_frames 
+        or audio.shape[1] != browserinterface.channels):
         print("Did not receive expected audio!")
         return
 

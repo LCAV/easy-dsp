@@ -48,8 +48,8 @@ frame_num = 0
 def apply_vad(buffer):
     global dft, vad, frame_num
 
-    if (browserinterface.buffer_frames != buffer_size 
-        or browserinterface.channels != 2):
+    if (audio.shape[0] != browserinterface.buffer_frames 
+        or audio.shape[1] != browserinterface.channels):
         print("Did not receive expected audio!")
         return
 

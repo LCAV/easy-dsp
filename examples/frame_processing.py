@@ -44,7 +44,7 @@ buffer_size = 2048-(numtaps/2)
 """ Visualization parameters """
 under = 100 # undersample otherwise too many points
 num_sec = 5
-viz = False   # if false, playback instead
+viz = True   # if false, playback instead
 
 def init(buffer_frames, rate, channels, volume):
     global stft
@@ -68,8 +68,8 @@ frame_num = 0
 def handle_data(audio):
     global stft, frame_num
 
-    if (browserinterface.buffer_frames != buffer_size 
-        or browserinterface.channels != 2):
+    if (audio.shape[0] != browserinterface.buffer_frames 
+        or audio.shape[1] != browserinterface.channels):
         print("Did not receive expected audio!")
         return
     

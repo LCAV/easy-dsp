@@ -111,7 +111,7 @@ class STFT:
 
     def reset(self):
         """
-        Reset state variables. Necesary after changing or setting the filter or zero padding.
+        Reset state variables. Necessary after changing or setting the filter or zero padding.
         """
         self.num_frames = 0
         self.nbin = self.nfft/2+1
@@ -194,6 +194,12 @@ class STFT:
         self.X : numpy array 
             Frequency spectrum of given frame.
         """
+
+        # check for valid input
+        if x_n.shape[0]!=self.hop:
+            raise ValueError('Invalid input dimensions.')
+        if self.D > 1 and x_n.shape[1]!=self.D:
+            raise ValueError('Invalid input dimensions.')
         # form current frame and store for next frame
         if self.D==1:
             currentFrame = np.append(self.x_p, x_n)

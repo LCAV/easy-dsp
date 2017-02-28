@@ -42,7 +42,7 @@ freq_range = [1000., 3500.]
 f_min = int(np.round(freq_range[0]/sampling_freq*nfft))
 f_max = int(np.round(freq_range[1]/sampling_freq*nfft))
 range_bins = np.arange(f_min, f_max+1)
-use_bin = False
+use_bin = True
 
 vrange = [1., 200.]
 
@@ -61,7 +61,7 @@ except:
 # a Bell curve for visualization
 sym_ind = np.concatenate((np.arange(0, 30), -np.arange(1,31)[::-1]))
 bell = np.exp(-sym_ind**2. / 4.)
-P = np.zeros(led_ring.num_pixels, dtype=np.float)
+P = np.zeros(num_pixels, dtype=np.float)
 
 """Initialization block"""
 def init(buffer_frames, rate, channels, volume):
@@ -87,8 +87,8 @@ def init(buffer_frames, rate, channels, volume):
 def apply_doa(audio):
     global doa, nfft, buffer_size, led_ring
 
-    if (browserinterface.buffer_frames != buffer_size 
-        or browserinterface.channels != 6):
+    if (audio.shape[0] != browserinterface.buffer_frames 
+        or audio.shape[1] != browserinterface.channels):
         print("Did not receive expected audio!")
         return
 
