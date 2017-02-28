@@ -2,13 +2,31 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.append('..')
 import browserinterface
-import realtimeaudio as rt
+import algorithms as rt
+
+"""
+Read hardware config from file
+"""
+try:
+    import json
+    with open('./hardware_config.json', 'r') as config_file:
+        config = json.load(config_file)
+        config_file.close()
+    sampling_freq = config['sampling_frequency']
+    array_type = config['array_type']
+    led_ring_address = config['led_ring_address']
+except:
+    # default when no hw config file is present
+    sampling_freq = 44100
+    array_type = 'random'
+    led_ring_address = '/dev/cu.usbmodem1421'
 
 """Select appropriate microphone array"""
-mic_array = rt.bbb_arrays.R_compactsix_random; sampling_freq = 44100
-# mic_array = rt.bbb_arrays.R_compactsix_circular_1; sampling_freq = 48000
+if array_type == 'random':
+    mic_array = rt.bbb_arrays.R_compactsix_random
+elif array_type == 'circular':
+    mic_array = rt.bbb_arrays.R_compactsix_circular_1
 
 """capture parameters"""
 zero_padding = 100
@@ -17,9 +35,8 @@ num_channels = 6
 
 """Check for LED Ring"""
 try:
-    from neopixels import NeoPixels
     import matplotlib.cm as cm
-    led_ring = NeoPixels(usb_port='/dev/cu.usbmodem1411',
+    led_ring = rt.neopixels.NeoPixels(usb_port=led_ring_address,
         colormap=cm.afmhot)
     print("LED ring ready to use!")
 except:

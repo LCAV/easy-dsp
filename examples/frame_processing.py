@@ -5,13 +5,21 @@ import sys
 import numpy as np
 from scipy import signal
 
-sys.path.append('..')
 import browserinterface
-import realtimeaudio as rt
+import algorithms as rt
 
-"""Board Parameters"""
-sampling_freq = 44100
-# sampling_freq = 48000
+"""
+Read hardware config from file
+"""
+try:
+    import json
+    with open('./hardware_config.json', 'r') as config_file:
+        config = json.load(config_file)
+        config_file.close()
+    sampling_freq = config['sampling_frequency']
+except:
+    # default when no hw config file is present
+    sampling_freq = 44100
 
 """
 Filter design : 
@@ -98,7 +106,7 @@ if viz:
 
 
 """START"""
+browserinterface.start()
 browserinterface.change_config(channels=2, buffer_frames=buffer_size, 
     volume=80, rate=sampling_freq)
-browserinterface.start()
 browserinterface.loop_callbacks()

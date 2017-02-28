@@ -2,13 +2,20 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.append('..')
 import browserinterface
-import realtimeaudio as rt
+import algorithms as rt
 
-"""Select appropriate microphone array"""
-mic_array = rt.bbb_arrays.R_compactsix_random; sampling_freq = 44100
-# mic_array = rt.bbb_arrays.R_compactsix_circular_1; sampling_freq = 48000
+"""Select appropriate sampling frequency"""
+try:
+    import json
+    with open('./hardware_config.json', 'r') as config_file:
+        config = json.load(config_file)
+        config_file.close()
+    sampling_freq = config['sampling_frequency']
+except:
+    # default when no hw config file is present
+    sampling_freq = 44100
+
 
 """capture parameters"""
 buffer_size = 4096

@@ -2,17 +2,26 @@ from __future__ import division
 import sys
 import numpy as np
 
-sys.path.append('..')
 import browserinterface
 
-import realtimeaudio as rt
+import algorithms as rt
 
 height = 200
 width = 200
 max = 100
 
+"""Select appropriate sampling frequency"""
+try:
+    import json
+    with open('./hardware_config.json', 'r') as config_file:
+        config = json.load(config_file)
+        config_file.close()
+    sampling_freq = config['sampling_frequency']
+except:
+    # default when no hw config file is present
+    sampling_freq = 44100
+
 buffer_size = 1024
-sampling_freq = 48000
 fft_size = 2*buffer_size
 hop = buffer_size
 
@@ -45,7 +54,7 @@ spectrogram = browserinterface.add_handler(name="Heat Map", type='base:spectrogr
         parameters={'width': width, 'height': height, 'min': 0, 'max': 150, 'delta_freq': sampling_freq / fft_size})
 
 """START"""
+browserinterface.start()
 browserinterface.change_config(channels=2, buffer_frames=buffer_size, 
     volume=80, rate=sampling_freq)
-browserinterface.start()
 browserinterface.loop_callbacks()

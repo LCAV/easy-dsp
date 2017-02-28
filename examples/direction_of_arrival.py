@@ -1,10 +1,8 @@
 import sys
 import numpy as np
 
-sys.path.append('./examples')
 import browserinterface
 import algorithms as rt
-
 
 """
 Number of snapshots for DOA will be: ~2*buffer_size/nfft
