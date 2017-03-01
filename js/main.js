@@ -12,7 +12,8 @@ aceEditor.session.setMode(new AcePythonMode());
 var wsAudio, wsConfig;
 var wsPythonServer = new WebSocket("ws://" + pythonDaemon + ":7320");
 
-var inputStream;
+var inputStream;   // Stream from WSAudio
+var outputStream;  // Stream from python code
 var outputHandle;
 var b;
 var audioCt = new AudioContext;
@@ -89,6 +90,9 @@ function daemonsConnect() {
   };
   wsAudio.onclose = function(e) {
     addAlert('danger', 'Error', 'Disconnected from the audio websocket');
+    if (inputStream) {
+      inputStream.destroyAudio();
+    }
     changeBadgeStatus(infosStatusWSAudio, 'disconnected');
   };
   wsConfig.onclose = function(e) {
@@ -429,7 +433,6 @@ function handleOutput(port) {
   var ws = new WebSocket("ws://" + pythonDaemon + ":" + port);
   var nbTry = 1;
   var stop = false; // se to true when the close of this handleOutput is asked
-  var outputStream;
 
   // Try multiple times to connect
   // Useful because we don't know after how much time
@@ -477,6 +480,12 @@ function handleOutput(port) {
       }
     }
   };
+
+  ws.onclose = function (e) {
+    if (outputStream) {
+      outputStream.destroyAudio();
+    }
+  }
 
   function stopAudio() {
     if (outputStream) {
