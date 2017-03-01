@@ -30,6 +30,11 @@
     "file": "direction_of_arrival.py"
   },
   {
+    "name": "FRIDA",
+    "description": "Real-time DOA with FRIDA",
+    "file": "frida.py"
+  },
+  {
     "name": "Direction of arrival (offline)",
     "description": "Visualize the direction of the sound from a recent recording",
     "file": "direction_of_arrival_recording.py"

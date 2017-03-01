@@ -10,9 +10,7 @@ from functools import partial
 from joblib import Parallel, delayed
 import os
 
-
 thread_num = 1
-
 
 def polar2cart(rho, phi):
     """
@@ -24,7 +22,6 @@ def polar2cart(rho, phi):
     x = rho * np.cos(phi)
     y = rho * np.sin(phi)
     return x, y
-
 
 def cov_mtx_est(y_mic):
     """
@@ -114,6 +111,31 @@ def mtx_freq2raw(M, p_mic_x, p_mic_y):
     return G
 
 
+# def mtx_freq2visi(M, p_mic_x, p_mic_y):
+#     """
+#     build the matrix that maps the Fourier series to the visibility
+#     :param M: the Fourier series expansion is limited from -M to M
+#     :param p_mic_x: a vector that constains microphones x coordinates
+#     :param p_mic_y: a vector that constains microphones y coordinates
+#     :return:
+#     """
+#     num_mic = p_mic_x.size
+#     ms = np.reshape(np.arange(-M, M + 1, step=1), (1, -1), order='F')
+#     G = np.zeros((num_mic * (num_mic - 1), 2 * M + 1), dtype=complex, order='C')
+#     count_G = 0
+#     for q in range(num_mic):
+#         p_x_outer = p_mic_x[q]
+#         p_y_outer = p_mic_y[q]
+#         for qp in range(num_mic):
+#             if not q == qp:
+#                 p_x_qqp = p_x_outer - p_mic_x[qp]
+#                 p_y_qqp = p_y_outer - p_mic_y[qp]
+#                 norm_p_qqp = np.sqrt(p_x_qqp ** 2 + p_y_qqp ** 2)
+#                 phi_qqp = np.arctan2(p_y_qqp, p_x_qqp)
+#                 G[count_G, :] = (-1j) ** ms * sp.special.jv(ms, norm_p_qqp) * \
+#                                 np.exp(1j * ms * phi_qqp)
+#                 count_G += 1
+#     return G
 def mtx_freq2visi(M, p_mic_x, p_mic_y):
     """
     build the matrix that maps the Fourier series to the visibility
@@ -124,21 +146,16 @@ def mtx_freq2visi(M, p_mic_x, p_mic_y):
     """
     num_mic = p_mic_x.size
     ms = np.reshape(np.arange(-M, M + 1, step=1), (1, -1), order='F')
-    G = np.zeros((num_mic * (num_mic - 1), 2 * M + 1), dtype=complex, order='C')
-    count_G = 0
-    for q in range(num_mic):
-        p_x_outer = p_mic_x[q]
-        p_y_outer = p_mic_y[q]
-        for qp in range(num_mic):
-            if not q == qp:
-                p_x_qqp = p_x_outer - p_mic_x[qp]
-                p_y_qqp = p_y_outer - p_mic_y[qp]
-                norm_p_qqp = np.sqrt(p_x_qqp ** 2 + p_y_qqp ** 2)
-                phi_qqp = np.arctan2(p_y_qqp, p_x_qqp)
-                G[count_G, :] = (-1j) ** ms * sp.special.jv(ms, norm_p_qqp) * \
-                                np.exp(1j * ms * phi_qqp)
-                count_G += 1
-    return G
+    p_mic_x_outer = p_mic_x[:, np.newaxis]
+    p_mic_y_outer = p_mic_y[:, np.newaxis]
+    p_mic_x_inner = p_mic_x[np.newaxis, :]
+    p_mic_y_inner = p_mic_y[np.newaxis, :]
+    extract_cond = np.reshape((1 - np.eye(num_mic)).astype(bool), (-1, 1), order='C')
+    baseline_x = np.extract(extract_cond, p_mic_x_outer - p_mic_x_inner)[:, np.newaxis]
+    baseline_y = np.extract(extract_cond, p_mic_y_outer - p_mic_y_inner)[:, np.newaxis]
+    baseline_norm = np.sqrt(baseline_x * baseline_x + baseline_y * baseline_y)
+    return (-1j) ** ms * sp.special.jv(ms, baseline_norm) * \
+           np.exp(1j * ms * np.arctan2(baseline_y, baseline_x))
 
 
 def mtx_fri2signal_ri_multiband(M, p_mic_x_all, p_mic_y_all, D1, D2, aslist=False, signal='visibility'):
@@ -311,6 +328,29 @@ def Rmtx_ri_half_out_half(coef_half, K, D, L, D_coef, mtx_shrink):
     return np.dot(mtx_shrink, Rmtx_ri(np.dot(D_coef, coef_half), K, D, L))
 
 
+# def build_mtx_amp(phi_k, p_mic_x, p_mic_y):
+#     """
+#     the matrix that maps Diracs' amplitudes to the visibility
+#     :param phi_k: Diracs' location (azimuth)
+#     :param p_mic_x: a vector that contains microphones' x-coordinates
+#     :param p_mic_y: a vector that contains microphones' y-coordinates
+#     :return:
+#     """
+#     xk, yk = polar2cart(1, phi_k)
+#     num_mic = p_mic_x.size
+#     K = phi_k.size
+#     mtx = np.zeros((num_mic * (num_mic - 1), K), dtype=complex, order='C')
+#     count_inner = 0
+#     for q in range(num_mic):
+#         p_x_outer = p_mic_x[q]
+#         p_y_outer = p_mic_y[q]
+#         for qp in range(num_mic):
+#             if q != qp:
+#                 p_x_qqp = p_x_outer - p_mic_x[qp]  # a scalar
+#                 p_y_qqp = p_y_outer - p_mic_y[qp]  # a scalar
+#                 mtx[count_inner, :] = np.exp(-1j * (xk * p_x_qqp + yk * p_y_qqp))
+#                 count_inner += 1
+#     return mtx
 def build_mtx_amp(phi_k, p_mic_x, p_mic_y):
     """
     the matrix that maps Diracs' amplitudes to the visibility
@@ -319,21 +359,16 @@ def build_mtx_amp(phi_k, p_mic_x, p_mic_y):
     :param p_mic_y: a vector that contains microphones' y-coordinates
     :return:
     """
-    xk, yk = polar2cart(1, phi_k)
+    xk, yk = polar2cart(1, phi_k[np.newaxis, :])
     num_mic = p_mic_x.size
-    K = phi_k.size
-    mtx = np.zeros((num_mic * (num_mic - 1), K), dtype=complex, order='C')
-    count_inner = 0
-    for q in range(num_mic):
-        p_x_outer = p_mic_x[q]
-        p_y_outer = p_mic_y[q]
-        for qp in range(num_mic):
-            if q != qp:
-                p_x_qqp = p_x_outer - p_mic_x[qp]  # a scalar
-                p_y_qqp = p_y_outer - p_mic_y[qp]  # a scalar
-                mtx[count_inner, :] = np.exp(-1j * (xk * p_x_qqp + yk * p_y_qqp))
-                count_inner += 1
-    return mtx
+    p_mic_x_outer = p_mic_x[:, np.newaxis]
+    p_mic_y_outer = p_mic_y[:, np.newaxis]
+    p_mic_x_inner = p_mic_x[np.newaxis, :]
+    p_mic_y_inner = p_mic_y[np.newaxis, :]
+    extract_cond = np.reshape((1 - np.eye(num_mic)).astype(bool), (-1, 1), order='C')
+    baseline_x = np.extract(extract_cond, p_mic_x_outer - p_mic_x_inner)[:, np.newaxis]
+    baseline_y = np.extract(extract_cond, p_mic_y_outer - p_mic_y_inner)[:, np.newaxis]
+    return np.exp(-1j * (xk * baseline_x + yk * baseline_y))
 
 
 def build_mtx_amp_ri(p_mic_x, p_mic_y, phi_k):
@@ -421,13 +456,22 @@ def mtx_updated_G_multiband_new(phi_opt, M, p_x, p_y,
 
         high_freq_mapping = np.dot(amp_mtx_ri_loop, mtx_fri2amp_ri)
 
+        # G_updated.append(
+        #     G0_loop +
+        #     high_freq_mapping -
+        #     np.dot(
+        #         G0_loop,
+        #         linalg.solve(np.dot(G0_loop.T, G0_loop),
+        #                      np.dot(G0_loop.T, high_freq_mapping))
+        #     )
+        # )
         G_updated.append(
-            G0_loop +
-            np.dot(
-                G0_loop,
-                linalg.solve(np.dot(G0_loop.T, G0_loop),
-                             np.dot(G0_loop.T, high_freq_mapping))
-            )
+            high_freq_mapping +
+            G0_loop -
+            np.dot(np.dot(G0_loop, mtx_fri2amp_ri.T),
+                   linalg.solve(np.dot(mtx_fri2amp_ri, mtx_fri2amp_ri.T),
+                                mtx_fri2amp_ri)
+                   )
         )
 
     return G_updated
@@ -787,8 +831,7 @@ def dirac_recon_ri_half(G, a_ri, K, M, noise_level, max_ini=100, stop_cri='mse')
 #             c_opt = c_ri[:K + 1] + 1j * c_ri[K + 1:]  # real and imaginary parts
 #     return c_opt, min_error, b_opt
 
-
-def dirac_recon_ri_half_multiband_lu(G_lst, a_ri, K, M, max_ini=100):
+def dirac_recon_ri_half_multiband_lu(G_lst, GtG_lst, GtG_inv_lst, a_ri, K, M, max_ini=100, max_iter=50):
     """
     Here we use LU decomposition to precompute a few entries.
         Reconstruct point sources' locations (azimuth) from the visibility measurements.
@@ -809,9 +852,6 @@ def dirac_recon_ri_half_multiband_lu(G_lst, a_ri, K, M, max_ini=100):
     assert not np.iscomplexobj(np.concatenate(G_lst))  # G should be real-valued
     assert not np.iscomplexobj(np.concatenate(a_ri))  # a_ri should be real-valued
 
-    # maximum number of iterations with each initialisation
-    max_iter = 50
-
     D1, D2 = hermitian_expan(M + 1)
     D = linalg.block_diag(D1, D2)
     D_coef1, D_coef2 = coef_expan_mtx(K)
@@ -823,22 +863,21 @@ def dirac_recon_ri_half_multiband_lu(G_lst, a_ri, K, M, max_ini=100):
 
     # compute Tbeta and GtG for each subband
     Gt_a_lst = []
-    lu_GtG_lst = []
     beta_ri_lst = []
     Tbeta_ri_lst = []
     for loop in range(num_bands):
-        G_loop = G_lst[loop]
-        a_loop = a_ri[:, loop]
+        #G_loop = G_lst[loop]
+        #a_loop = a_ri[:, loop]
 
-        lu_GtG_loop = linalg.lu_factor(np.dot(G_loop.T, G_loop), check_finite=False)
+        #lu_GtG_loop = linalg.lu_factor(np.dot(G_loop.T, G_loop), check_finite=False)
 
-        Gt_a_loop = np.dot(G_loop.T, a_loop)
+        Gt_a_loop = np.dot(G_lst[loop].T, a_ri[:, loop])
 
-        beta_ri_loop = linalg.lu_solve(lu_GtG_loop, Gt_a_loop, check_finite=False)
+        #beta_ri_loop = linalg.lu_solve(lu_GtG_loop, Gt_a_loop, check_finite=False)
+        beta_ri_loop = np.dot(GtG_inv_lst[loop], Gt_a_loop)
 
         beta_ri_lst.append(beta_ri_loop)
         Gt_a_lst.append(Gt_a_loop)
-        lu_GtG_lst.append(lu_GtG_loop)
 
         Tbeta_ri_lst.append(Tmtx_ri_half_out_half(
             beta_ri_loop, K, D, L, D_coef, mtx_shrink))
@@ -855,7 +894,7 @@ def dirac_recon_ri_half_multiband_lu(G_lst, a_ri, K, M, max_ini=100):
         mtx_loop = \
             np.vstack((
                 np.hstack((
-                    lu_compute_mtx_obj_initial(lu_GtG_lst, Tbeta_ri_lst,
+                    lu_compute_mtx_obj_initial(GtG_inv_lst, Tbeta_ri_lst,
                                                Rmtx_band, num_bands, K),
                     c0_ri_half)),
                 np.append(c0_ri_half, 0).T
@@ -863,9 +902,9 @@ def dirac_recon_ri_half_multiband_lu(G_lst, a_ri, K, M, max_ini=100):
         for inner in range(max_iter):
             # update mtx_loop
             if inner != 0:
-                mtx_loop[:sz_coef, :sz_coef] = \
-                    lu_compute_mtx_obj(Tbeta_ri_lst, num_bands, K, lu_R_GtGinv_Rt_loop)
-
+                # mtx_loop[:sz_coef, :sz_coef] = \
+                #     lu_compute_mtx_obj(Tbeta_ri_lst, num_bands, K, lu_R_GtGinv_Rt_loop)
+                mtx_loop[:sz_coef, :sz_coef] = mtx_loop_upper_left
             try:
                 c_ri_half = linalg.solve(mtx_loop, rhs, check_finite=False)[:sz_coef]
             except linalg.LinAlgError:
@@ -875,16 +914,20 @@ def dirac_recon_ri_half_multiband_lu(G_lst, a_ri, K, M, max_ini=100):
             Rmtx_band = Rmtx_ri_half_out_half(c_ri_half, K, D, L, D_coef, mtx_shrink)
 
             # update b_recon
-            b_recon_ri, error_loop, lu_R_GtGinv_Rt_loop = \
-                compute_b(G_lst, lu_GtG_lst, beta_ri_lst, Rmtx_band,
-                          num_bands, a_ri, use_lu=True)
+            error_loop, mtx_loop_upper_left = \
+                compute_obj_val(GtG_inv_lst, Tbeta_ri_lst, Rmtx_band, c_ri_half, num_bands, K)
 
             if error_loop < min_error:
                 min_error = error_loop
-                b_opt = np.dot(D1, b_recon_ri[:M + 1, :]) + \
-                        1j * np.dot(D2, b_recon_ri[M + 1:, :])
+                # b_opt = np.dot(D1, b_recon_ri[:M + 1, :]) + \
+                #         1j * np.dot(D2, b_recon_ri[M + 1:, :])
+                Rmtx_opt = Rmtx_band
                 c_ri = np.dot(D_coef, c_ri_half)
                 c_opt = c_ri[:K + 1] + 1j * c_ri[K + 1:]  # real and imaginary parts
+
+    b_opt_ri = compute_b(G_lst, GtG_lst, beta_ri_lst, Rmtx_opt, num_bands, a_ri, use_lu=True, GtG_inv_lst=GtG_inv_lst)[0]
+    b_opt = np.dot(D1, b_opt_ri[:M + 1, :]) + 1j * np.dot(D2, b_opt_ri[M + 1:, :])
+
     return c_opt, min_error, b_opt
 
 
@@ -994,13 +1037,13 @@ def lu_compute_mtx_obj(Tbeta_lst, num_bands, K, lu_R_GtGinv_Rt_lst):
         Tbeta_loop = Tbeta_lst[loop]
         mtx += np.dot(Tbeta_loop.T,
                       linalg.lu_solve(lu_R_GtGinv_Rt_lst[loop],
-                                   Tbeta_loop, check_finite=False)
+                                      Tbeta_loop, check_finite=False)
                       )
 
     return mtx
 
 
-def lu_compute_mtx_obj_initial(lu_GtG_lst, Tbeta_lst, Rc0, num_bands, K):
+def lu_compute_mtx_obj_initial(GtG_inv_lst, Tbeta_lst, Rc0, num_bands, K):
     """
     compute the matrix (M) in the objective function:
         min   c^H M c
@@ -1016,8 +1059,7 @@ def lu_compute_mtx_obj_initial(lu_GtG_lst, Tbeta_lst, Rc0, num_bands, K):
         Tbeta_loop = Tbeta_lst[loop]
         mtx += np.dot(Tbeta_loop.T,
                       linalg.solve(np.dot(Rc0,
-                                          linalg.lu_solve(lu_GtG_lst[loop],
-                                                          Rc0.T)),
+                                          np.dot(GtG_inv_lst[loop], Rc0.T)),
                                    Tbeta_loop)
                       )
     return mtx
@@ -1044,8 +1086,34 @@ def compute_mtx_obj(GtG_lst, Tbeta_lst, Rc0, num_bands, K):
                       )
     return mtx
 
+def compute_obj_val(GtG_inv_lst, Tbeta_lst, Rc0, c_ri_half, num_bands, K):
+    """
+    compute the fitting error.
+    CAUTION: Here we assume use_lu = True
+    :return:
+    """
+    mtx = np.zeros((K + 1, K + 1), dtype=float)  # <= assume G, Tbeta and Rc0 are real-valued
+    fitting_error = 0
+    for band_count in range(num_bands):
+        #GtG_loop = GtG_lst[band_count]
+        Tbeta_loop = Tbeta_lst[band_count]
 
-def compute_b(G_lst, GtG_lst, beta_lst, Rc0, num_bands, a_ri, use_lu=False):
+        mtx += np.dot(Tbeta_loop.T,
+                      linalg.solve(
+                          np.dot(Rc0, 
+                              #linalg.lu_solve(GtG_loop, Rc0.T, check_finite=False)
+                              np.dot(GtG_inv_lst[band_count], Rc0.T)
+                              ),
+                          Tbeta_loop, check_finite=False
+                      )
+                      )
+
+    fitting_error += np.sqrt(np.dot(c_ri_half.T, np.dot(mtx, c_ri_half)).real)
+
+    return fitting_error, mtx
+
+
+def compute_b(G_lst, GtG_lst, beta_lst, Rc0, num_bands, a_ri, use_lu=False, GtG_inv_lst=None):
     """
     compute the uniform sinusoidal samples b from the updated annihilating
     filter coeffiients.
@@ -1059,20 +1127,21 @@ def compute_b(G_lst, GtG_lst, beta_lst, Rc0, num_bands, a_ri, use_lu=False):
     b_lst = []
     a_Gb_lst = []
     if use_lu:
+        assert GtG_inv_lst is not None
         lu_lst = []
         for loop in range(num_bands):
             GtG_loop = GtG_lst[loop]
             beta_loop = beta_lst[loop]
             lu_loop = linalg.lu_factor(
-                np.dot(Rc0, linalg.lu_solve(GtG_loop, Rc0.T, check_finite=False)),
+                np.dot(Rc0, np.dot(GtG_inv_lst[loop], Rc0.T)),
                 check_finite=False
             )
             b_loop = beta_loop - \
-                     linalg.lu_solve(GtG_loop,
+                     np.dot(GtG_inv_lst[loop],
                                      np.dot(Rc0.T,
                                             linalg.lu_solve(lu_loop, np.dot(Rc0, beta_loop),
                                                             check_finite=False)),
-                                     check_finite=False)
+                                     )
 
             b_lst.append(b_loop)
             a_Gb_lst.append(a_ri[:, loop] - np.dot(G_lst[loop], b_loop))
@@ -1424,10 +1493,58 @@ def dirac_recon_ri_inner(c_ri_half, a_ri, rhs, rhs_bl, K, M,
             c_opt = c_ri[:K + 1] + 1j * c_ri[K + 1:]  # real and imaginary parts
     return c_opt, min_error, b_opt
 
+def make_G(p_mic_x, p_mic_y, omega_bands, sound_speed, M, signal_type='visibility'):
+    """
+    reconstruct point sources on the circle from the visibility measurements
+    from multi-bands.
+    :param p_mic_x: a vector that contains microphones' x-coordinates
+    :param p_mic_y: a vector that contains microphones' y-coordinates
+    :param omega_bands: mid-band (ANGULAR) frequencies [radian/sec]
+    :param sound_speed: speed of sound
+    :param signal_type: The type of the signal a, possible values are 'visibility' 
+                        for covariance matrix and 'raw' for microphone inputs
+    :return:
+    The list of mapping matrices from measurements to sinusoids
+    """
+    
+    # expansion matrices to take Hermitian symmetry into account
+    norm_factor = np.reshape(sound_speed / omega_bands, (1, -1), order='F')
+    # normalised antenna coordinates in a matrix form
+    # each column corresponds to the location in one subband,
+    # i.e., the second dimension corresponds to different subbands
+    p_mic_x_normalised = np.reshape(p_mic_x, (-1, 1), order='F') / norm_factor
+    p_mic_y_normalised = np.reshape(p_mic_y, (-1, 1), order='F') / norm_factor
+
+    D1, D2 = hermitian_expan(M + 1)
+    # G = mtx_fri2visi_ri_multiband(M, p_mic_x_normalised, p_mic_y_normalised, D1, D2)
+    G_lst = mtx_fri2signal_ri_multiband(M, p_mic_x_normalised, p_mic_y_normalised,
+                                        D1, D2, aslist=True, signal=signal_type)
+
+    return np.array(G_lst)
+
+
+def make_GtG_and_inv(G_lst):
+
+    GtG_lst = []
+    GtG_inv_lst = []
+    for loop in range(len(G_lst)):
+        G_loop = G_lst[loop]
+
+        GtG = np.dot(G_loop.T, G_loop)
+
+
+        GtG_lst.append(GtG)
+        GtG_inv_lst.append(linalg.inv(GtG))
+
+    return np.array(GtG_lst), np.array(GtG_inv_lst)
+
 
 def pt_src_recon_multiband(a, p_mic_x, p_mic_y, omega_bands, sound_speed,
                            K, M, noise_level, max_ini=50,
-                           update_G=False, verbose=False, signal_type='visibility', **kwargs):
+                           update_G=False, verbose=False, signal_type='visibility', 
+                           max_iter=50, 
+                           G_lst=None, GtG_lst=None, GtG_inv_lst=None, 
+                           **kwargs):
     """
     reconstruct point sources on the circle from the visibility measurements
     from multi-bands.
@@ -1485,10 +1602,14 @@ def pt_src_recon_multiband(a, p_mic_x, p_mic_y, omega_bands, sound_speed,
     p_mic_y_normalised = np.reshape(p_mic_y, (-1, 1), order='F') / norm_factor
 
     D1, D2 = hermitian_expan(M + 1)
-    # G = mtx_fri2visi_ri_multiband(M, p_mic_x_normalised, p_mic_y_normalised, D1, D2)
-    G_lst = mtx_fri2signal_ri_multiband(M, p_mic_x_normalised, p_mic_y_normalised,
-                                        D1, D2, aslist=True, signal=signal_type)
-    # sz_G_blk_0, sz_G_blk_1 = G_lst[0].shape
+
+    # Create G if necessary
+    if G_lst is None:
+        G_lst = make_G(p_mic_x, p_mic_y, omega_bands, sound_speed, M, signal_type=signal_type)
+        GtG_lst, GtG_inv_lst = make_GtG_and_inv(G_lst)
+
+    if GtG_lst is None or GtG_inv_lst is None:
+        GtG_lst, GtG_inv_lst = make_GtG_and_inv(G_lst)
 
     for loop_G in range(max_loop_G):
         # c_recon, error_recon = \
@@ -1501,7 +1622,8 @@ def pt_src_recon_multiband(a, p_mic_x, p_mic_y, omega_bands, sound_speed,
 
         '''faster version with lu decomposition'''
         c_recon, error_recon = \
-            dirac_recon_ri_half_multiband_lu(G_lst, a_ri, K, M, max_ini)[:2]
+            dirac_recon_ri_half_multiband_lu(G_lst, GtG_lst, GtG_inv_lst,
+                    a_ri, K, M, max_ini, max_iter=max_iter)[:2]
         # toc = time.time()
         # print(toc - tic)
 
@@ -1579,22 +1701,9 @@ def pt_src_recon_multiband(a, p_mic_x, p_mic_y, omega_bands, sound_speed,
 
         # update the linear transformation matrix
         if update_G:
-            # G = mtx_updated_G_multiband(phik_recon, M, amp_mtx_ri, G, num_bands)
-            '''the original implementation
-            # this works but probably can be implemented more efficiently
-            G = mtx_updated_G_multiband(phik_recon, M, amp_mtx_ri,
-                                        linalg.block_diag(*G_lst), num_bands)
-            # extract diagonal blocks convert to list
-            G_lst = []
-            for loop in range(num_bands):
-                idx_s0 = loop * sz_G_blk_0
-                idx_s1 = loop * sz_G_blk_1
-                G_lst.append(G[idx_s0:idx_s0 + sz_G_blk_0, idx_s1:idx_s1 + sz_G_blk_1])
-            '''
-            '''new implementation'''
             G_lst = mtx_updated_G_multiband_new(phik_opt, M, p_mic_x_normalised,
                                                 p_mic_y_normalised, G_lst, num_bands)
-
+            GtG_lst, GtG_inv_lst = make_GtG_and_inv(G_lst)
 
     # convert propagation vector to DOA
     phik_doa = np.mod(phik_opt - np.pi, 2. * np.pi)

@@ -5,24 +5,9 @@ import browserinterface
 import algorithms as rt
 
 """
-This script runs real-time direction of arrival
-finding algorithms. Possible algorithms can be selected here:
-"""
-
-""" Select algorithm """
-doa_algo = 'SRPPHAT'
-doa_algo = 'FRI'
-doa_algo = 'MUSIC'
-doa_algo_config = dict(
-        MUSIC=dict(vrange=[0.2, 0.6]),
-        SRPPHAT=dict(vrange=[0.1, 0.4]),
-        FRI=dict(vrange=[0., 1.]),
-        )
-
-"""
 Number of snapshots for DOA will be: ~2*buffer_size/nfft
 """
-buffer_size = 1024
+buffer_size = 8192
 nfft = 512
 num_angles = 60
 
@@ -57,20 +42,26 @@ freq_range = [1000., 3500.]
 f_min = int(np.round(freq_range[0]/sampling_freq*nfft))
 f_max = int(np.round(freq_range[1]/sampling_freq*nfft))
 range_bins = np.arange(f_min, f_max+1)
-use_bin = False
+use_bin = True
+
+vrange = [1., 200.]
 
 """Check for LED Ring"""
 try:
     import matplotlib.cm as cm
-    led_ring = rt.neopixels.NeoPixels(
-            usb_port=led_ring_address,
-            colormap=cm.afmhot, 
-            vrange=doa_algo_config[doa_algo]['vrange']
-            )
+    led_ring = rt.neopixels.NeoPixels(usb_port=led_ring_address,
+        colormap=cm.afmhot, vrange=vrange)
     print("LED ring ready to use!")
+    num_pixels = led_ring.num_pixels
 except:
     print("No LED ring available...")
     led_ring = False
+    num_pixels = 60
+
+# a Bell curve for visualization
+sym_ind = np.concatenate((np.arange(0, 30), -np.arange(1,31)[::-1]))
+bell = np.exp(-sym_ind**2. / 4.)
+P = np.zeros(num_pixels, dtype=np.float)
 
 """Initialization block"""
 def init(buffer_frames, rate, channels, volume):
@@ -80,18 +71,17 @@ def init(buffer_frames, rate, channels, volume):
             'L': mic_array,
             'fs': rate,
             'nfft': nfft,
-            'num_src': 1,
-            'n_grid': num_angles
+            'num_src': 2,
+            'n_grid': num_angles,
+            'max_four': 4,
+            'max_ini': 10,
+            'max_iter': 3,
+            'G_iter': 1,
+            'low_rank_cleaning': True,
+            'signal_type': 'visibility',
             }
 
-    # doa = rt.doa.FRIDA(max_four=2, signal_type='visibility', G_iter=1, **doa_args)
-    if doa_algo == 'SRPPHAT':
-        doa = rt.doa.SRP(**doa_args)
-    elif doa_algo == 'MUSIC':
-        doa = rt.doa.MUSIC(**doa_args)
-    elif doa_algo == 'FRI':
-        doa = rt.doa.FRIDA(max_four=2, signal_type='visibility', G_iter=1, **doa_args)
-
+    doa = rt.doa.FRIDA(**doa_args)
 
 """Callback"""
 def apply_doa(audio):
@@ -117,15 +107,21 @@ def apply_doa(audio):
         doa.locate_sources(X_stft, freq_range=freq_range)
 
     # send to browser for visualization
-    if doa.grid.values.max() > 1:
-        doa.grid.values /= doa.grid.values.max()
-    to_send = doa.grid.values.tolist()
+    # Now map the angles to some function
+    P[:] = 0
+    for azimuth, power in zip(doa.azimuth_recon, doa.alpha_recon):
+        i = int(round(num_pixels * azimuth / (2 * np.pi)))
+        sigma = np.mean(power)
+        P[i:] += bell[:num_pixels-i] * sigma
+        P[:i] += bell[num_pixels-i:] * sigma
+
+    to_send = ((P - vrange[0]) / (vrange[1] - vrange[0]) + 0.05).tolist()
     to_send.append(to_send[0])
     polar_chart.send_data([{ 'replace': to_send }])
 
     # send to lights if available
     if led_ring:
-        led_ring.lightify(vals=doa.grid.values, realtime=True)
+        led_ring.lightify(vals=P, realtime=True)
 
 """Interface features"""
 browserinterface.register_when_new_config(init)

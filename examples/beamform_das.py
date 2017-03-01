@@ -70,6 +70,11 @@ def init(buffer_frames, rate, channels, volume):
 def beamform_audio(audio):
     global stft, bf
 
+    if (audio.shape[0] != browserinterface.buffer_frames 
+        or audio.shape[1] != browserinterface.channels):
+        print("Did not receive expected audio!")
+        return
+
     stft.analysis(audio)
     stft.process()
     y = np.sum(stft.synthesis(), axis=1)

@@ -1,13 +1,17 @@
 from __future__ import division, print_function
 
+from scipy import linalg as la
+
+# import numpy as np
 
 from doa import *
-from .tools_fri_doa_plane import pt_src_recon_multiband, extract_off_diag, cov_mtx_est, polar2cart
+from .tools_fri_doa_plane import pt_src_recon_multiband, extract_off_diag, cov_mtx_est, polar2cart, make_G, make_GtG_and_inv
 
 
 class FRIDA(DOA):
     def __init__(self, L, fs, nfft, max_four=None, c=343.0, num_src=1,
-                 G_iter=None, max_ini=5, n_rot=10, noise_level=1e-10, stopping='max_iter',
+                 G_iter=None, max_ini=5, n_rot=10, max_iter=50, noise_level=1e-10, 
+                 low_rank_cleaning=False, stopping='max_iter',
                  stft_noise_floor=0., stft_noise_margin=1.5, signal_type='visibility',
                  use_lu=True, verbose=False, symb=True, **kwargs):
         '''
@@ -65,15 +69,19 @@ class FRIDA(DOA):
 
         # Set the number of updates of the mapping matrix
         self.max_four = max_four if max_four is not None else num_src + 1
-        self.update_G = True if G_iter is not None and G_iter > 0 else False
+        self.update_G = True if G_iter is not None and G_iter > 1 else False
         self.G_iter = G_iter if self.update_G else 1
         self.noise_level = noise_level
         self.max_ini = max_ini
+        self.max_iter = max_iter
+        self.low_rank_cleaning = low_rank_cleaning  # This will impose low rank on corr matrix
         self.stop_cri = stopping
         self.n_rot = n_rot
         self.use_lu = use_lu
         self.verbose = verbose
         self.symb = symb
+
+        self.G = None
 
         # The type of measurement to use, can be 'visibility' (default) for the covariance
         # matrix, or 'raw' to use microphone signals directly
@@ -104,19 +112,40 @@ class FRIDA(DOA):
         # loop over all subbands
         self.num_freq = self.freq_bins.shape[0]
 
-        # reconstruct point sources with FRI
-        self.azimuth_recon, self.alpha_recon = \
-            pt_src_recon_multiband(signal,
-                                   self.L[0, :], self.L[1, :],
-                                   2 * np.pi * self.freq_hz, self.c,
-                                   self.num_src, self.max_four,
-                                   self.noise_level, self.max_ini,
-                                   update_G=self.update_G,
-                                   G_iter=self.G_iter,
-                                   verbose=False,
-                                   signal_type=self.signal_type)
+        assert(self.dim == 2)
 
-        self.grid.set_values(self._gen_dirty_img().real)
+        if self.dim == 2:
+
+            # build the G matrix if necessary
+            if self.G is None:
+                self.G = make_G(
+                        self.L[0,:], self.L[1,:],
+                        2 * np.pi * self.freq_hz, self.c,
+                        self.max_four,
+                        signal_type=self.signal_type
+                        )
+                self.GtG, self.GtG_inv = make_GtG_and_inv(self.G)
+
+            # reconstruct point sources with FRI
+            import time
+            then = time.time()
+            self.azimuth_recon, self.alpha_recon = \
+                    pt_src_recon_multiband(
+                            signal,
+                            self.L[0, :], self.L[1, :],
+                            2 * np.pi * self.freq_hz, self.c,
+                            self.num_src, self.max_four,
+                            self.noise_level, self.max_ini,
+                            max_iter=self.max_iter,
+                            update_G=self.update_G,
+                            G_iter=self.G_iter,
+                            verbose=False,
+                            signal_type=self.signal_type,
+                            G_lst=self.G,
+                            GtG_lst=self.GtG,
+                            GtG_inv_lst=self.GtG_inv
+                            )
+            compute_time = time.time() - then
 
     def _raw_average(self, X):
         ''' Correct the time rotation and average the raw microphone signal '''
@@ -132,7 +161,19 @@ class FRIDA(DOA):
             fn = self.freq_bins[band_count]
             energy = np.var(X[:, fn, :], axis=0)
             I = np.where(energy > self.stft_noise_margin * self.stft_noise_floor)
-            visi_noisy = extract_off_diag(cov_mtx_est(X[:, fn, I[0]]))
+            R = cov_mtx_est(X[:, fn, I[0]])
+
+            # impose low rank constraint
+            if self.low_rank_cleaning:
+                w, vl = la.eig(R)
+                order = np.argsort(w)
+                sig = order[-self.num_src:]
+                sigma = (np.trace(R) - np.sum(w[sig])) / (R.shape[0] - self.num_src)
+                Rhat = np.dot(vl[:,sig], np.dot(np.diag(w[sig] - sigma), np.conj(vl[:,sig].T)))
+            else:
+                Rhat = R
+
+            visi_noisy = extract_off_diag(Rhat)
             visi_noisy_all.append(visi_noisy)
 
         return visi_noisy_all
@@ -147,32 +188,35 @@ class FRIDA(DOA):
         sound_speed = self.c
         num_mic = self.M
 
-        x_plt, y_plt = polar2cart(1, self.grid.azimuth)
-        img = np.zeros(self.grid.n_points, dtype=complex)
+        assert(self.dim == 2)
 
-        pos_mic_x = self.L[0, :]
-        pos_mic_y = self.L[1, :]
-        for i in range(self.num_freq):
+        if self.dim == 2:
 
-            visi = self.visi_noisy_all[:, i]
-            omega_band = 2 * np.pi * self.freq_hz[i]
+            x_plt, y_plt = polar2cart(1, self.grid.azimuth)
+            img = np.zeros(self.grid.n_points, dtype=complex)
 
-            pos_mic_x_normalised = pos_mic_x / (sound_speed / omega_band)
-            pos_mic_y_normalised = pos_mic_y / (sound_speed / omega_band)
+            pos_mic_x = self.L[0, :]
+            pos_mic_y = self.L[1, :]
+            for i in range(self.num_freq):
 
-            count_visi = 0
-            for q in range(num_mic):
-                p_x_outer = pos_mic_x_normalised[q]
-                p_y_outer = pos_mic_y_normalised[q]
-                for qp in range(num_mic):
-                    if not q == qp:
-                        p_x_qqp = p_x_outer - pos_mic_x_normalised[qp]  # a scalar
-                        p_y_qqp = p_y_outer - pos_mic_y_normalised[qp]  # a scalar
-                        # <= the negative sign converts DOA to propagation vector
-                        img += visi[count_visi] * \
-                               np.exp(-1j * (p_x_qqp * x_plt + p_y_qqp * y_plt))
-                        count_visi += 1
+                visi = self.visi_noisy_all[:, i]
+                omega_band = 2 * np.pi * self.freq_hz[i]
 
-        return img / (num_mic * (num_mic - 1))
+                pos_mic_x_normalised = pos_mic_x / (sound_speed / omega_band)
+                pos_mic_y_normalised = pos_mic_y / (sound_speed / omega_band)
 
+                count_visi = 0
+                for q in range(num_mic):
+                    p_x_outer = pos_mic_x_normalised[q]
+                    p_y_outer = pos_mic_y_normalised[q]
+                    for qp in range(num_mic):
+                        if not q == qp:
+                            p_x_qqp = p_x_outer - pos_mic_x_normalised[qp]  # a scalar
+                            p_y_qqp = p_y_outer - pos_mic_y_normalised[qp]  # a scalar
+                            # <= the negative sign converts DOA to propagation vector
+                            img += visi[count_visi] * \
+                                   np.exp(-1j * (p_x_qqp * x_plt + p_y_qqp * y_plt))
+                            count_visi += 1
+
+            return img / (num_mic * (num_mic - 1))
 

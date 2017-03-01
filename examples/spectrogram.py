@@ -32,16 +32,16 @@ def init(buffer_frames, rate, channels, volume):
     stft = rt.transforms.STFT(fft_size, rate, hop)
 
 
-def handle_data(buffer):
+def handle_data(audio):
     global stft
 
-    if (browserinterface.buffer_frames != buffer_size 
-        or browserinterface.channels != 2):
+    if (audio.shape[0] != browserinterface.buffer_frames 
+        or audio.shape[1] != browserinterface.channels):
         print("Did not receive expected audio!")
         return
 
     # apply stft and istft for a few windows
-    stft.analysis(buffer[:,0])
+    stft.analysis(audio[:,0])
     spectrum = (20 * np.log10(np.abs(stft.X[:height]))).tolist()
     spectrogram.send_data(spectrum)
 

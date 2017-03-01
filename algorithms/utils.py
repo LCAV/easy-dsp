@@ -111,7 +111,7 @@ def compute_snapshot_spec(signals, N, J, hop):
     d = dft.DFT(N,M)
     for j in range(J):
         x, _ = select_slice(signals, j*hop, N)
-        X[:,:,j] = d.analysis(x).T
+        X[:,:,j] = d.analysis(x).T / float(N)
     return X
 
 def select_slice(x, start_sample, num_samples, fs=1.0):
