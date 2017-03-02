@@ -372,7 +372,7 @@ function onWSAudioMessage(e) {
 
     // If the audio was playing, we need to recreate
     // the stream using the new configuration
-    if (inputStream) {
+    if (inputStream && inputStream.playing) {
       inputStream.destroyAudio();
       inputStream = new sourceAudio(audioCt, conf);
     }
@@ -508,13 +508,18 @@ function handleOutput(port) {
   };
 }
 
+// This function receives audio from the network convert the samplerate to the
+// local one and sends it to play. Note that the simple linear interpolation
+// used here will not work well if the two sampling rates are wildly different
+// 
 // This function should also manage the play/stop buttons
+//
 function sourceAudio(audioCtx, config) {
+
   var audioData, channelData, source, buffer_size;
 
   // Create the buffer source and connect the buffer
   source = audioCtx.createBufferSource();
-  source.playBackRate = config.rate;
 
   console.log(audioCtx.sampleRate);
   audioCtx.sampleRate = config.rate;
@@ -529,7 +534,7 @@ function sourceAudio(audioCtx, config) {
   var zero_buffer = audioCtx.createBuffer(config.channels, buffer_size, config.rate);
   zero_buffer.loop = true;
 
-  var cache_min_duration = 0.25;  // minimum buffering time
+  var cache_min_length = 5;  // minimum buffering time
   var playing = false;
 
   var next_time = 0.;
@@ -538,6 +543,11 @@ function sourceAudio(audioCtx, config) {
   for (var i = 0; i < config.channels; i++) {
     channelData[i] = current_buffer.getChannelData(i);
   }
+
+  // we need to implement resampling from source rate to audio context rate
+  var time_step = config.rate / audioCtx.sampleRate;
+  var frac_time = 0.;
+  var state = new Array(config.channels).fill(0.);
   
   // This is a node responsible for audio processing
   var scriptNode = audioCtx.createScriptProcessor(buffer_size, config.channels, config.channels);
@@ -548,20 +558,22 @@ function sourceAudio(audioCtx, config) {
     // The output buffer contains the samples that will be modified and played
     var outputBuffer = audioProcessingEvent.outputBuffer;
 
-    if (playing == true || (playing == false && cache_duration > cache_min_duration))
+    if (playing == true || (playing == false && cache.length > cache_min_length))
     {
       playing = true;
       var inputBuffer = cache.shift();
 
       // Loop through the output channels (in this case there is only one)
       for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
-        var inputData = inputBuffer.getChannelData(channel);
-        var outputData = outputBuffer.getChannelData(channel);
+        if (inputBuffer) {
+          var inputData = inputBuffer.getChannelData(channel);
+          var outputData = outputBuffer.getChannelData(channel);
 
-        // Loop through the 4096 samples
-        for (var sample = 0; sample < inputBuffer.length; sample++) {
-          // make output equal to the same as the input
-          outputData[sample] = inputData[sample];
+          // Loop through all samples in the buffer
+          for (var sample = 0; sample < inputBuffer.length; sample++) {
+            // make output equal to the same as the input
+            outputData[sample] = inputData[sample];
+          }
         }
       }
     } else {
@@ -579,9 +591,8 @@ function sourceAudio(audioCtx, config) {
 
   }
 
-  source.connect(scriptNode);
+  // Connect the script node to outside world
   scriptNode.connect(audioCtx.destination);
-  source.start();
 
   // This function is responsible for filling the buffer cache with
   // data from the stream
@@ -591,40 +602,68 @@ function sourceAudio(audioCtx, config) {
     fileReader.onload = function() {
       var data = new Int16Array(this.result);
 
-      // copy data in buffer
-      for (var i = 0; i < data.length; i++) {
+      var n_samples = data.length / config.channels;
 
-        var channel = i % config.channels;
+      while (frac_time <= n_samples - 1)
+      {
+        var n1 = Math.floor(frac_time);
+        var n2 = Math.ceil(frac_time);
 
-        channelData[channel][current_buffer_filling] = data[i]/256/128; // 16 bits audio => we must move it between -1 and 1
-
-        if (channel == (config.channels - 1)) {
-          current_buffer_filling += 1;
-          
-          // Current buffer is full. We need a new buffer
-          if (current_buffer_filling == buffer_size) {
-            // add current buffer to the cache
-            cache.push(current_buffer);
-            cache_duration += current_buffer.duration;
-
-            // create a new buffer
-            current_buffer = audioCtx.createBuffer(config.channels, buffer_size, config.rate);
-            current_buffer_filling = 0;
-            for (var ch = 0; ch < config.channels; ch++) {
-              channelData[ch] = current_buffer.getChannelData(ch);
-            }
+        for (var ch = 0 ; ch < config.channels ; ch++) {
+          if (n1 < 0) {
+            p1 = state[ch] / 256 / 128;
+          } else {
+            p1 = data[n1 * config.channels + ch] / 256 / 128;
           }
+          p2 = data[n2 * config.channels + ch] / 256 / 128;
 
+          // Linear interpolation
+          channelData[ch][current_buffer_filling] = (p2 - p1) * (frac_time - n1) + p1;
         }
+
+        // increment current buffer counter
+        current_buffer_filling += 1;
+        
+        // Current buffer is full. We need a new buffer
+        if (current_buffer_filling == buffer_size) {
+          // add current buffer to the cache
+          cache.push(current_buffer);
+
+          // create a new buffer
+          current_buffer = audioCtx.createBuffer(config.channels, buffer_size, config.rate);
+          current_buffer_filling = 0;
+          for (var ch = 0; ch < config.channels; ch++) {
+            channelData[ch] = current_buffer.getChannelData(ch);
+          }
+        }
+
+        // move time
+        frac_time += time_step;
       }
+
+      // Save the last sample of each channel in the state
+      for (var ch = 0 ; ch < config.channels ; ch++) {
+        state[ch] = data[data.length - config.channels + ch];
+      }
+
+      // Remove the data size from the fractional time
+      frac_time -= n_samples;
+
     };
 
     fileReader.readAsArrayBuffer(data);
   }
 
   function destroyAudio() {
-    if (source !== undefined) {
-      source.stop();
+    if (playing === true) {
+      console.log("Stop audio source.");
+      if (scriptNode.numberOfOutputs > 0) {
+        scriptNode.disconnect(audioCtx.destination);
+      }
+
+      // empty cache and stop playing
+      cache = [];
+      playing = false;
     }
   }
 
