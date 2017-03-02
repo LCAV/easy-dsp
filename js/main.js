@@ -512,12 +512,24 @@ function handleOutput(port) {
 function sourceAudio(audioCtx, config) {
   var audioData, channelData, source, buffer_size;
 
+  // Create the buffer source and connect the buffer
+  source = audioCtx.createBufferSource();
+  source.playBackRate = config.rate;
+
+  console.log(audioCtx.sampleRate);
+  audioCtx.sampleRate = config.rate;
+  console.log(audioCtx.sampleRate);
+
   var cache = [];
   var cache_duration = 0.;
-  var buffer_size = 12000;
+  var buffer_size = 256;
   var current_buffer = audioCtx.createBuffer(config.channels, buffer_size, config.rate);
   var current_buffer_filling = 0;
-  var cache_min_duration = 0.5;  // minimum buffering time
+
+  var zero_buffer = audioCtx.createBuffer(config.channels, buffer_size, config.rate);
+  zero_buffer.loop = true;
+
+  var cache_min_duration = 0.25;  // minimum buffering time
   var playing = false;
 
   var next_time = 0.;
@@ -526,7 +538,53 @@ function sourceAudio(audioCtx, config) {
   for (var i = 0; i < config.channels; i++) {
     channelData[i] = current_buffer.getChannelData(i);
   }
+  
+  // This is a node responsible for audio processing
+  var scriptNode = audioCtx.createScriptProcessor(buffer_size, config.channels, config.channels);
+  
+  // Give the node a function to process audio events
+  scriptNode.onaudioprocess = function(audioProcessingEvent) {
 
+    // The output buffer contains the samples that will be modified and played
+    var outputBuffer = audioProcessingEvent.outputBuffer;
+
+    if (playing == true || (playing == false && cache_duration > cache_min_duration))
+    {
+      playing = true;
+      var inputBuffer = cache.shift();
+
+      // Loop through the output channels (in this case there is only one)
+      for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
+        var inputData = inputBuffer.getChannelData(channel);
+        var outputData = outputBuffer.getChannelData(channel);
+
+        // Loop through the 4096 samples
+        for (var sample = 0; sample < inputBuffer.length; sample++) {
+          // make output equal to the same as the input
+          outputData[sample] = inputData[sample];
+        }
+      }
+    } else {
+      // Just fill with zeros until we get some audio
+      for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
+        var outputData = outputBuffer.getChannelData(channel);
+
+        // Loop through all samples
+        for (var sample = 0; sample < outputBuffer.length; sample++) {
+          // make output equal to the same as the input
+          outputData[sample] = 0;
+        }
+      }
+    }
+
+  }
+
+  source.connect(scriptNode);
+  scriptNode.connect(audioCtx.destination);
+  source.start();
+
+  // This function is responsible for filling the buffer cache with
+  // data from the stream
   function loadData(data) {
     var fileReader = new FileReader();
 
@@ -562,35 +620,6 @@ function sourceAudio(audioCtx, config) {
     };
 
     fileReader.readAsArrayBuffer(data);
-
-    if ((playing === true) || ((playing === false) && (cache_duration > cache_min_duration))) { 
-      playing = true;
-      playCache(cache);
-    }
-
-  }
-
-  function playCache (cache) {
-
-    // Get the oldest buffer in the cache
-    buffer = cache.shift();
-    cache_duration -= buffer.duration;
-
-    // Create the buffer source and connect the buffer
-    source = audioCtx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(audioCtx.destination);
-
-    // Small delay the first time
-    if (next_time == 0) {
-      next_time += 0.05;
-    }
-
-    // start to play
-    source.start(next_time);
-
-    // time to play next bit.
-    next_time += buffer.duration;
   }
 
   function destroyAudio() {
