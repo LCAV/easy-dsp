@@ -516,29 +516,21 @@ function handleOutput(port) {
 //
 function sourceAudio(audioCtx, config) {
 
-  var audioData, channelData, source, buffer_size;
+  var channelData, buffer_size;
 
-  // Create the buffer source and connect the buffer
-  source = audioCtx.createBufferSource();
+  // state of the source
+  var playing = false;
 
-  console.log(audioCtx.sampleRate);
-  audioCtx.sampleRate = config.rate;
-  console.log(audioCtx.sampleRate);
-
+  // We'll cache a few buffer to avoid glitches
   var cache = [];
-  var cache_duration = 0.;
-  var buffer_size = 256;
+  var cache_min_length = 5;  // minimum buffering time
+
+  // This is the running buffer
+  buffer_size = 256;
   var current_buffer = audioCtx.createBuffer(config.channels, buffer_size, config.rate);
   var current_buffer_filling = 0;
 
-  var zero_buffer = audioCtx.createBuffer(config.channels, buffer_size, config.rate);
-  zero_buffer.loop = true;
-
-  var cache_min_length = 5;  // minimum buffering time
-  var playing = false;
-
-  var next_time = 0.;
-
+  // channels of the running buffer
   channelData = [];
   for (var i = 0; i < config.channels; i++) {
     channelData[i] = current_buffer.getChannelData(i);
@@ -670,7 +662,7 @@ function sourceAudio(audioCtx, config) {
   return {
     loadData: loadData,
     destroyAudio: destroyAudio,
-    source: source
+    source: scriptNode
   };
 }
 
