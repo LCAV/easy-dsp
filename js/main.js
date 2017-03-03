@@ -372,9 +372,18 @@ function onWSAudioMessage(e) {
 
     // If the audio was playing, we need to recreate
     // the stream using the new configuration
-    if (inputStream && inputStream.playing) {
+
+    if (inputStream) {
+      // check the current status of the source
+      var was_playing = !(inputStream.isStopped());
+
+      // destroy it
       inputStream.destroyAudio();
-      inputStream = new sourceAudio(audioCt, conf);
+
+      // if it was playing before, restart it
+      if (was_playing) {
+        inputStream = new sourceAudio(audioCt, conf);
+      }
     }
     return;
   }
@@ -443,7 +452,7 @@ function handleOutput(port) {
 
   ws.onmessage = function(e) {
     if (typeof e.data != "string") { // we have binary data: it's audio
-      if (!outputStream) {
+      if (!outputStream || outputStream.isStopped()) {
         outputStream = new sourceAudio(audioCt, config);
       }
       outputStream.loadData(e.data);
@@ -520,6 +529,7 @@ function sourceAudio(audioCtx, config) {
 
   // state of the source
   var playing = false;
+  var stopped = false;
 
   // We'll cache a few buffer to avoid glitches
   var cache = [];
@@ -589,6 +599,13 @@ function sourceAudio(audioCtx, config) {
   // This function is responsible for filling the buffer cache with
   // data from the stream
   function loadData(data) {
+
+    // if the source is stopped, do nothing
+    if (stopped) {
+      return;
+    }
+
+    // Otherwise, process incoming data
     var fileReader = new FileReader();
 
     fileReader.onload = function() {
@@ -647,7 +664,7 @@ function sourceAudio(audioCtx, config) {
   }
 
   function destroyAudio() {
-    if (playing === true) {
+    if (stopped === false) {
       console.log("Stop audio source.");
       if (scriptNode.numberOfOutputs > 0) {
         scriptNode.disconnect(audioCtx.destination);
@@ -656,13 +673,19 @@ function sourceAudio(audioCtx, config) {
       // empty cache and stop playing
       cache = [];
       playing = false;
+      stopped = true;
     }
+  }
+
+  function isStopped() {
+    return stopped;
   }
 
   return {
     loadData: loadData,
     destroyAudio: destroyAudio,
-    source: scriptNode
+    source: scriptNode,
+    isStopped: isStopped
   };
 }
 
