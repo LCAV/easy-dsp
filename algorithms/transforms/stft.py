@@ -226,6 +226,7 @@ class STFT:
         self.X : numpy array 
             Frequency spectrum of given frame.
         """
+
         if self.H is None:
             warnings.warn("No filter given to the STFT object.")
         else:
