@@ -149,18 +149,9 @@ class StreamClient(WebSocketClient):
             # We convert the binary stream into a 2D Numpy array of 16-bits integers
             data = bytearray()
             data.extend(m.data)
-            i = 0
-            i_frame = 0
-            i_channel = 0
-            for i in range(len(data) / 2): # we work with 16 bits = 2 bytes
-                if data[2*i+1] <= 127:
-                    bi_buffer[i_frame][i_channel] = data[2*i] + 256*data[2*i+1]
-                else:
-                    bi_buffer[i_frame][i_channel] = (data[2*i+1]-128)*256 + data[2*i] - 32768
-                i_channel += 1
-                if (i % channels) == (channels-1):
-                    i_channel = 0
-                    i_frame += 1
+
+            # replace data in the buffer
+            bi_buffer.data[:] = data[:]
 
             # We add the new data to the recordings
             for recording in bi_recordings:
