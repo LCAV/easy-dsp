@@ -63,7 +63,7 @@ class DAS(object):
 
         omega = 2 * np.pi * frequency
 
-        return np.exp(-1j * omega * D / self.c)
+        return np.exp(1j * omega * D / self.c)
 
 
     def compute_weights(self, direction=None):
@@ -77,15 +77,20 @@ class DAS(object):
         #     self.weights[:,i] = 1.0/self.M * self.compute_mode(f, phi)
 
         src = utils.polar2cart(np.array([1, phi]))
+        dist_m = -np.dot(self.L.T, src)
+
+        '''
         dist_m = np.linalg.norm(self.L - np.tile(src, (self.M,1)).T, 
             axis=0)
         dist_c = np.linalg.norm(self.center-src)
         dist_cent = dist_m-dist_c
+        '''
+
+        dist_cent = dist_m - dist_m.min()
 
         for i, f in enumerate(self.frequencies):
             wavenum = 2*np.pi*f/self.c
-            self.weights[i,:] = 1.0/self.M/dist_c*np.multiply(dist_m, 
-                np.exp(1j * wavenum * dist_cent))
+            self.weights[i,:] = np.exp(-1j * wavenum * dist_cent) / self.L.shape[1]
 
 
 
