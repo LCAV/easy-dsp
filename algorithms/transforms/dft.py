@@ -72,7 +72,7 @@ class DFT(object):
             if synthesis_window is not None:
                 self.synthesis_window = np.tile(synthesis_window, (self.D,1)).T
             else:
-                synthesis_window=None
+                self.synthesis_window=None
 
 
         if transform == 'fftw':
@@ -100,6 +100,7 @@ class DFT(object):
         elif transform == 'mkl':
             if mkl_available: 
                 import mkl_fft
+                self.transform = 'mkl'
             else:
                 warnings.warn("Could not import mkl wrapper. Using numpy's rfft instead.")
                 self.transform = 'numpy'
@@ -163,7 +164,7 @@ class DFT(object):
             self.b[:] = self.X
             x = self.backward()
         elif self.transform == 'mkl':
-            self.X = mkl_fft.irfft(x,axis=0)
+            x = mkl_fft.irfft(self.X,axis=0)
         else:
             x = irfft(self.X, axis=0)
         # apply window if needed

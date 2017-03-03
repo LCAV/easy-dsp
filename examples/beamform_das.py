@@ -1,9 +1,11 @@
+from __future__ import division, print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
 import browserinterface
 import algorithms as rt
+import time
 
 """
 Read hardware config from file
@@ -30,8 +32,8 @@ elif array_type == 'circular':
 
 """define capture parameters accordingly"""
 zero_padding = 100
-nfft = 16384
-buffer_size = nfft/2-zero_padding/2
+nfft = 2048  # seems that less than this is not reliable
+buffer_size = nfft - zero_padding
 num_channels = 6
 
 """Check for LED Ring"""
@@ -51,8 +53,9 @@ direction = 70 # degrees
 def init(buffer_frames, rate, channels, volume):
     global stft, bf
 
-    stft = rt.transforms.STFT(2*buffer_size, rate, num_sig=num_channels)
+    stft = rt.transforms.STFT(buffer_size, rate, hop=buffer_size, channels=channels, transform='mkl')
 
+    # 
     bf = rt.beamformers.DAS(mic_array, sampling_freq, direction=direction, nfft=nfft, num_angles=num_angles)
     stft.set_filter(coeff=bf.weights, freq=True, zb=zero_padding)
 
@@ -62,23 +65,43 @@ def init(buffer_frames, rate, channels, volume):
     beam = beam_shape.tolist()
     beam.append(beam[0]) # "close" beam shape
     polar_chart.send_data([{ 'replace': beam }])
+
     if led_ring:
         led_ring.lightify(vals=beam_shape)
+
+    # run once the processing on empty buffer to load all libraries
+    stft.analysis(np.zeros((buffer_size, num_channels)))
+    stft.process()
+    stft.synthesis()
+
 
 
 """Defining callback"""
 def beamform_audio(audio):
     global stft, bf
 
+    if audio.shape[0] != buffer_size:
+        return
+
+    # record start of processing time
+    start_proc = time.time()
+
+    # Do the filtering in frequency domain
     stft.analysis(audio)
     stft.process()
-    y = np.sum(stft.synthesis(), axis=1)
 
     # This should work to send back audio to browser
-    audio[:,0] = y.astype(audio.dtype)
-    audio[:,1] = y.astype(audio.dtype)
+    audio[:,0] = np.sum(stft.synthesis(), axis=1)
+    audio[:,1] = audio[:,0]
     audio[:,2:] = 0
 
+    # Check time spent on processing
+    proc_time = time.time() - start_proc
+    if proc_time > buffer_size / sampling_freq:
+        print("Processing is a little long:", proc_time, "sec vs", 
+                buffer_size / sampling_freq, " sec available")
+
+    # Send audio back to the browser
     browserinterface.send_audio(audio)
 
 
@@ -89,7 +112,6 @@ polar_chart = browserinterface.add_handler(name="Beam pattern",
     type='base:polar:line', 
     parameters={'title': 'Beam pattern', 'series': ['Intensity'], 
     'numPoints': num_angles} )
-
 
 """START"""
 browserinterface.start()

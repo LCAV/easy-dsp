@@ -2,6 +2,7 @@
 # Date: Feb 1, 2016
 
 """Class for real-time STFT analysis and processing."""
+from __future__ import division
 
 import numpy as np
 from dft import DFT
@@ -45,7 +46,7 @@ class STFT:
         Plot spectrogram according to object's parameters and given signal.
     """
     def __init__(self, N, fs, hop=None, analysis_window=None, 
-        synthesis_window=None, num_sig=1, transform='numpy'):
+        synthesis_window=None, channels=1, transform='numpy'):
         """
         Constructor for STFT class.
 
@@ -61,13 +62,13 @@ class STFT:
             analysis window
         wS : numpy array
             synthesis window
-        D : int
+        channels : int
             number of signals
         """
         # initialize parameters
         self.N = N          # number of samples per frame
         self.fs = fs
-        self.D = num_sig         # number of signals
+        self.D = channels         # number of channels
         if hop is not None: # hop size
             self.hop = hop  
         else:
@@ -92,12 +93,14 @@ class STFT:
         # create DFT object
         self.transform = transform
         self.nfft = self.N
-        self.nbin = self.nfft/2+1
+        self.nbin = self.nfft // 2 + 1
         self.freq = np.linspace(0,self.fs/2,self.nbin)
         self.dft = DFT(nfft=self.nfft,fs=self.fs,num_sig=self.D,
                 analysis_window=self.analysis_window,
                 synthesis_window=self.synthesis_window,
                 transform=self.transform)
+
+        self.fft_out_buffer = np.zeros(self.nbin, dtype=np.complex64)
 
         # initialize filter + zero padding --> use set_filter
         self.zf = 0; self.zb = 0
@@ -105,20 +108,35 @@ class STFT:
 
         # state variables
         self.num_frames = 0            # number of frames processed so far
-        self.x_p = np.squeeze(np.zeros((self.N-self.hop, self.D)))     # previous input samples
-        self.y_p = np.squeeze(np.zeros((self.nfft-self.hop, self.D)))  # prev reconstructed samples
-        self.X = np.squeeze(np.zeros((self.nbin, self.D), dtype=complex))       # current frame in STFT domain
+        self.n_state = self.N - self.hop
+
+        # allocate all the required buffers
+        self.make_buffers()
+
+    def make_buffers(self):
+
+        # The input buffer, float32 for speed!
+        self.fft_in_buffer = np.zeros((self.nfft, self.D), dtype=np.float32)
+        #  a number of useful views on the input buffer
+        self.x_p = self.fft_in_buffer[self.zf:self.zf+self.n_state,:]  # State buffer
+        self.fresh_samples = self.fft_in_buffer[self.zf+self.n_state:self.zf+self.n_state+self.hop,:]
+        self.old_samples = self.fft_in_buffer[self.zf+self.hop:self.zf+self.hop+self.n_state,:]
+
+        self.y_p = np.zeros((self.zb, self.D), dtype=np.float32)  # prev reconstructed samples
+        self.X = np.zeros((self.nbin, self.D), dtype=np.complex64)       # current frame in STFT domain
 
     def reset(self):
         """
         Reset state variables. Necesary after changing or setting the filter or zero padding.
         """
         self.num_frames = 0
-        self.nbin = self.nfft/2+1
+        self.nbin = self.nfft // 2 + 1
         self.freq = np.linspace(0,self.fs/2,self.nbin)
-        self.x_p = np.squeeze(np.zeros((self.N-self.hop, self.D)))  
-        self.y_p = np.squeeze(np.zeros((self.nfft-self.hop, self.D)))
-        self.X = np.squeeze(np.zeros((self.nbin, self.D),  dtype=complex)) 
+
+        self.fft_in_buffer[:,:] = 0.
+        self.X[:,:] = 0.
+        self.y_p[:,:] = 0.
+
         self.dft = DFT(nfft=self.nfft,fs=self.fs,num_sig=self.D,
             analysis_window=self.analysis_window,
             synthesis_window=self.synthesis_window,
@@ -170,7 +188,7 @@ class STFT:
         self.reset()      
         if not freq:
             # compute filter magnitude and phase spectrum
-            self.H = np.fft.rfft(coeff, self.nfft)
+            self.H = np.complex64(np.fft.rfft(coeff, self.nfft, axis=0))
             # check for sufficient zero-padding
             if self.nfft < (self.N+len(coeff)-1):
                 raise ValueError('Insufficient zero-padding for chosen number of samples per frame (L) and filter length (h). Require zero-padding such that new length is at least (L+h-1).')
@@ -178,6 +196,9 @@ class STFT:
             if len(coeff)!=self.nbin:
                 raise ValueError('Invalid length for frequency domain coefficients.')
             self.H = coeff
+
+        # We need to reallocate buffers after changing zero padding
+        self.make_buffers()
 
 
     def analysis(self, x_n):
@@ -194,22 +215,18 @@ class STFT:
         self.X : numpy array 
             Frequency spectrum of given frame.
         """
+        if x_n.ndim == 1:
+            x_n = x_n[:,None]
+
         # form current frame and store for next frame
-        if self.D==1:
-            currentFrame = np.append(self.x_p, x_n)
-            self.x_p[:] = currentFrame[self.hop:]
-        else:
-            currentFrame = np.concatenate((self.x_p, x_n), axis=0)
-            self.x_p[:] = currentFrame[self.hop:,:]
-        # zero-pad
-        if self.D==1:
-            x = np.append(np.append(np.zeros(self.zf), currentFrame), np.zeros(self.zb))
-        else:
-            x = np.concatenate((np.zeros((self.zf,self.D)), 
-                currentFrame, np.zeros((self.zb,self.D))), axis=0)
+        self.fresh_samples[:,:] = x_n[:,:]
+
         # apply DFT to current frame
-        self.X = self.dft.analysis(x)
+        self.X = self.dft.analysis(self.fft_in_buffer)
         self.num_frames += 1
+
+        #
+        self.x_p[:] = self.old_samples
 
     def process(self):
         """
@@ -223,7 +240,7 @@ class STFT:
         if self.H is None:
             warnings.warn("No filter given to the STFT object.")
         else:
-            self.X = np.multiply(self.X, self.H)
+            np.multiply(self.X, self.H, self.X)
 
     def synthesis(self):
         """
@@ -236,14 +253,14 @@ class STFT:
         """
         # apply IDFT to current frame
         y = self.dft.synthesis(self.X)
+
         # reconstruct output
-        if self.num_frames==0:
-            out = y[0:self.hop]
-        else:
-            y[0:self.nfft-self.hop] += self.y_p
-            out = y[0:self.hop]
+        out = y[0:self.hop,:]
+        out[:self.zb,:] += self.y_p[:,:]
+
         # update state variables
-        self.y_p[:] = y[self.hop:]
+        self.y_p[:,:] = y[-self.zb:,:]
+
         return out
 
 
