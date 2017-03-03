@@ -28,8 +28,12 @@ class NeoPixels(object):
         self.x_range = x_range
         self.positions = np.linspace(self.x_range[0], self.x_range[1], 
             self.num_pixels, endpoint=False)
-        norm = mpl.colors.Normalize(vmin=0, vmax=1)
-        self.mapper = cm.ScalarMappable(norm=norm, cmap=colormap)
+
+        if colormap is not None:
+            norm = mpl.colors.Normalize(vmin=0, vmax=1)
+            self.mapper = cm.ScalarMappable(norm=norm, cmap=colormap)
+        else:
+            self.mapper = None
 
         # normalization setup
         self.normalize = normalize
@@ -83,18 +87,17 @@ class NeoPixels(object):
             pixel_values[pixel_values < 0.] = 0.
             pixel_values[pixel_values > 1.] = 1.
 
-        '''
-        colors = self.mapper.to_rgba(pixel_values)
-        colors = colors[:,:3]
-        '''
-
-        # nice map ?
-        # It is good to have slightly less intensity
-        # for lower sound intensity
-        colors = np.zeros((len(pixel_values), 3))
-        colors[:,0] = pixel_values
-        colors[:,1] = 0.05 * (1. - pixel_values)
-        colors[:,2] = 0.1 * (1. - pixel_values)
+        if self.mapper is not None:
+            colors = self.mapper.to_rgba(pixel_values)
+            colors = colors[:,:3]
+        else:
+            # nice map ?
+            # It is good to have slightly less intensity
+            # for lower sound intensity
+            colors = np.zeros((len(pixel_values), 3))
+            colors[:,0] = pixel_values
+            colors[:,1] = 0.05 * (1. - pixel_values)
+            colors[:,2] = 0.1 * (1. - pixel_values)
         
         # Send to the arduino
         colors = np.reshape((colors * 254).round().astype(np.uint8),-1)
