@@ -12,7 +12,8 @@ aceEditor.session.setMode(new AcePythonMode());
 var wsAudio, wsConfig;
 var wsPythonServer = new WebSocket("ws://" + pythonDaemon + ":7320");
 
-var inputStream;
+var inputStream;   // Stream from WSAudio
+var outputStream;  // Stream from python code
 var outputHandle;
 var b;
 var audioCt = new AudioContext;
@@ -89,6 +90,9 @@ function daemonsConnect() {
   };
   wsAudio.onclose = function(e) {
     addAlert('danger', 'Error', 'Disconnected from the audio websocket');
+    if (inputStream) {
+      inputStream.destroyAudio();
+    }
     changeBadgeStatus(infosStatusWSAudio, 'disconnected');
   };
   wsConfig.onclose = function(e) {
@@ -368,9 +372,18 @@ function onWSAudioMessage(e) {
 
     // If the audio was playing, we need to recreate
     // the stream using the new configuration
+
     if (inputStream) {
+      // check the current status of the source
+      var was_playing = !(inputStream.isStopped());
+
+      // destroy it
       inputStream.destroyAudio();
-      inputStream = new sourceAudio(audioCt, conf);
+
+      // if it was playing before, restart it
+      if (was_playing) {
+        inputStream = new sourceAudio(audioCt, conf);
+      }
     }
     return;
   }
@@ -429,7 +442,6 @@ function handleOutput(port) {
   var ws = new WebSocket("ws://" + pythonDaemon + ":" + port);
   var nbTry = 1;
   var stop = false; // se to true when the close of this handleOutput is asked
-  var outputStream;
 
   // Try multiple times to connect
   // Useful because we don't know after how much time
@@ -440,7 +452,7 @@ function handleOutput(port) {
 
   ws.onmessage = function(e) {
     if (typeof e.data != "string") { // we have binary data: it's audio
-      if (!outputStream) {
+      if (!outputStream || outputStream.isStopped()) {
         outputStream = new sourceAudio(audioCt, config);
       }
       outputStream.loadData(e.data);
@@ -478,6 +490,12 @@ function handleOutput(port) {
     }
   };
 
+  ws.onclose = function (e) {
+    if (outputStream) {
+      outputStream.destroyAudio();
+    }
+  }
+
   function stopAudio() {
     if (outputStream) {
       outputStream.destroyAudio();
@@ -499,50 +517,175 @@ function handleOutput(port) {
   };
 }
 
+// This function receives audio from the network convert the samplerate to the
+// local one and sends it to play. Note that the simple linear interpolation
+// used here will not work well if the two sampling rates are wildly different
+// 
 // This function should also manage the play/stop buttons
+//
 function sourceAudio(audioCtx, config) {
-  var audioData, channelData, audioPos, source, buffer_size;
-  buffer_size = 2 * config.rate; // Fix at two seconds
-  audioData = audioCtx.createBuffer(config.channels, buffer_size, config.rate); // channels - size of the buffer - frameRate
+
+  var channelData, buffer_size;
+
+  // state of the source
+  var playing = false;
+  var stopped = false;
+
+  // We'll cache a few buffer to avoid glitches
+  var cache = [];
+  var cache_min_length = 5;  // minimum buffering time
+
+  // This is the running buffer
+  buffer_size = 256;
+  var current_buffer = audioCtx.createBuffer(config.channels, buffer_size, config.rate);
+  var current_buffer_filling = 0;
+
+  // channels of the running buffer
   channelData = [];
   for (var i = 0; i < config.channels; i++) {
-    channelData[i] = audioData.getChannelData(i);
+    channelData[i] = current_buffer.getChannelData(i);
   }
-  audioPos = 0;
-  source = audioCtx.createBufferSource();
-  source.loop = true;
-  source.buffer = audioData;
-  source.connect(audioCtx.destination);
-  setTimeout(function () {
-    console.log("Start receiving audio");
-    source.start();
-  }, 3000);
 
-  function loadData(data) {
-    var fileReader = new FileReader();
-    fileReader.onload = function() {
-      var data = new Int16Array(this.result);
-      for (var i = 0; i < data.length; i++) {
-        var channel = i % config.channels;
-        channelData[channel][audioPos] = data[i]/256/128; // 16 bits audio => we must move it between -1 and 1
-        if (channel == (config.channels - 1)) {
-          audioPos = (audioPos + 1) % (buffer_size);
+  // we need to implement resampling from source rate to audio context rate
+  var time_step = config.rate / audioCtx.sampleRate;
+  var frac_time = 0.;
+  var state = new Array(config.channels).fill(0.);
+  
+  // This is a node responsible for audio processing
+  var scriptNode = audioCtx.createScriptProcessor(buffer_size, config.channels, config.channels);
+  
+  // Give the node a function to process audio events
+  scriptNode.onaudioprocess = function(audioProcessingEvent) {
+
+    // The output buffer contains the samples that will be modified and played
+    var outputBuffer = audioProcessingEvent.outputBuffer;
+
+    if (playing == true || (playing == false && cache.length > cache_min_length))
+    {
+      playing = true;
+      var inputBuffer = cache.shift();
+
+      // Loop through the output channels (in this case there is only one)
+      for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
+        if (inputBuffer) {
+          var inputData = inputBuffer.getChannelData(channel);
+          var outputData = outputBuffer.getChannelData(channel);
+
+          // Loop through all samples in the buffer
+          for (var sample = 0; sample < inputBuffer.length; sample++) {
+            // make output equal to the same as the input
+            outputData[sample] = inputData[sample];
+          }
         }
       }
+    } else {
+      // Just fill with zeros until we get some audio
+      for (var channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
+        var outputData = outputBuffer.getChannelData(channel);
+
+        // Loop through all samples
+        for (var sample = 0; sample < outputBuffer.length; sample++) {
+          // make output equal to the same as the input
+          outputData[sample] = 0;
+        }
+      }
+    }
+
+  }
+
+  // Connect the script node to outside world
+  scriptNode.connect(audioCtx.destination);
+
+  // This function is responsible for filling the buffer cache with
+  // data from the stream
+  function loadData(data) {
+
+    // if the source is stopped, do nothing
+    if (stopped) {
+      return;
+    }
+
+    // Otherwise, process incoming data
+    var fileReader = new FileReader();
+
+    fileReader.onload = function() {
+      var data = new Int16Array(this.result);
+
+      var n_samples = data.length / config.channels;
+
+      while (frac_time <= n_samples - 1)
+      {
+        var n1 = Math.floor(frac_time);
+        var n2 = Math.ceil(frac_time);
+
+        for (var ch = 0 ; ch < config.channels ; ch++) {
+          if (n1 < 0) {
+            p1 = state[ch] / 256 / 128;
+          } else {
+            p1 = data[n1 * config.channels + ch] / 256 / 128;
+          }
+          p2 = data[n2 * config.channels + ch] / 256 / 128;
+
+          // Linear interpolation
+          channelData[ch][current_buffer_filling] = (p2 - p1) * (frac_time - n1) + p1;
+        }
+
+        // increment current buffer counter
+        current_buffer_filling += 1;
+        
+        // Current buffer is full. We need a new buffer
+        if (current_buffer_filling == buffer_size) {
+          // add current buffer to the cache
+          cache.push(current_buffer);
+
+          // create a new buffer
+          current_buffer = audioCtx.createBuffer(config.channels, buffer_size, config.rate);
+          current_buffer_filling = 0;
+          for (var ch = 0; ch < config.channels; ch++) {
+            channelData[ch] = current_buffer.getChannelData(ch);
+          }
+        }
+
+        // move time
+        frac_time += time_step;
+      }
+
+      // Save the last sample of each channel in the state
+      for (var ch = 0 ; ch < config.channels ; ch++) {
+        state[ch] = data[data.length - config.channels + ch];
+      }
+
+      // Remove the data size from the fractional time
+      frac_time -= n_samples;
+
     };
+
     fileReader.readAsArrayBuffer(data);
   }
 
   function destroyAudio() {
-    if (source !== undefined) {
-      source.stop();
+    if (stopped === false) {
+      console.log("Stop audio source.");
+      if (scriptNode.numberOfOutputs > 0) {
+        scriptNode.disconnect(audioCtx.destination);
+      }
+
+      // empty cache and stop playing
+      cache = [];
+      playing = false;
+      stopped = true;
     }
+  }
+
+  function isStopped() {
+    return stopped;
   }
 
   return {
     loadData: loadData,
     destroyAudio: destroyAudio,
-    source: source
+    source: scriptNode,
+    isStopped: isStopped
   };
 }
 

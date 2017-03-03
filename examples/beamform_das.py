@@ -47,9 +47,11 @@ except:
     led_ring = False
 
 
-"""Setup"""
 num_angles = 60 # for directivity
+beam_shape = np.zeros(num_angles)
 direction = 70 # degrees
+
+"""Setup"""
 def init(buffer_frames, rate, channels, volume):
     global stft, bf
 
@@ -61,7 +63,7 @@ def init(buffer_frames, rate, channels, volume):
 
     # visualization
     freq_viz = 2000 # frequency for which to visualize beam pattern
-    beam_shape = bf.get_directivity(freq=freq_viz)
+    beam_shape[:] = bf.get_directivity(freq=freq_viz)
     beam = beam_shape.tolist()
     beam.append(beam[0]) # "close" beam shape
     polar_chart.send_data([{ 'replace': beam }])
@@ -80,7 +82,8 @@ def init(buffer_frames, rate, channels, volume):
 def beamform_audio(audio):
     global stft, bf
 
-    if audio.shape[0] != buffer_size:
+    if (audio.shape[0] != browserinterface.buffer_frames 
+        or audio.shape[1] != browserinterface.channels):
         return
 
     # record start of processing time
@@ -100,6 +103,9 @@ def beamform_audio(audio):
     if proc_time > buffer_size / sampling_freq:
         print("Processing is a little long:", proc_time, "sec vs", 
                 buffer_size / sampling_freq, " sec available")
+
+    if led_ring:
+        led_ring.lightify(vals=beam_shape)
 
     # Send audio back to the browser
     browserinterface.send_audio(audio)
