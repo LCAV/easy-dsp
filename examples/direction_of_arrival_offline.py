@@ -26,7 +26,7 @@ except:
     led_ring = False
 
 # read recording
-sampling_freq, x = wavfile.read('out.wav')
+sampling_freq, x = wavfile.read('recording.wav')
 
 """Select appropriate microphone array"""
 mic_array = rt.bbb_arrays.R_compactsix_random

@@ -1,13 +1,13 @@
 import numpy as np
-import sys
 
 import browserinterface
 import algorithms as rt
 
-from math import ceil
-
 
 """ Board parameters """
+buffer_size = 2048; num_channels = 2
+transform = 'fftw' # 'numpy', 'mlk', 'fftw'
+
 try:
     import json
     with open('./hardware_config.json', 'r') as config_file:
@@ -20,7 +20,6 @@ except:
     sampling_freq = 44100
     led_ring_address = '/dev/cu.usbmodem1421'
 
-buffer_size = 4096
 
 """ Visualization parameters """
 under = 100  # undersample otherwise too many points
@@ -40,21 +39,21 @@ except:
 def when_config(buffer_frames, rate, channels, volume):
     global dft, vad
 
-    dft = rt.transforms.DFT(nfft=buffer_frames)
+    dft = rt.transforms.DFT(nfft=buffer_frames, transform=transform)
     vad = rt.VAD(buffer_size, rate, 10, 40e-3, 3, 1.2)
 
 # perform VAD
 frame_num = 0
-def apply_vad(buffer):
+def apply_vad(audio):
     global dft, vad, frame_num
 
-    if (audio.shape[0] != browserinterface.buffer_frames 
-        or audio.shape[1] != browserinterface.channels):
+    # check for correct audio shape
+    if audio.shape != (buffer_size, num_channels):
         print("Did not receive expected audio!")
         return
 
     # only one channel needed
-    sig = buffer[:,0]
+    sig = audio[:,0]
     X = dft.analysis(sig)
     decision = vad.decision(X)
     # decision = vad.decision_energy(sig, 4)
@@ -81,6 +80,5 @@ chart = browserinterface.add_handler("Speech Detection", 'base:graph:line', {'xN
 
 """START"""
 browserinterface.start()
-browserinterface.change_config(channels=2, buffer_frames=buffer_size,
-    rate=sampling_freq, volume=80)
+browserinterface.change_config(channels=num_channels, buffer_frames=buffer_size, rate=sampling_freq, volume=80)
 browserinterface.loop_callbacks()

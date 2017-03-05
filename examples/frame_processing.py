@@ -1,7 +1,6 @@
 """
-Apply processing frame by frame in the STFT domain (overlapping windows).
+Apply processing frame by frame in the STFT domain.
 """
-import sys
 import numpy as np
 from scipy import signal
 
@@ -22,6 +21,35 @@ except:
     # default when no hw config file is present
     sampling_freq = 44100
     led_ring_address = '/dev/cu.usbmodem1421'
+
+"""
+Filter design : 
+https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.firwin.html 
+"""
+nrate = sampling_freq/2 # nyquist rate
+
+# # low pass
+# numtaps = 50
+# cutoff_hz = 200.
+# fir_coeff = signal.firwin(numtaps, float(cutoff_hz)/nrate)
+
+# band pass
+numtaps = 50
+f1, f2 = 2000., 5000.
+fir_coeff = signal.firwin(numtaps, [float(f1)/nrate, float(f2)/nrate], 
+    pass_zero=False)
+    
+# ideally pick a buffer size so that length of DFT (buffer_size*2) will be power of two
+nfft = 2048
+buffer_size = nfft - numtaps + 1
+num_channels = 2
+transform = 'fftw' # 'numpy', 'mlk', 'fftw'
+
+""" Visualization parameters """
+under = 100 # undersample otherwise too many points
+num_sec = 5
+viz = True   # if false, playback instead
+
 
 """Check for LED Ring"""
 try:
@@ -64,38 +92,14 @@ def bin_spectrum(spectrum, bands, output=None):
 
     return output
     
-"""
-Filter design : 
-https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.firwin.html 
-"""
-nrate = sampling_freq/2 # nyquist rate
-
-# low pass
-numtaps = 50
-cutoff_hz = 200.
-fir_coeff = signal.firwin(numtaps, float(cutoff_hz)/nrate)
-
-# # band pass
-# numtaps = 50
-# f1, f2 = 2000., 5000.
-# fir_coeff = signal.firwin(numtaps, [float(f1)/nrate, float(f2)/nrate], 
-#     pass_zero=False)
-    
-# ideally pick a buffer size so that length of DFT (buffer_size*2) will be power of two
-nfft = 2048
-buffer_size = nfft - numtaps + 1
-
-""" Visualization parameters """
-under = 100 # undersample otherwise too many points
-num_sec = 5
-viz = True   # if false, playback instead
 
 def init(buffer_frames, rate, channels, volume):
     global stft
 
     # create STFT object - buffer size will be our hop size
-    stft = rt.transforms.STFT(buffer_size, rate, hop=buffer_size, transform="mkl")
-    stft.set_filter(coeff=fir_coeff[:,None], zb=numtaps)
+    stft = rt.transforms.STFT(buffer_size, rate, hop=buffer_size, 
+        transform=transform)
+    stft.set_filter(coeff=fir_coeff, zb=numtaps)
 
 def visualize_spectrum(handle, spectrum):
     global stft
@@ -126,11 +130,12 @@ frame_num = 0
 def handle_data(audio):
     global stft, frame_num
 
-    if (audio.shape[0] != browserinterface.buffer_frames 
-        or audio.shape[1] != browserinterface.channels):
+    # check for correct audio shape
+    if audio.shape != (buffer_size, num_channels):
+        print("Did not receive expected audio!")
         return
     
-    stft.analysis(audio[:,:1])
+    stft.analysis(audio[:,0])
     spectrum_before = np.floor(20. * np.log10( np.maximum( 1e-5, np.abs( stft.X ) ) ))
     if viz:
         visualize_spectrum(c_magnitude, spectrum_before)
@@ -168,6 +173,5 @@ if viz:
 
 """START"""
 browserinterface.start()
-browserinterface.change_config(channels=2, buffer_frames=buffer_size, 
-    volume=80, rate=sampling_freq)
+browserinterface.change_config(channels=num_channels, buffer_frames=buffer_size, volume=80, rate=sampling_freq)
 browserinterface.loop_callbacks()

@@ -8,7 +8,6 @@ import numpy as np
 from numpy.fft import rfft
 from numpy.fft import irfft
 import warnings
-import utils
 
 try:
     import matplotlib as mpl
@@ -56,23 +55,26 @@ class DFT(object):
         self.nfft = nfft
         self.D = num_sig
         
-        self.nbin = int(self.nfft/2+1)
+        self.nbin = self.nfft//2+1
         self.fs = float(fs)
         self.freq = np.linspace(0,self.fs/2,self.nbin)
-        self.X = np.zeros((self.nbin,self.D),dtype='complex64')
+        self.X = np.squeeze(np.zeros((self.nbin,self.D),dtype='complex64'))
+        self.x = np.squeeze(np.zeros((self.nfft,self.D),dtype='float32'))
 
-        if self.D==1:
-            self.analysis_window = analysis_window
-            self.synthesis_window = synthesis_window
+        if analysis_window is not None:
+            if self.D==1:
+                self.analysis_window = analysis_window.astype('float32')
+            else:
+                self.analysis_window = np.tile(analysis_window, (self.D,1)).astype('float32').T
         else:
-            if analysis_window is not None:
-                self.analysis_window = np.tile(analysis_window, (self.D,1)).T
+            self.analysis_window = None
+        if synthesis_window is not None:
+            if self.D==1:
+                self.synthesis_window = synthesis_window.astype('float32')
             else:
-                self.analysis_window = None
-            if synthesis_window is not None:
-                self.synthesis_window = np.tile(synthesis_window, (self.D,1)).T
-            else:
-                self.synthesis_window=None
+                self.synthesis_window = np.tile(synthesis_window, (self.D,1)).astype('float32').T
+        else:
+            self.synthesis_window=None
 
 
         if transform == 'fftw':
@@ -108,7 +110,7 @@ class DFT(object):
             self.transform = 'numpy'
 
 
-    def analysis(self, x, plot_spec=False):
+    def analysis(self, x):
         """
         Perform frequency analysis of a real input using DFT.
 
@@ -120,27 +122,33 @@ class DFT(object):
         """
 
         # check for valid input
-        if self.D==1 and x.size!=self.nfft:
-            raise ValueError('Invalid input dimensions.')
-        if self.D!=1 and x.shape!=(self.nfft,self.D):
-            raise ValueError('Invalid input dimensions.')
+        if self.D!=1:
+            if x.shape!=(self.nfft,self.D):
+                raise ValueError('Invalid input dimensions.')
+        elif self.D==1:
+            if x.ndim!=1 and x.shape[0]!=self.nfft:
+                raise ValueError('Invalid input dimensions.')
         # apply window if needed
         if self.analysis_window is not None:
-            x = np.multiply(self.analysis_window, x)
+            try:
+                np.multiply(self.analysis_window, x, x)
+            except:
+                self.analysis_window = self.analysis_window.astype(x.dtype, 
+                    copy=False)
+                np.multiply(self.analysis_window, x, x)
         # apply DFT
         if self.transform == 'fftw':
             self.a[:,] = x
-            self.X = self.forward()
+            self.X[:,] = self.forward()
         elif self.transform == 'mkl':
-            self.X = mkl_fft.rfft(x,axis=0)
+            self.X[:,] = mkl_fft.rfft(x,axis=0)
         else:
-            self.X = rfft(x,axis=0)
-        # plot
-        if plot_spec:
-            utils.plot_spec(self.X,fs=self.fs)
+            self.X[:,] = rfft(x,axis=0)
+
         return self.X
 
-    def synthesis(self, X=None, plot_time=False):
+
+    def synthesis(self, X=None):
         """
         Perform time synthesis of frequency domain to real signal using the 
         inverse DFT.
@@ -154,23 +162,24 @@ class DFT(object):
 
         # check for valid input
         if X is not None:
-            if self.D==1 and X.size!=self.nbin:
-                raise ValueError('Invalid input dimensions.')
-            if self.D!=1 and X.shape!=(self.nbin, self.D):
-                raise ValueError('Invalid input dimensions.')
-            self.X = X
+            if self.D!=1:
+                if X.shape!=(self.nbin,self.D):
+                    raise ValueError('Invalid input dimensions.')
+            elif self.D==1:
+                if X.ndim!=1 and X.shape[0]!=self.nbin:
+                    raise ValueError('Invalid input dimensions.')
+            self.X[:,] = X
         # inverse DFT
         if self.transform == 'fftw':
             self.b[:] = self.X
-            x = self.backward()
+            self.x[:,] = self.backward()
         elif self.transform == 'mkl':
-            x = mkl_fft.irfft(self.X,axis=0)
+            self.x[:,] = mkl_fft.irfft(self.X,axis=0)
         else:
-            x = irfft(self.X, axis=0)
+            self.x[:,] = irfft(self.X, axis=0)
         # apply window if needed
         if self.synthesis_window is not None:
-            x = np.multiply(self.synthesis_window, x)
-        # plot
-        if plot_time:
-            utils.plot_time(x,fs=self.fs,title='Waveforms computed from DFT then IDFT')
-        return x
+            np.multiply(self.synthesis_window, self.x[:,], self.x[:,])
+
+        return self.x
+

@@ -7,9 +7,10 @@ import algorithms as rt
 """
 Number of snapshots for DOA will be: ~2*buffer_size/nfft
 """
-buffer_size = 8192
+buffer_size = 8192; num_channels=6
 nfft = 512
 num_angles = 60
+num_src = 1
 
 """
 Read hardware config from file
@@ -71,7 +72,7 @@ def init(buffer_frames, rate, channels, volume):
             'L': mic_array,
             'fs': rate,
             'nfft': nfft,
-            'num_src': 2,
+            'num_src': num_src,
             'n_grid': num_angles,
             'max_four': 4,
             'max_ini': 10,
@@ -87,8 +88,8 @@ def init(buffer_frames, rate, channels, volume):
 def apply_doa(audio):
     global doa, nfft, buffer_size, led_ring
 
-    if (audio.shape[0] != browserinterface.buffer_frames 
-        or audio.shape[1] != browserinterface.channels):
+    # check for correct audio shape
+    if audio.shape != (buffer_size, num_channels):
         print("Did not receive expected audio!")
         return
 
@@ -134,6 +135,6 @@ polar_chart = browserinterface.add_handler(name="Directions",
 
 """START"""
 browserinterface.start()
-browserinterface.change_config(channels=6, buffer_frames=buffer_size,
-    rate=sampling_freq, volume=80)
+browserinterface.change_config(channels=num_channels, 
+    buffer_frames=buffer_size, rate=sampling_freq, volume=80)
 browserinterface.loop_callbacks()

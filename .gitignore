@@ -3,6 +3,8 @@ browser-wsaudio
 browser-wsconfig
 code-program.py
 hardware_config.json
+*.wav
 *.pyc
+*.lprof
 *DS_Store
-examples/test_*
+test_*

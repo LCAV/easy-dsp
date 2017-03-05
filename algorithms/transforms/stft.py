@@ -8,7 +8,6 @@ import numpy as np
 from dft import DFT
 import warnings
 import windows
-import utils
 
 try:
     import matplotlib as mpl
@@ -49,7 +48,6 @@ class STFT:
         synthesis_window=None, channels=1, transform='numpy'):
         """
         Constructor for STFT class.
-
         Parameters
         -----------
         N : int
@@ -79,14 +77,14 @@ class STFT:
         if analysis_window is not None:
             self.analysis_window = analysis_window
         elif analysis_window is None and self.hop ==self.N/2:
-            self.analysis_window = windows.sine(self.N)
+            self.analysis_window = windows.hann(self.N)
         else:
             self.analysis_window = None
         # synthesis window
         if synthesis_window is not None:  
             self.synthesis_window = synthesis_window
         elif synthesis_window is None and self.hop ==self.N/2:
-            self.synthesis_window = windows.sine(self.N)
+            self.synthesis_window = None # rectangular window
         else:
             self.synthesis_window = None
 
@@ -113,29 +111,63 @@ class STFT:
         # allocate all the required buffers
         self.make_buffers()
 
+    # def make_buffers(self):
+
+    #     # The input buffer, float32 for speed!
+    #     self.fft_in_buffer = np.zeros((self.nfft, self.D), dtype=np.float32)
+    #     #  a number of useful views on the input buffer
+    #     self.x_p = self.fft_in_buffer[self.zf:self.zf+self.n_state,:]  # State buffer
+    #     self.fresh_samples = self.fft_in_buffer[self.zf+self.n_state:self.zf+self.n_state+self.hop,:]
+    #     self.old_samples = self.fft_in_buffer[self.zf+self.hop:self.zf+self.hop+self.n_state,:]
+
+    #     self.y_p = np.zeros((self.zb, self.D), dtype=np.float32).squeeze()  # prev reconstructed samples
+    #     self.X = np.zeros((self.nbin, self.D), dtype=np.complex64)       # current frame in STFT domain
+
     def make_buffers(self):
 
-        # The input buffer, float32 for speed!
-        self.fft_in_buffer = np.zeros((self.nfft, self.D), dtype=np.float32)
-        #  a number of useful views on the input buffer
-        self.x_p = self.fft_in_buffer[self.zf:self.zf+self.n_state,:]  # State buffer
-        self.fresh_samples = self.fft_in_buffer[self.zf+self.n_state:self.zf+self.n_state+self.hop,:]
-        self.old_samples = self.fft_in_buffer[self.zf+self.hop:self.zf+self.hop+self.n_state,:]
+        if self.D==1:  # need this distinction for fftw
 
-        self.y_p = np.zeros((self.zb, self.D), dtype=np.float32)  # prev reconstructed samples
-        self.X = np.zeros((self.nbin, self.D), dtype=np.complex64)       # current frame in STFT domain
+            # The input buffer, float32 for speed!
+            self.fft_in_buffer = np.zeros(self.nfft, dtype=np.float32)
+            #  a number of useful views on the input buffer
+            self.x_p = self.fft_in_buffer[self.zf:self.zf+self.n_state]  # State buffer
+            self.fresh_samples = self.fft_in_buffer[self.zf+self.n_state:self.zf+self.n_state+self.hop]
+            self.old_samples = self.fft_in_buffer[self.zf+self.hop:self.zf+self.hop+self.n_state]
+
+            self.y_p = np.zeros(self.zb, dtype=np.float32)  # prev reconstructed samples
+            self.X = np.zeros(self.nbin, dtype=np.complex64)       # current frame in STFT domain
+            self.out = np.zeros(self.hop, dtype=np.float32)
+
+        else:
+
+            # The input buffer, float32 for speed!
+            self.fft_in_buffer = np.zeros((self.nfft, self.D), dtype=np.float32)
+            #  a number of useful views on the input buffer
+            self.x_p = self.fft_in_buffer[self.zf:self.zf+self.n_state,:]  # State buffer
+            self.fresh_samples = self.fft_in_buffer[self.zf+self.n_state:self.zf+self.n_state+self.hop,:]
+            self.old_samples = self.fft_in_buffer[self.zf+self.hop:self.zf+self.hop+self.n_state,:]
+
+            self.y_p = np.zeros((self.zb, self.D), dtype=np.float32)  # prev reconstructed samples
+            self.X = np.zeros((self.nbin, self.D), dtype=np.complex64)       # current frame in STFT domain
+            self.out = np.zeros((self.hop,self.D), dtype=np.float32)
+
 
     def reset(self):
         """
-        Reset state variables. Necessary after changing or setting the filter or zero padding.
+        Reset state variables. Necesary after changing or setting the filter or zero padding.
         """
         self.num_frames = 0
         self.nbin = self.nfft // 2 + 1
         self.freq = np.linspace(0,self.fs/2,self.nbin)
 
-        self.fft_in_buffer[:,:] = 0.
-        self.X[:,:] = 0.
-        self.y_p[:,:] = 0.
+        if self.D==1:
+            self.fft_in_buffer[:] = 0.
+            self.X[:] = 0.
+            self.y_p[:] = 0.
+        else:
+            self.fft_in_buffer[:,:] = 0.
+            self.X[:,:] = 0.
+            self.y_p[:,:] = 0.
 
         self.dft = DFT(nfft=self.nfft,fs=self.fs,num_sig=self.D,
             analysis_window=self.analysis_window,
@@ -167,10 +199,8 @@ class STFT:
     def set_filter(self, coeff, zb=None, zf=None, freq=False):
         """
         Set time-domain filter with appropriate zero-padding.
-
         Frequency spectrum of the filter is computed and set for the object. 
         There is also a check for sufficient zero-padding.
-
         Parameters
         -----------
         coeff : numpy array 
@@ -204,72 +234,75 @@ class STFT:
     def analysis(self, x_n):
         """
         Transform new samples to STFT domain for analysis.
-
         Parameters
         -----------
         x_n : numpy array
             [self.hop] new samples.
-
         Returns
         -----------
         self.X : numpy array 
             Frequency spectrum of given frame.
         """
 
+        # check for valid input - already done by self.dft
+        # if x_n.shape[0]!=self.hop:
+        #     raise ValueError('Invalid input dimensions.')
+        # if self.D > 1 and x_n.shape[1]!=self.D:
+        #     raise ValueError('Invalid input dimensions.')
+
         if x_n.ndim == 1:
-            x_n = x_n[:,None]
-
-        # check for valid input
-        if x_n.shape[0]!=self.hop:
-            raise ValueError('Invalid input dimensions.')
-        if self.D > 1 and x_n.shape[1]!=self.D:
-            raise ValueError('Invalid input dimensions.')
-
-        # form current frame and store for next frame
-        self.fresh_samples[:,:] = x_n[:,:]
+            self.fresh_samples[:] = x_n[:]
+        else:
+            self.fresh_samples[:,:] = x_n[:,:]
 
         # apply DFT to current frame
-        self.X = self.dft.analysis(self.fft_in_buffer)
-        self.num_frames += 1
-
-        #
+        self.X[:] = self.dft.analysis(self.fft_in_buffer)
         self.x_p[:] = self.old_samples
+
+        # self.num_frames += 1
 
     def process(self):
         """
         Apply filtering in STFT domain.
-
         Returns
         -----------
         self.X : numpy array 
             Frequency spectrum of given frame.
         """
-
         if self.H is None:
             warnings.warn("No filter given to the STFT object.")
         else:
             np.multiply(self.X, self.H, self.X)
 
+
     def synthesis(self):
         """
         Transform to time domain and reconstruct output with overlap-and-add.
-
         Returns
         -----------
         out: numpy array
             Reconstructed array of samples of length [self.hop]
         """
         # apply IDFT to current frame
-        y = self.dft.synthesis(self.X)
+        self.dft.synthesis(self.X)
 
         # reconstruct output
-        out = y[0:self.hop,:]
-        out[:self.zb,:] += self.y_p[:,:]
+        if self.D==1:
+            self.out[:] = self.dft.x[0:self.hop]
 
-        # update state variables
-        self.y_p[:,:] = y[-self.zb:,:]
+            if self.zb > 0:
+                self.out[:self.zb] += self.y_p
+                # update state variables
+                self.y_p[:] = self.dft.x[-self.zb:]
+        else:
+            self.out = self.dft.x[0:self.hop,:]
 
-        return out
+            if self.zb > 0:
+                self.out[:self.zb,:] += self.y_p[:,:]
+                # update state variables
+                self.y_p[:,:] = self.dft.x[-self.zb:,:]
+
+        return self.out
 
 
     def get_prev_samples(self):
@@ -279,87 +312,87 @@ class STFT:
         return self.y_p
 
 
-    def visualize_frame(self, fmin=None,fmax=None,plot_time=False):
-        """
-        Visualize frequency spectrum of current frame.
+    # def visualize_frame(self, fmin=None,fmax=None,plot_time=False):
+    #     """
+    #     Visualize frequency spectrum of current frame.
 
-        Parameters
-        -----------
-        fmin : float
-            Lower limit for plotting frequency spectrum.
-        fmax : float
-            Upper limit for plotting frequency spectrum.
-        plot_time : bool
-            Whether or not to plot corresponding time frame.
-        """
-        # check if matplotlib imported
-        if matplotlib_available is False:
-            warnings.warn("Could not import matplotlib.")
-            return
-        # plot DFT
-        time_window = np.arange(2,dtype=float)/self.fs*self.nfft + \
-            float(self.num_frames)*self.hop/self.fs - float(self.hop)/self.fs
-        title = 'Magnitude spectrum: '+str(time_window[0])[:5]+' s to '+str(time_window[1])[:5]+' s'
-        utils.plot_spec(self.X, fs=self.fs, fmin=fmin, fmax=fmax, title=title)
-        # plot time waveform
-        if plot_time is True:
-            y = self.dft.synthesis(self.X)
-            time = np.arange(len(y))/float(self.fs) + float(self.num_frames)*self.hop/self.fs - float(self.hop)/self.fs
-            title = 'Time waveform: '+str(time_window[0])[:5]+' s to '+str(time_window[1])[:5]+' s'
-            utils.plot_time(y, title=title, time=time)
+    #     Parameters
+    #     -----------
+    #     fmin : float
+    #         Lower limit for plotting frequency spectrum.
+    #     fmax : float
+    #         Upper limit for plotting frequency spectrum.
+    #     plot_time : bool
+    #         Whether or not to plot corresponding time frame.
+    #     """
+    #     # check if matplotlib imported
+    #     if matplotlib_available is False:
+    #         warnings.warn("Could not import matplotlib.")
+    #         return
+    #     # plot DFT
+    #     time_window = np.arange(2,dtype=float)/self.fs*self.nfft + \
+    #         float(self.num_frames)*self.hop/self.fs - float(self.hop)/self.fs
+    #     title = 'Magnitude spectrum: '+str(time_window[0])[:5]+' s to '+str(time_window[1])[:5]+' s'
+    #     utils.plot_spec(self.X, fs=self.fs, fmin=fmin, fmax=fmax, title=title)
+    #     # plot time waveform
+    #     if plot_time is True:
+    #         y = self.dft.synthesis(self.X)
+    #         time = np.arange(len(y))/float(self.fs) + float(self.num_frames)*self.hop/self.fs - float(self.hop)/self.fs
+    #         title = 'Time waveform: '+str(time_window[0])[:5]+' s to '+str(time_window[1])[:5]+' s'
+    #         utils.plot_time(y, title=title, time=time)
 
-    def spectrogram(self, x, fmin=None,fmax=None,tmin=None,tmax=None, plot_time=False):
-        """
-        Plot spectrogram according to object's parameters and given signal.
+    # def spectrogram(self, x, fmin=None,fmax=None,tmin=None,tmax=None, plot_time=False):
+    #     """
+    #     Plot spectrogram according to object's parameters and given signal.
 
-        Parameters
-        -----------
-        x : numpy array
-            Time domain signal.
-        fmin : float
-            Lower limit for plotting spectrogram.
-        fmax : float
-            Upper limit for plotting spectrogram.
-        tmin : float
-            Lower limit for plotting spectrogram.
-        tmax : float
-            Upper limit for plotting spectrogram.
-        plot_time : bool
-            Whether or not to plot input waveform.
-        """
-        if matplotlib_available == False:
-            warnings.warn("Could not import matplotlib.")
-            return
-        self.reset()
-        # calculate spectrogram
-        num_frames = int(np.floor(len(x)/self.hop))
-        dur = float(num_frames*self.hop)/self.fs
-        Sx = np.ones([num_frames,self.nbin])
-        for i in range(num_frames):
-            sig = x[i*self.hop:(i+1)*self.hop]
-            X = self.analysis(sig)
-            Sx[i,:] = np.log10(np.abs(np.conj(X)*X))
-        # plot spectrogram
-        f = np.linspace(0,self.fs/2,self.nbin)
-        t = np.linspace(0,dur,num=num_frames,dtype=float)
-        plt.figure()
-        im = plt.pcolormesh(t,f,Sx.T)
-        plt.ylabel('Frequency [Hz]')
-        if fmin == None:
-            fmin = min(f)
-        if fmax == None:
-            fmax = max(f)
-        plt.ylim([fmin,fmax])
-        plt.xlabel('Time [sec]')
-        if tmin == None:
-            tmin = min(t)
-        if tmax == None:
-            tmax = max(t)
-        plt.xlim([tmin,tmax])
-        plt.title('Spectrogram')
-        plt.colorbar(im, orientation='vertical')
-        # plot time waveform
-        if plot_time==True:
-            utils.plot_time(x[0:num_frames*self.hop],fs=self.fs)
-        self.reset()
+    #     Parameters
+    #     -----------
+    #     x : numpy array
+    #         Time domain signal.
+    #     fmin : float
+    #         Lower limit for plotting spectrogram.
+    #     fmax : float
+    #         Upper limit for plotting spectrogram.
+    #     tmin : float
+    #         Lower limit for plotting spectrogram.
+    #     tmax : float
+    #         Upper limit for plotting spectrogram.
+    #     plot_time : bool
+    #         Whether or not to plot input waveform.
+    #     """
+    #     if matplotlib_available == False:
+    #         warnings.warn("Could not import matplotlib.")
+    #         return
+    #     self.reset()
+    #     # calculate spectrogram
+    #     num_frames = int(np.floor(len(x)/self.hop))
+    #     dur = float(num_frames*self.hop)/self.fs
+    #     Sx = np.ones([num_frames,self.nbin])
+    #     for i in range(num_frames):
+    #         sig = x[i*self.hop:(i+1)*self.hop]
+    #         X = self.analysis(sig)
+    #         Sx[i,:] = np.log10(np.abs(np.conj(X)*X))
+    #     # plot spectrogram
+    #     f = np.linspace(0,self.fs/2,self.nbin)
+    #     t = np.linspace(0,dur,num=num_frames,dtype=float)
+    #     plt.figure()
+    #     im = plt.pcolormesh(t,f,Sx.T)
+    #     plt.ylabel('Frequency [Hz]')
+    #     if fmin == None:
+    #         fmin = min(f)
+    #     if fmax == None:
+    #         fmax = max(f)
+    #     plt.ylim([fmin,fmax])
+    #     plt.xlabel('Time [sec]')
+    #     if tmin == None:
+    #         tmin = min(t)
+    #     if tmax == None:
+    #         tmax = max(t)
+    #     plt.xlim([tmin,tmax])
+    #     plt.title('Spectrogram')
+    #     plt.colorbar(im, orientation='vertical')
+    #     # plot time waveform
+    #     if plot_time==True:
+    #         utils.plot_time(x[0:num_frames*self.hop],fs=self.fs)
+    #     self.reset()
 

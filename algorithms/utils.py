@@ -477,3 +477,48 @@ def cart2polar(cart):
                 polar[1,i] = 0
 
     return polar
+
+
+class cov_estimator(object):
+
+    def __init__(self, nfft, num_sig, hop=0.5):
+
+        self.nfft = nfft
+        self.nbin = int(self.nfft/2+1)
+        self.num_snapshots = 0
+        self.num_sig = num_sig
+        self.hop = hop*self.nfft
+        self.prev_samples = np.zeros((int(self.nfft-self.hop),self.num_sig))
+
+        self.d = dft.DFT(self.nfft,self.num_sig)
+        self.Rhat = np.zeros((self.nbin,num_sig,num_sig),dtype=complex)
+
+    def send_frame(self, frame):
+
+        if self.hop < self.nfft:
+            if self.num_snapshots==0:
+                self.prev_samples = frame
+            else:
+                current = np.concatenate((self.prev_samples,frame))
+                X = self.d.analysis(current)
+                for k in range(self.nbin):
+                    h = np.array(X[k,:],ndmin=2)
+                    self.Rhat[k,:,:] += np.dot(np.conjugate(h.T),h)
+                self.prev_samples = current[self.hop:,:]
+        else:
+            X = self.d.analysis(frame) 
+            for k in range(self.nbin):
+                h = np.array(X[k,:],ndmin=2)
+                self.Rhat[k,:,:] += np.dot(np.conjugate(h.T),h)
+
+        self.num_snapshots += 1
+
+    def get_cov(self):
+
+        return self.Rhat / self.num_snapshots
+
+
+
+
+
+

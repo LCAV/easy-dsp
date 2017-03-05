@@ -1,5 +1,3 @@
-# adapted from pyroomacoustics
-
 from __future__ import division, print_function
 
 import numpy as np 
@@ -8,17 +6,21 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('..')
 from utils import cart2polar, polar2cart
+from transforms.dft import DFT
 
 def H(A):
     """Returns the conjugate (Hermitian) transpose of a matrix."""
     return np.transpose(A).conj()
 
+class MVB(object):
 
+    def __init__(self, mic_pos, fs, nfft=256, c=343., direction=0., num_angles=60, num_snapshots=25, mu=0.):
 
-class DAS(object):
-
-    def __init__(self, mic_pos, fs, nfft=256, c=343., direction=0.,
-        num_angles=60):
+        """
+        :param noise_spec: noise spectrum, ambient + instrument
+        :type noise_spec: numpy array
+        :param mu: Factor (<1) for diagonal loading, i.e regularization
+        """
 
         # only support even FFT length
         if nfft % 2 is 1:
@@ -30,26 +32,68 @@ class DAS(object):
         self.nfft = int(nfft)
         self.fs = fs
         self.c = c
+        self.nbin = self.nfft//2+1
 
-        self.frequencies = np.arange(0, self.nfft/2+1)/float(self.nfft)*float(self.fs)
+        self.frequencies = np.arange(0, self.nbin)/float(self.nfft)*float(self.fs)
         self.mics_polar = cart2polar(self.L)
+
+        # estimate of spatial cross correlation (cov), add overlapping?
+        self.Rhat = np.zeros((self.nbin,self.M,self.M),dtype=np.complex64)
+        self.mu = mu
+        self.num_snapshots = num_snapshots
+        self.frame_left = num_snapshots
+        self.d = DFT(self.nfft,self.M, transform="fftw")
+        self.ready = False   # done computing estimate of cov?
+        self.frame = np.zeros((self.nfft,self.M),dtype='float32') # in case zero padding is needed
 
         # compute weights
         self.direction = direction
         self.weights = np.zeros((len(self.frequencies), self.M), 
-            dtype=complex)
-        self.compute_weights(direction)
-        self.compute_directivity(num_angles)
+            dtype=np.complex64)
 
+    # @profile
+    def estimate_cov(self, frame):
 
-    def compute_mode(self, freq, phi):
+        self.frame[:frame.shape[0],:] = frame.astype(np.float32)
+        self.d.analysis(self.frame)
+        for k in range(self.nbin):
+            h = np.array(self.d.X[k,:],ndmin=2)
+            self.Rhat[k,:,:] += np.dot(np.conjugate(h.T),h)
 
-        X = polar2cart(np.array([1, phi]))
+        self.frame_left -= 1
+        if self.frame_left==0:
+            self.ready = True
+            self.compute_weights()
+            self.Rhat[k,:,:] /= self.num_snapshots
+            self.compute_directivity()
+    
+    # @profile
+    def compute_weights(self, direction=None):
 
-        dist = np.linalg.norm(self.L - np.tile(X, (self.M,1)).T, axis=0)
-        wavenum = 2 * np.pi * freq / self.c
+        if direction is not None:
+            self.direction = direction
 
-        return np.exp(1j * wavenum * dist)
+        phi = self.direction*np.pi/180.
+        src = polar2cart(np.array([1, phi]))
+
+        # near-field
+        # dist_m = np.linalg.norm(self.L - np.tile(src, (self.M,1)).T, 
+        #     axis=0)
+        # dist_c = np.linalg.norm(self.center-src)
+        # dist_m = dist_m-dist_c
+
+        # far-field
+        dist_m = -np.dot(self.L.T, src)
+        dist_m = dist_m - dist_m.min()
+
+        for i, f in enumerate(self.frequencies):
+            wavenum = 2*np.pi*f/self.c
+            # mode_vecs = 1./dist_m * np.exp(-1j*wavenum*dist_m) # near field model
+            mode_vecs = np.exp(-1j*wavenum*dist_m) # fair field model
+            w = np.dot(H(mode_vecs), np.linalg.pinv(self.Rhat[i,:,:]+
+                self.mu*np.diag(self.Rhat[i,:,:])*np.identity(self.M,dtype=complex)))
+            self.weights[i,:] = w / np.dot(w,mode_vecs)
+
 
     def steering_vector_2D(self, frequency, phi):
 
@@ -63,32 +107,7 @@ class DAS(object):
 
         omega = 2 * np.pi * frequency
 
-        return np.exp(1j * omega * D / self.c)
-
-
-    def compute_weights(self, direction=None):
-
-        if direction is not None:
-            self.direction = direction
-
-        phi = self.direction*np.pi/180.
-        src = polar2cart(np.array([1, phi]))
-        
-
-        # near-field
-        # dist_m = np.linalg.norm(self.L - np.tile(src, (self.M,1)).T, 
-        #     axis=0)
-        # dist_c = np.linalg.norm(self.center-src)
-        # self.dist_cent = dist_m-dist_c
-
-        # far-field
-        dist_m = -np.dot(self.L.T, src)
-        self.dist_cent = dist_m - dist_m.min()
-
-        for i, f in enumerate(self.frequencies):
-            wavenum = 2*np.pi*f/self.c
-            self.weights[i,:] = np.exp(-1j * wavenum * self.dist_cent) / self.L.shape[1]
-
+        return np.exp(-1j * omega * D / self.c)
 
 
     def compute_directivity(self, num_angles=60):
@@ -103,26 +122,7 @@ class DAS(object):
 
         self.direct = np.abs(resp)**2
         self.direct /= self.direct.max()
-
-        ## Tashev method unoptimized
-        # self.angles = np.linspace(0, 2*np.pi, num_angles, endpoint=False)
-        # resp = np.zeros((len(self.frequencies), num_angles), dtype=complex)
-
-        # for j, phi in enumerate(self.angles):
-        #     direc = utils.polar2cart(np.array([1, phi]))
-        #     dist_m = 1/np.linalg.norm(self.L - np.tile(direc, 
-        #         (self.M,1)).T, axis=0)
-        #     dist_c = np.linalg.norm(self.center-direc)
-        #     dist_cent = dist_m-dist_c
-        #     for i, f in enumerate(self.frequencies):
-        #         wavenum = 2*np.pi*f/self.c
-        #         D = dist_c * np.multiply(dist_m, 
-        #             np.exp(-1j*wavenum*dist_cent))
-        #         resp[i,j] = np.dot(H(self.weights[:,i]), D)
-
-        # self.direct = np.abs(resp)**2
-        # self.direct /= self.direct.max()
-
+        
 
     def get_directivity(self, freq):
 
@@ -144,4 +144,8 @@ class DAS(object):
         resp = np.append(self.direct[freq_bin,:], self.direct[freq_bin,0])
         ax.plot(angl, resp)
         plt.show()
+
+
+
+
 

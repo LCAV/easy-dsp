@@ -1,11 +1,22 @@
-import sys
 import numpy as np
-import matplotlib.pyplot as plt
 
-sys.path.append('..')
 import browserinterface
 import realtimeaudio as rt
 import time
+
+
+""" Select algorithm """
+doa_algo = 'SRPPHAT'
+doa_algo = 'FRI'
+doa_algo = 'TOPS'
+doa_algo = 'CSSM'
+doa_algo = 'WAVES'
+doa_algo = 'MUSIC'
+doa_algo_config = dict(
+        MUSIC=dict(vrange=[0.2, 0.6]),
+        SRPPHAT=dict(vrange=[0.1, 0.4]),
+        FRI=dict(vrange=[0., 1.]),
+        )
 
 """Select appropriate microphone array"""
 mic_array = rt.bbb_arrays.R_compactsix_random; sampling_freq = 44100

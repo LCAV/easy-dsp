@@ -20,9 +20,14 @@
     "file": "voice_activity_detection.py"
   },
   {
-    "name": "Beamforming",
-    "description": "Beamforming in a particular direction",
+    "name": "Beamforming DAS",
+    "description": "Beamforming using delay and sum.",
     "file": "beamform_das.py"
+  },
+  {
+    "name": "Beamforming MVB",
+    "description": "Beamforming using minimum variance.",
+    "file": "beamform_mvb.py"
   },
   {
     "name": "Direction of arrival",
@@ -33,10 +38,5 @@
     "name": "FRIDA",
     "description": "Real-time DOA with FRIDA",
     "file": "frida.py"
-  },
-  {
-    "name": "Direction of arrival (offline)",
-    "description": "Visualize the direction of the sound from a recent recording",
-    "file": "direction_of_arrival_recording.py"
   }
 ]

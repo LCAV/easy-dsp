@@ -1,9 +1,4 @@
-import sys
-import numpy as np
-import matplotlib.pyplot as plt
-
 import browserinterface
-import algorithms as rt
 
 """Select appropriate sampling frequency"""
 try:
@@ -18,11 +13,15 @@ except:
 
 
 """capture parameters"""
-buffer_size = 4096
-num_channels = 2
+buffer_size = 1024; num_channels = 2
 
 """Defining callback"""
 def example_callback(audio):
+    
+    # check for correct audio shape
+    if audio.shape != (buffer_size, num_channels):
+        print("Did not receive expected audio!")
+        return
 
     # play back audio
     browserinterface.send_audio(audio)

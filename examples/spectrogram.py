@@ -1,16 +1,19 @@
+"""
+Perform frequency domain analysis with STFT (50% overlap)
+"""
+
 from __future__ import division
-import sys
 import numpy as np
 
 import browserinterface
-
 import algorithms as rt
 
-height = 200
-width = 200
-max = 100
+"""Spectrogram parameters"""
+buffer_size = 1024
+max_freq = 4000; max_val = 200; width = 200
+transform = 'fftw' # 'numpy', 'mlk', 'fftw'
 
-"""Select appropriate sampling frequency"""
+"""Read hardware config from file"""
 try:
     import json
     with open('./hardware_config.json', 'r') as config_file:
@@ -21,22 +24,24 @@ except:
     # default when no hw config file is present
     sampling_freq = 44100
 
-buffer_size = 1024
-fft_size = 2*buffer_size
-hop = buffer_size
+fft_size = 2*buffer_size; hop = buffer_size
+max_freq = min(sampling_freq/2, max_freq);
+height = int(np.ceil(float(max_freq)/sampling_freq*fft_size))
+num_channels=2
+
 
 def init(buffer_frames, rate, channels, volume):
     global stft
 
     # create STFT object
-    stft = rt.transforms.STFT(fft_size, rate, hop)
+    stft = rt.transforms.STFT(fft_size, rate, hop, transform=transform)
 
 
 def handle_data(audio):
     global stft
 
-    if (audio.shape[0] != browserinterface.buffer_frames 
-        or audio.shape[1] != browserinterface.channels):
+    # check for correct audio shape
+    if audio.shape != (buffer_size, num_channels):
         print("Did not receive expected audio!")
         return
 
@@ -51,10 +56,9 @@ browserinterface.register_when_new_config(init)
 browserinterface.register_handle_data(handle_data)
 
 spectrogram = browserinterface.add_handler(name="Heat Map", type='base:spectrogram',
-        parameters={'width': width, 'height': height, 'min': 0, 'max': 150, 'delta_freq': sampling_freq / fft_size})
+        parameters={'width': width, 'height': height, 'min': 0, 'max': max_val, 'delta_freq': sampling_freq / fft_size})
 
 """START"""
 browserinterface.start()
-browserinterface.change_config(channels=2, buffer_frames=buffer_size, 
-    volume=80, rate=sampling_freq)
+browserinterface.change_config(channels=num_channels, buffer_frames=buffer_size, volume=80, rate=sampling_freq)
 browserinterface.loop_callbacks()
