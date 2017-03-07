@@ -71,10 +71,10 @@ source = np.array(colorsys.hsv_to_rgb(0.11, 0.9, 1.))
 spatial_spectrum = np.zeros(num_pixels)
 
 map_val = np.zeros(num_pixels)
-ff = 0.9
+ff = 0.7
 
 def make_colors(azimuths, powers):
-    global old_azimuths
+    global old_azimuths, map_val
 
     P[:,:] = 0
     spatial_spectrum[:] = 0.1
