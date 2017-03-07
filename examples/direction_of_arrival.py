@@ -1,5 +1,7 @@
 import numpy as np
 
+import sys
+sys.path.append("..")
 import browserinterface
 import algorithms as rt
 
@@ -10,8 +12,10 @@ finding algorithms. Possible algorithms can be selected here:
 
 """ Select algorithm """
 doa_algo = 'SRPPHAT'
-doa_algo = 'FRI'
 doa_algo = 'MUSIC'
+# doa_algo = 'TOPS'
+doa_algo = 'CSSM'
+# doa_algo = 'WAVES'
 doa_algo_config = dict(
         MUSIC=dict(vrange=[0.2, 0.6]),
         SRPPHAT=dict(vrange=[0.1, 0.4]),
@@ -30,7 +34,7 @@ Select frequency range
 """
 n_bands = 20
 freq_range = [1000., 3500.]
-use_bin = False  # use top <n_bands> frequencies (True) or use all frequencies within specified range (False)
+use_bin = True  # use top <n_bands> frequencies (True) or use all frequencies within specified range (False)
 
 """
 Read hardware config from file
@@ -87,6 +91,12 @@ def init(buffer_frames, rate, channels, volume):
         doa = rt.doa.SRP(**doa_args)
     elif doa_algo == 'MUSIC':
         doa = rt.doa.MUSIC(**doa_args)
+    if doa_algo == 'WAVES':
+        doa = rt.doa.WAVES(**doa_args)
+    elif doa_algo == 'CSSM':
+        doa = rt.doa.CSSM(num_iter=1, **doa_args)
+    elif doa_algo == 'TOPS':
+        doa = rt.doa.TOPS(**doa_args)
     elif doa_algo == 'FRI':
         doa = rt.doa.FRIDA(max_four=2, signal_type='visibility', G_iter=1, **doa_args)
 
