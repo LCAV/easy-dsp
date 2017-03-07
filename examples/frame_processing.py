@@ -43,7 +43,7 @@ fir_coeff = signal.firwin(numtaps, [float(f1)/nrate, float(f2)/nrate],
 nfft = 2048
 buffer_size = nfft - numtaps + 1
 num_channels = 2
-transform = 'fftw' # 'numpy', 'mlk', 'fftw'
+transform = 'mkl' # 'numpy', 'mlk', 'fftw'
 
 """ Visualization parameters """
 under = 100 # undersample otherwise too many points

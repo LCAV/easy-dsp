@@ -127,8 +127,6 @@ class FRIDA(DOA):
                 self.GtG, self.GtG_inv = make_GtG_and_inv(self.G)
 
             # reconstruct point sources with FRI
-            import time
-            then = time.time()
             self.azimuth_recon, self.alpha_recon = \
                     pt_src_recon_multiband(
                             signal,
@@ -145,7 +143,6 @@ class FRIDA(DOA):
                             GtG_lst=self.GtG,
                             GtG_inv_lst=self.GtG_inv
                             )
-            compute_time = time.time() - then
 
     def _raw_average(self, X):
         ''' Correct the time rotation and average the raw microphone signal '''

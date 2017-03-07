@@ -2,16 +2,21 @@
 Perform frequency domain analysis with STFT (50% overlap)
 """
 
-from __future__ import division
+from __future__ import division, print_function
+import sys
 import numpy as np
+import time
 
 import browserinterface
 import algorithms as rt
 
 """Spectrogram parameters"""
 buffer_size = 1024
-max_freq = 4000; max_val = 200; width = 200
-transform = 'fftw' # 'numpy', 'mlk', 'fftw'
+max_freq = 3000
+min_val = 60
+max_val = 120
+width = 200
+transform = 'mkl' # 'numpy', 'mlk', 'fftw'
 
 """Read hardware config from file"""
 try:
@@ -46,6 +51,7 @@ def handle_data(audio):
         return
 
     # apply stft and istft for a few windows
+
     stft.analysis(audio[:,0])
     spectrum = (20 * np.log10(np.abs(stft.X[:height]))).tolist()
     spectrogram.send_data(spectrum)
@@ -56,7 +62,7 @@ browserinterface.register_when_new_config(init)
 browserinterface.register_handle_data(handle_data)
 
 spectrogram = browserinterface.add_handler(name="Heat Map", type='base:spectrogram',
-        parameters={'width': width, 'height': height, 'min': 0, 'max': max_val, 'delta_freq': sampling_freq / fft_size})
+        parameters={'width': width, 'height': height, 'min': min_val, 'max': max_val, 'delta_freq': sampling_freq / fft_size})
 
 """START"""
 browserinterface.start()

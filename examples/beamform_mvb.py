@@ -6,7 +6,7 @@ import algorithms as rt
 
 """Beamforming parameters"""
 direction = 70 # degrees
-transform = 'fftw' # 'numpy', 'mlk', 'fftw'
+transform = 'mkl' # 'numpy', 'mlk', 'fftw'
 num_snapshots = 50 # number of frames for estimating covariance matrix
 
 """
