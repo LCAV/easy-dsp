@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import colorsys
 
 import browserinterface
 import algorithms as rt
@@ -43,7 +44,7 @@ freq_range = [1000., 3500.]
 f_min = int(np.round(freq_range[0]/sampling_freq*nfft))
 f_max = int(np.round(freq_range[1]/sampling_freq*nfft))
 range_bins = np.arange(f_min, f_max+1)
-use_bin = True
+use_bin = False
 
 vrange = [1., 200.]
 
@@ -61,8 +62,34 @@ except:
 
 # a Bell curve for visualization
 sym_ind = np.concatenate((np.arange(0, 30), -np.arange(1,31)[::-1]))
-bell = np.exp(-sym_ind**2. / 4.)
-P = np.zeros(num_pixels, dtype=np.float)
+P = np.zeros((num_pixels, 3), dtype=np.float)
+old_azimuths = np.zeros(num_src)
+source_hue = [0, 0.5]
+source_sat = [0.8, 0.8]
+
+def make_colors(azimuths, powers):
+    global old_azimuths
+
+    P[:,:] = 0
+
+    # background color
+    for i in range(num_pixels):
+        P[i,:] = colorsys.hsv_to_rgb(0.7, 0.1, 0.1)
+
+    # source colors
+    for azimuth, power, hue, sat in zip(azimuths, powers, source_hue, source_sat):
+        i = num_pixels - 1 - int(round(num_pixels * azimuth / (2 * np.pi))) % num_pixels
+        value = (power - vrange[0]) / (vrange[1] - vrange[0])
+        if value > 1:
+            value = 1
+        if value < 0.1:
+            value = 0.1
+        P[i,:] = colorsys.hsv_to_rgb(hue, sat, value)
+        P[(i-1)%num_pixels,:] = colorsys.hsv_to_rgb(hue, sat, value*0.25)
+        P[(i+1)%num_pixels,:] = colorsys.hsv_to_rgb(hue, sat, value*0.25)
+
+    led_ring.send_colors(P)
+
 
 """Initialization block"""
 def init(buffer_frames, rate, channels, volume):
@@ -97,7 +124,7 @@ def apply_doa(audio):
     hop_size = int(nfft/2)
     n_snapshots = int(np.floor(buffer_size/hop_size))-1
     X_stft = rt.utils.compute_snapshot_spec(audio, nfft, 
-        n_snapshots, hop_size)
+        n_snapshots, hop_size, transform='mkl')
 
     # pick bands with most energy and perform DOA
     if use_bin:
@@ -109,20 +136,14 @@ def apply_doa(audio):
 
     # send to browser for visualization
     # Now map the angles to some function
-    P[:] = 0
-    for azimuth, power in zip(doa.azimuth_recon, doa.alpha_recon):
-        i = int(round(num_pixels * azimuth / (2 * np.pi)))
-        sigma = np.mean(power)
-        P[i:] += bell[:num_pixels-i] * sigma
-        P[:i] += bell[num_pixels-i:] * sigma
+    # send to lights if available
+    if led_ring:
+        make_colors(doa.azimuth_recon, doa.alpha_recon.mean(axis=1))
 
-    to_send = ((P - vrange[0]) / (vrange[1] - vrange[0]) + 0.05).tolist()
+    to_send = ((P[:,2] - vrange[0]) / (vrange[1] - vrange[0]) + 0.05).tolist()
     to_send.append(to_send[0])
     polar_chart.send_data([{ 'replace': to_send }])
 
-    # send to lights if available
-    if led_ring:
-        led_ring.lightify(vals=P, realtime=True)
 
 """Interface features"""
 browserinterface.register_when_new_config(init)

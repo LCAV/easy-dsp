@@ -104,11 +104,11 @@ def gen_far_field_ir(doa, L, fs, c, frac_delay):
             fb[k, m, delay_i:delay_i+(frac_delay-1)+1] += fractional_delay(delay_f, frac_delay)
     return fb
 
-def compute_snapshot_spec(signals, N, J, hop):
+def compute_snapshot_spec(signals, N, J, hop, transform='numpy'):
     nbin = N/2+1
     M = signals.shape[1]
     X = np.zeros([M,nbin,J],dtype=complex)
-    d = dft.DFT(N,M)
+    d = dft.DFT(N,M, transform=transform)
     for j in range(J):
         x, _ = select_slice(signals, j*hop, N)
         X[:,:,j] = d.analysis(x).T / float(N)

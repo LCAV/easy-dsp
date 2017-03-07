@@ -90,16 +90,20 @@ class NeoPixels(object):
         if self.mapper is not None:
             colors = self.mapper.to_rgba(pixel_values)
             colors = colors[:,:3]
+
         else:
             # nice map ?
             # It is good to have slightly less intensity
             # for lower sound intensity
-            colors = np.zeros((len(pixel_values), 3))
+            colors = np.zeros((len(pixel_values), 3), dtype=np.float)
             colors[:,0] = pixel_values
             colors[:,1] = 0.05 * (1. - pixel_values)
             colors[:,2] = 0.1 * (1. - pixel_values)
         
         # Send to the arduino
+        self.send_colors(colors)
+
+    def send_colors(self, colors):
         colors = np.reshape((colors * 254).round().astype(np.uint8),-1)
         self.arduino.write(colors.tobytes())
 

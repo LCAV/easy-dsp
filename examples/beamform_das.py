@@ -7,7 +7,7 @@ import time
 
 """Beamforming parameters"""
 direction = 70 # degrees
-transform = 'fftw' # 'numpy', 'mlk', 'fftw'
+transform = 'mkl' # 'numpy', 'mlk', 'fftw'
 
 """
 Read hardware config from file

@@ -10,12 +10,10 @@ finding algorithms. Possible algorithms can be selected here:
 
 """ Select algorithm """
 doa_algo = 'SRPPHAT'
-doa_algo = 'FRI'
 doa_algo = 'MUSIC'
 doa_algo_config = dict(
         MUSIC=dict(vrange=[0.2, 0.6]),
         SRPPHAT=dict(vrange=[0.1, 0.4]),
-        FRI=dict(vrange=[0., 1.]),
         )
 
 """
@@ -61,7 +59,7 @@ try:
     import matplotlib.cm as cm
     led_ring = rt.neopixels.NeoPixels(
             usb_port=led_ring_address,
-            colormap=cm.afmhot, 
+            colormap=None, 
             vrange=doa_algo_config[doa_algo]['vrange']
             )
     print("LED ring ready to use!")
@@ -87,8 +85,6 @@ def init(buffer_frames, rate, channels, volume):
         doa = rt.doa.SRP(**doa_args)
     elif doa_algo == 'MUSIC':
         doa = rt.doa.MUSIC(**doa_args)
-    elif doa_algo == 'FRI':
-        doa = rt.doa.FRIDA(max_four=2, signal_type='visibility', G_iter=1, **doa_args)
 
 
 """Callback"""
@@ -107,7 +103,7 @@ def apply_doa(audio):
     hop_size = int(nfft/2)
     n_snapshots = int(np.floor(buffer_size/hop_size))-1
     X_stft = rt.utils.compute_snapshot_spec(audio, nfft, 
-        n_snapshots, hop_size)
+        n_snapshots, hop_size, transform='mkl')
 
     # pick bands with most energy and perform DOA
     if use_bin:
@@ -118,8 +114,6 @@ def apply_doa(audio):
         doa.locate_sources(X_stft, freq_range=freq_range)
 
     # send to browser for visualization
-    if doa.grid.values.max() > 1:
-        doa.grid.values /= doa.grid.values.max()
     to_send = doa.grid.values.tolist()
     to_send.append(to_send[0])
     polar_chart.send_data([{ 'replace': to_send }])
