@@ -67,7 +67,11 @@ old_azimuths = np.zeros(num_src)
 source_hue = [0.11, 0.5]
 source_sat = [0.9, 0.8]
 background = np.array(colorsys.hsv_to_rgb(0.45, 0.2, 0.1))
+source = np.array(colorsys.hsv_to_rgb(0.11, 0.9, 1.))
 spatial_spectrum = np.zeros(num_pixels)
+
+map_val = np.zeros(num_pixels)
+ff = 0.9
 
 def make_colors(azimuths, powers):
     global old_azimuths
@@ -79,6 +83,9 @@ def make_colors(azimuths, powers):
     for i in range(num_pixels):
         P[i,:] = background
 
+    # forget!
+    map_val *= ff
+
     # source colors
     for azimuth, power, hue, sat in zip(azimuths, powers, source_hue, source_sat):
 
@@ -86,24 +93,30 @@ def make_colors(azimuths, powers):
         i = num_pixels - 1 - int(round(num_pixels * azimuth / (2 * np.pi))) % num_pixels
 
         # adjust range of power
-        value = ((np.log10(power) - vrange[0]) / (vrange[1] - vrange[0]) - 0.1) / 0.9
+        value = (np.log10(power) - vrange[0]) / (vrange[1] - vrange[0])
 
         # clamp the values
         if value > 1:
             value = 1
 
-        if value < 0.1:
-            value = 0.1
+        if value < 0.0:
+            value = 0.0
 
         # set the direction
-        if value > 0.1:
-            main_lobe = np.array(colorsys.hsv_to_rgb(hue, sat, value))
-            side_lobe = np.array(colorsys.hsv_to_rgb(hue, sat, 0.6 * value))
-            P[i,:] = main_lobe
-            P[(i-1)%num_pixels,:] = side_lobe
-            P[(i+1)%num_pixels,:] = side_lobe
+        if (value > 0.5):
+            map_val[i] = value
+            map_val[(i-1)%num_pixels] = 0.6 * value
+            map_val[(i+1)%num_pixels] = 0.6 * value
+
+        else:
+            map_val[i] += (1 - ff) * value
+            map_val[(i-1)%num_pixels] += (1 - ff) * value * 0.6
+            map_val[(i+1)%num_pixels] += (1 - ff) * value * 0.6
 
         spatial_spectrum[i] += value
+
+    for i in range(num_pixels):
+        P[i,:] = map_val[i] * source + (1 - map_val[i]) * background
 
     led_ring.send_colors(P)
 
