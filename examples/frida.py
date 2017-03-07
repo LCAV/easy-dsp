@@ -46,7 +46,7 @@ f_max = int(np.round(freq_range[1]/sampling_freq*nfft))
 range_bins = np.arange(f_min, f_max+1)
 use_bin = False
 
-vrange = [1., 200.]
+vrange = [0.1, 5.]
 
 """Check for LED Ring"""
 try:
@@ -64,29 +64,59 @@ except:
 sym_ind = np.concatenate((np.arange(0, 30), -np.arange(1,31)[::-1]))
 P = np.zeros((num_pixels, 3), dtype=np.float)
 old_azimuths = np.zeros(num_src)
-source_hue = [0, 0.5]
-source_sat = [0.8, 0.8]
+source_hue = [0.11, 0.5]
+source_sat = [0.9, 0.8]
+background = np.array(colorsys.hsv_to_rgb(0.45, 0.2, 0.1))
+source = np.array(colorsys.hsv_to_rgb(0.11, 0.9, 1.))
+spatial_spectrum = np.zeros(num_pixels)
+
+map_val = np.zeros(num_pixels)
+ff = 0.7
 
 def make_colors(azimuths, powers):
-    global old_azimuths
+    global old_azimuths, map_val
 
     P[:,:] = 0
+    spatial_spectrum[:] = 0.1
 
     # background color
     for i in range(num_pixels):
-        P[i,:] = colorsys.hsv_to_rgb(0.7, 0.1, 0.1)
+        P[i,:] = background
+
+    # forget!
+    map_val *= ff
 
     # source colors
     for azimuth, power, hue, sat in zip(azimuths, powers, source_hue, source_sat):
+
+        # compute bin location, led array is in the other direction
         i = num_pixels - 1 - int(round(num_pixels * azimuth / (2 * np.pi))) % num_pixels
-        value = (power - vrange[0]) / (vrange[1] - vrange[0])
+
+        # adjust range of power
+        value = (np.log10(power) - vrange[0]) / (vrange[1] - vrange[0])
+
+        # clamp the values
         if value > 1:
             value = 1
-        if value < 0.1:
-            value = 0.1
-        P[i,:] = colorsys.hsv_to_rgb(hue, sat, value)
-        P[(i-1)%num_pixels,:] = colorsys.hsv_to_rgb(hue, sat, value*0.25)
-        P[(i+1)%num_pixels,:] = colorsys.hsv_to_rgb(hue, sat, value*0.25)
+
+        if value < 0.0:
+            value = 0.0
+
+        # set the direction
+        if (value > 0.5):
+            map_val[i] = value
+            map_val[(i-1)%num_pixels] = 0.6 * value
+            map_val[(i+1)%num_pixels] = 0.6 * value
+
+        else:
+            map_val[i] += (1 - ff) * value
+            map_val[(i-1)%num_pixels] += (1 - ff) * value * 0.6
+            map_val[(i+1)%num_pixels] += (1 - ff) * value * 0.6
+
+        spatial_spectrum[i] += value
+
+    for i in range(num_pixels):
+        P[i,:] = map_val[i] * source + (1 - map_val[i]) * background
 
     led_ring.send_colors(P)
 
@@ -140,7 +170,7 @@ def apply_doa(audio):
     if led_ring:
         make_colors(doa.azimuth_recon, doa.alpha_recon.mean(axis=1))
 
-    to_send = ((P[:,2] - vrange[0]) / (vrange[1] - vrange[0]) + 0.05).tolist()
+    to_send = spatial_spectrum.tolist()
     to_send.append(to_send[0])
     polar_chart.send_data([{ 'replace': to_send }])
 
