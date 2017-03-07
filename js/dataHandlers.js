@@ -316,7 +316,7 @@ function spectrogram(html, parameters) {
       z: hdata,
       zmax: parameters.max,
       zmin: parameters.min,
-      type: 'heatmap',
+      type: 'heatmapgl',
       colorscale: 'Viridis',
       showscale: false,
       y0: 0,
@@ -326,24 +326,32 @@ function spectrogram(html, parameters) {
 
   Plotly.newPlot('specgram', pdata, layout);
 
-  var colCounter = 0;
-
   function newData(data) {
     var plotDiv = document.getElementById('specgram');
     var plotData = plotDiv.data;
 
-    for (row = 0 ; row < size[1] ; row++) {
-      plotData[0].z[row].shift();
-      plotData[0].z[row].push(data[row]);
+    function update() {
+      var row;
+
+      for (row = 0 ; row < size[1] ; row++) {
+        hdata[row].shift();
+        hdata[row].push(data[row]);
+      }
+
+      Plotly.animate('specgram', {
+            data: [{z: hdata}]
+          }, {
+            transition: {
+                duration: 0,
+            },
+            frame: {
+              duration: 0.,
+              redraw: false,
+          }
+      });
     }
 
-    colCounter = (colCounter + 1) % size[0];
-
-    if (colCounter % update_rate == 0) {
-      Plotly.redraw(plotDiv);
-    }
-    
-
+    requestAnimationFrame(update);
   }
 
   return {
