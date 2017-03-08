@@ -1,7 +1,5 @@
 import numpy as np
 
-import sys
-sys.path.append("..")
 import browserinterface
 import algorithms as rt
 
@@ -13,9 +11,6 @@ finding algorithms. Possible algorithms can be selected here:
 """ Select algorithm """
 doa_algo = 'SRPPHAT'
 doa_algo = 'MUSIC'
-# doa_algo = 'TOPS'
-doa_algo = 'CSSM'
-# doa_algo = 'WAVES'
 doa_algo_config = dict(
         MUSIC=dict(vrange=[0.2, 0.6]),
         SRPPHAT=dict(vrange=[0.1, 0.4]),
@@ -24,9 +19,11 @@ doa_algo_config = dict(
 """
 Number of snapshots for DOA will be: ~2*buffer_size/nfft
 """
-buffer_size = 1024; num_channels=6
+buffer_size = 1024
+num_channels=6
 nfft = 512
 num_angles = 60
+transform = 'mkl'
 
 """
 Select frequency range
@@ -90,6 +87,12 @@ def init(buffer_frames, rate, channels, volume):
         doa = rt.doa.SRP(**doa_args)
     elif doa_algo == 'MUSIC':
         doa = rt.doa.MUSIC(**doa_args)
+    elif doa_algo == 'CSSM':
+        doa = rt.doa.CSSM(num_iter=1, **doa_args)
+    elif doa_algo == 'WAVES':
+        doa = rt.doa.WAVES(num_iter=1, **doa_args)
+    elif doa_algo == 'TOPS':
+        doa = rt.doa.TOPS(**doa_args)
 
 
 """Callback"""
@@ -108,7 +111,7 @@ def apply_doa(audio):
     hop_size = int(nfft/2)
     n_snapshots = int(np.floor(buffer_size/hop_size))-1
     X_stft = rt.utils.compute_snapshot_spec(audio, nfft, 
-        n_snapshots, hop_size, transform='mkl')
+        n_snapshots, hop_size, transform=transform)
 
     # pick bands with most energy and perform DOA
     if use_bin:

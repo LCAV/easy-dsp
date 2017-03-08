@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 import colorsys
 
@@ -12,6 +11,7 @@ buffer_size = 8192; num_channels=6
 nfft = 512
 num_angles = 60
 num_src = 1
+transform = 'mkl'
 
 """
 Read hardware config from file
@@ -154,7 +154,7 @@ def apply_doa(audio):
     hop_size = int(nfft/2)
     n_snapshots = int(np.floor(buffer_size/hop_size))-1
     X_stft = rt.utils.compute_snapshot_spec(audio, nfft, 
-        n_snapshots, hop_size, transform='mkl')
+        n_snapshots, hop_size, transform=transform)
 
     # pick bands with most energy and perform DOA
     if use_bin:

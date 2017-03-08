@@ -36,11 +36,18 @@ class MUSIC(DOA):
     def __init__(self, L, fs, nfft, c=343.0, num_src=1, mode='far', r=None,
         azimuth=None, colatitude=None, **kwargs):
 
-        DOA.__init__(self, L=L, fs=fs, nfft=nfft, c=c, num_src=num_src, 
-            mode=mode, r=r, azimuth=azimuth, colatitude=colatitude, **kwargs)
+        DOA.__init__(self, L=L, fs=fs, nfft=nfft, c=c, 
+            num_src=num_src, mode=mode, r=r, azimuth=azimuth, 
+            colatitude=colatitude, **kwargs)
 
         self.Pssl = None
-
+        self.CC = np.zeros((self.M, self.M), dtype=np.complex64)
+        self.eigval = np.zeros(self.M, dtype=np.complex64)
+        self.eigvec = np.zeros((self.M,self.M), dtype=np.complex64)
+        self.noise_space = np.zeros((self.M,self.M-self.num_src),dtype=np.complex64)
+        self.music_test = np.zeros((self.M-self.num_src,self.grid.n_points),dtype=np.complex64)
+        
+    # @profile
     def _process(self, X):
         """
         Perform MUSIC for given frame in order to estimate steered response 
@@ -49,28 +56,21 @@ class MUSIC(DOA):
 
         self.Pssl = np.zeros((self.num_freq,self.grid.n_points))
 
-        # estimate cross correlation
-        # C_hat = self._compute_correlation_matrices(X)
-        CC = []
-        for k in self.freq_bins:
-            X_k = X[:,k,:]
-            CC.append( np.dot(X[:,k,:], np.conj(X[:,k,:]).T) )
-
         # compute response for each frequency
-        for i in range(self.num_freq):
-            k = self.freq_bins[i]
+        for i, k in enumerate(self.freq_bins):
 
-            # subspace decomposition
-            # Es, En, ws, wn = self._subspace_decomposition(C_hat[i,:,:])
-            # Es, En, ws, wn = self._subspace_decomposition(CC[i])
+            # estimate cross correlation
+            self.CC[:] = np.dot(X[:,k,:], np.conj(X[:,k,:]).T) 
 
-            w,v = np.linalg.eig(CC[i])
-            eig_order = np.flipud(np.argsort(abs(w)))
-            noise_space = eig_order[self.num_src:]
-            En = v[:,noise_space]
+            # determine signal and noise subspace
+            self.eigval[:],self.eigvec[:] = np.linalg.eig(self.CC)
+            eigord = np.argsort(abs(self.eigval))
+            self.noise_space[:] = self.eigvec[:,eigord[:-self.num_src]]
 
             # compute spatial spectrum
-            self.Pssl[i,:] = self._compute_spatial_spectrum(En,k)
+            self.music_test[:] = np.dot(self.noise_space.conj().T, 
+                self.mode_vec[k,:,:])
+            self.Pssl[i,:] = 1/np.sum(np.multiply(self.music_test,self.music_test.conj()), axis=0).real
 
         self.grid.set_values(np.sum(self.Pssl, axis=0)/self.num_freq)
 
@@ -94,10 +94,8 @@ class MUSIC(DOA):
 
     def _compute_correlation_matrices(self, X):
         C_hat = np.zeros([self.num_freq,self.M,self.M], dtype=complex)
-        for i in range(self.num_freq):
-            k = self.freq_bins[i]
-            X_k = X[:,k,:]
-            C_hat[i,:,:] = np.dot(X_k,X_k.T.conj())
+        for i, k in enumerate(self.freq_bins):
+            C_hat[i,:,:] = np.dot(X[:,k,:],X[:,k,:].T.conj())
         return C_hat/self.num_snap
 
 
@@ -123,35 +121,4 @@ class MUSIC(DOA):
 
         return Es, En, ws, wn
 
-
-    def plot_individual_spectrum(self):
-        """
-        Plot the steered response for each frequency.
-        """
-
-        # check if matplotlib imported
-        if matplotlib_available is False:
-            warnings.warn('Could not import matplotlib.')
-            return
-
-        # only for 2D
-        if self.grid.dim == 3:
-            pass
-        else:
-            warnings.warn('Only for 2D.')
-            return
-
-        # plot
-        for k in range(self.num_freq):
-
-            freq = float(self.freq_bins[k])/self.nfft*self.fs
-            azimuth = self.grid.azimuth * 180 / np.pi
-
-            plt.plot(azimuth, self.Pssl[k,0:len(azimuth)])
-
-            plt.ylabel('Magnitude')
-            plt.xlabel('Azimuth [degrees]')
-            plt.xlim(min(azimuth),max(azimuth))
-            plt.title('Steering Response Spectrum - ' + str(freq) + ' Hz')
-            plt.grid(True)
 
