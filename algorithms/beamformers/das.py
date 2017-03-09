@@ -63,7 +63,7 @@ class DAS(object):
 
         omega = 2 * np.pi * frequency
 
-        return np.exp(1j * omega * D / self.c)
+        return np.exp(-1j * omega * D / self.c)
 
 
     def compute_weights(self, direction=None):
@@ -83,11 +83,11 @@ class DAS(object):
 
         # far-field
         dist_m = -np.dot(self.L.T, src)
-        self.dist_cent = dist_m - dist_m.min()
+        self.dist_cent = dist_m - dist_m.max()
 
         for i, f in enumerate(self.frequencies):
             wavenum = 2*np.pi*f/self.c
-            self.weights[i,:] = np.exp(-1j * wavenum * self.dist_cent) / self.L.shape[1]
+            self.weights[i,:] = np.exp(1j * wavenum * self.dist_cent) / self.L.shape[1]
 
 
 

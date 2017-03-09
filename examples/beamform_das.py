@@ -6,7 +6,7 @@ import algorithms as rt
 import time
 
 """Beamforming parameters"""
-direction = 70 # degrees
+direction = 0 # degrees
 transform = 'mkl' # 'numpy', 'mlk', 'fftw'
 
 """
