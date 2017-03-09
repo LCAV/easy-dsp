@@ -100,13 +100,14 @@ class GridCircle(Grid):
         else:
             self.values = func(self.x, self.y)
 
+    # @profile
     def find_peaks(self, k=1):
 
         # make circular
         val_ext = np.append(self.values ,self.values[:10])
 
         # run peak finding
-        indexes = detect_peaks(val_ext, show=False) % self.n_points
+        indexes = detect_peaks(val_ext) % self.n_points
         candidates = np.unique(indexes)  # get rid of duplicates, if any
 
         # Select k largest

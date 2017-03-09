@@ -356,7 +356,7 @@ class DOA(object):
         phi_plt = self.grid.azimuth
 
         # determine amplitudes
-        from .fri import FRIDA
+        from .frida import FRIDA
         if not isinstance(self, FRIDA):  # use spatial spectrum
 
             dirty_img = self.grid.values
@@ -450,7 +450,7 @@ class DOA(object):
                   ncol=1, bbox_to_anchor=(0.9, -0.17),
                   handletextpad=.2, columnspacing=1.7, labelspacing=0.1)
 
-        ax.set_xlabel(r'azimuth $\bm{\varphi}$', fontsize=11)
+        # ax.set_xlabel(r'azimuth $\bm{\varphi}$', fontsize=11)
         ax.set_xticks(np.linspace(0, 2 * np.pi, num=12, endpoint=False))
         ax.xaxis.set_label_coords(0.5, -0.11)
         ax.set_yticks(np.linspace(0, 1, 2))
