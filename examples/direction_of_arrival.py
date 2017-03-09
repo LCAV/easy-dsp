@@ -1,4 +1,5 @@
 import numpy as np
+import colorsys
 
 import browserinterface
 import algorithms as rt
@@ -10,9 +11,9 @@ finding algorithms. Possible algorithms can be selected here:
 
 """ Select algorithm """
 doa_algo = 'SRPPHAT'
-doa_algo = 'MUSIC'
+#doa_algo = 'MUSIC'
 doa_algo_config = dict(
-        MUSIC=dict(vrange=[0.2, 0.6]),
+        MUSIC=dict(vrange=[0.1, 0.8]),
         SRPPHAT=dict(vrange=[0.1, 0.4]),
         )
 
@@ -61,13 +62,61 @@ try:
     import matplotlib.cm as cm
     led_ring = rt.neopixels.NeoPixels(
             usb_port=led_ring_address,
-            colormap=None, 
+            colormap=cm.winter, 
             vrange=doa_algo_config[doa_algo]['vrange']
             )
+    num_pixels = led_ring.num_pixels
     print("LED ring ready to use!")
 except:
     print("No LED ring available...")
+    num_pixels = 60
     led_ring = False
+
+# Color stuff
+sym_ind = np.concatenate((np.arange(0, 30), -np.arange(1,31)[::-1]))
+P = np.zeros((num_pixels, 3), dtype=np.float)
+background = np.array([1/6., 0.2, 0.1])
+source = np.array([0., 0.9, 1.])
+
+map_val = np.zeros(num_pixels)
+ff = 0.6
+
+def make_colors(powers):
+    global old_azimuths, map_val
+
+    P[:,:] = 0
+
+    # background color
+    for i in range(num_pixels):
+        P[i,:] = background
+    print max(powers)
+
+    # forget!
+    map_val *= ff
+
+    # source colors
+    for i in range(num_pixels):
+
+        # adjust range of power
+        vrange = doa_algo_config[doa_algo]['vrange']
+        value = (powers[i] - vrange[0]) / (vrange[1] - vrange[0])
+
+        # clamp the values
+        if value > 1:
+            value = 1
+
+        if value < 0.0:
+            value = 0.0
+
+        map_val[i] += (1 - ff) * value
+            
+
+        P[i,:] = colorsys.hsv_to_rgb(*(map_val[i] * source + (1 - map_val[i]) * background))
+        
+    print max(map_val)
+
+    led_ring.send_colors(P[::-1,:])
+
 
 """Initialization block"""
 print("Using " + doa_algo)
@@ -128,7 +177,8 @@ def apply_doa(audio):
 
     # send to lights if available
     if led_ring:
-        led_ring.lightify(vals=doa.grid.values, realtime=True)
+        make_colors(doa.grid.values)
+        #led_ring.lightify(vals=doa.grid.values, realtime=True)
 
 """Interface features"""
 browserinterface.register_when_new_config(init)
@@ -144,3 +194,4 @@ browserinterface.start()
 browserinterface.change_config(channels=num_channels, buffer_frames=buffer_size,
     rate=sampling_freq, volume=80)
 browserinterface.loop_callbacks()
+

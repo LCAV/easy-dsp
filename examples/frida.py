@@ -170,7 +170,7 @@ def apply_doa(audio):
     if led_ring:
         make_colors(doa.azimuth_recon, doa.alpha_recon.mean(axis=1))
 
-    to_send = spatial_spectrum.tolist()
+    to_send = spatial_spectrum[::-1].tolist()
     to_send.append(to_send[0])
     polar_chart.send_data([{ 'replace': to_send }])
 
