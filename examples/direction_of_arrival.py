@@ -89,7 +89,6 @@ def make_colors(powers):
     # background color
     for i in range(num_pixels):
         P[i,:] = background
-    print max(powers)
 
     # forget!
     map_val *= ff
@@ -113,8 +112,6 @@ def make_colors(powers):
 
         P[i,:] = colorsys.hsv_to_rgb(*(map_val[i] * source + (1 - map_val[i]) * background))
         
-    print max(map_val)
-
     led_ring.send_colors(P[::-1,:])
 
 
