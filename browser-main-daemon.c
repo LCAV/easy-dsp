@@ -17,6 +17,8 @@
 
 #include "browser-config.h"
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof *(a))
+
 
 void sig_handler(int signo)
 {
@@ -45,6 +47,12 @@ unsigned int* rate;
 int* volume;
 int* channels;
 
+// possible alsa configurations
+unsigned int* channelConfigs;
+unsigned int numChannelConfigs = 0;
+unsigned int* possibleRates;
+unsigned int numPossibleRates = 0;
+
 // a few flags
 int audio_thread_active_flag = 0;
 int new_config_received_flag = 0;
@@ -62,6 +70,8 @@ int main (int argc, char *argv[])
   *channels = EASY_DSP_NUM_CHANNELS;
   *volume = EASY_DSP_VOLUME;
   clients = NULL;
+
+  query_available_config();
 
   // "catch" SIGPIPE we get when we try to send data to a disconnected client
   if (signal(SIGPIPE, sig_handler) == SIG_ERR) {
@@ -96,6 +106,103 @@ int main (int argc, char *argv[])
 
   exit (0);
 }
+
+void query_available_config(void)
+{
+  unsigned int i;
+  int err;
+  unsigned int minval, maxval;
+  unsigned int numReadVals;
+  static const unsigned int rates[] = {
+    5512,
+    8000,
+    11025,
+    16000,
+    22050,
+    32000,
+    44100,
+    48000,
+    64000,
+    88200,
+    96000,
+    176400,
+    192000,
+  };
+
+  const char *device_name = "hw:0";
+  snd_pcm_hw_params_t *hw_params;
+
+  err = snd_pcm_open(&capture_handle, device_name, SND_PCM_STREAM_CAPTURE, 0);
+  if (err < 0) {
+      fprintf(stderr, "cannot open device '%s': %s\n", device_name, snd_strerror(err));
+      return 1;
+  }
+
+  snd_pcm_hw_params_alloca(&hw_params);
+  err = snd_pcm_hw_params_any(capture_handle, hw_params);
+  if (err < 0) {
+      fprintf(stderr, "cannot get hardware parameters: %s\n", snd_strerror(err));
+      snd_pcm_close(capture_handle);
+      return 1;
+  }
+
+  // query possible channel config
+  numReadVals = 0;
+  err = snd_pcm_hw_params_get_channels_min(hw_params, &minval);
+  if (err < 0) {
+      fprintf(stderr, "cannot get minimum channels count: %s\n", snd_strerror(err));
+      snd_pcm_close(capture_handle);
+      return 1;
+  }
+  err = snd_pcm_hw_params_get_channels_max(hw_params, &maxval);
+  if (err < 0) {
+      fprintf(stderr, "cannot get maximum channels count: %s\n", snd_strerror(err));
+      snd_pcm_close(capture_handle);
+      return 1;
+  }
+  for (i = minval; i <= maxval; ++i) {
+      if (!snd_pcm_hw_params_test_channels(capture_handle, hw_params, i))
+          numChannelConfigs++;
+  }
+  channelConfigs = malloc(sizeof(unsigned int)*numChannelConfigs);
+  for (i = minval; i <= maxval; ++i) {
+      if (!snd_pcm_hw_params_test_channels(capture_handle, hw_params, i)) {
+          channelConfigs[numReadVals] = i;
+          numReadVals++;
+        }
+  }
+  printf("Possible number of channels:");
+  for (i = 0; i < numChannelConfigs; i++) {
+    printf(" %u", channelConfigs[i]);
+  }
+  putchar('\n');
+
+  // query possible sample rate config
+  numReadVals = 0;
+  for (i = 0; i < ARRAY_SIZE(rates); ++i) {
+    if (!snd_pcm_hw_params_test_rate(capture_handle, hw_params, rates[i], 0)){
+      numPossibleRates++;
+    }
+  }
+  possibleRates = malloc(sizeof(unsigned int)*numPossibleRates);
+  for (i = 0; i < ARRAY_SIZE(rates); ++i) {
+    if (!snd_pcm_hw_params_test_rate(capture_handle, hw_params, rates[i], 0)){
+      possibleRates[numReadVals] = rates[i];
+      numReadVals++;
+    }
+  }
+  printf("Possible sampling rates:");
+  for (i = 0; i < numPossibleRates; i++) {
+    printf(" %u", possibleRates[i]);
+  }
+  putchar('\n');
+
+  snd_pcm_close(capture_handle);
+
+  return;
+
+}
+
 
 void* handle_audio(void* nothing)
 {
@@ -407,6 +514,20 @@ void* handle_connections_audio(void* nothing) {
     easy_dsp_hdr_t magic_byte = EASY_DSP_HDR_CONFIG;
     write(s2, &magic_byte, sizeof(easy_dsp_hdr_t));
     write(s2, &audio_cfg, sizeof(config_t));
+
+    // Send possible configurations
+    magic_byte = EASY_DSP_HDR_CHANNELS;
+    write(s2, &magic_byte, sizeof(easy_dsp_hdr_t));
+    int configSize = sizeof(unsigned int)*numChannelConfigs;
+    write(s2, &configSize, sizeof(configSize));
+    write(s2, channelConfigs, configSize);
+
+    magic_byte = EASY_DSP_HDR_RATES;
+    write(s2, &magic_byte, sizeof(easy_dsp_hdr_t));
+    configSize = sizeof(unsigned int)*numPossibleRates;
+    write(s2, &configSize, sizeof(configSize));
+    write(s2, possibleRates, configSize);
+
 
     // Create new client and add to the linked list
     struct client* new_client = malloc(sizeof(struct client));

@@ -365,27 +365,56 @@ wsPythonServer.onmessage = function(e) {
 // Input stream: audio and configuration
 function onWSAudioMessage(e) {
   if (typeof e.data == "string") { // configuration
+
+
     var conf = JSON.parse(e.data);
-    config = conf;
-    console.log("Config received:", config);
-    displayConfig();
 
-    // If the audio was playing, we need to recreate
-    // the stream using the new configuration
+    if(conf.hasOwnProperty('rate')){ // new config
 
-    if (inputStream) {
-      // check the current status of the source
-      var was_playing = !(inputStream.isStopped());
+      config = conf;
+      console.log("Config received:", config);
+      displayConfig();
 
-      // destroy it
-      inputStream.destroyAudio();
+      // If the audio was playing, we need to recreate
+      // the stream using the new configuration
 
-      // if it was playing before, restart it
-      if (was_playing) {
-        inputStream = new sourceAudio(audioCt, conf);
+      if (inputStream) {
+        // check the current status of the source
+        var was_playing = !(inputStream.isStopped());
+
+        // destroy it
+        inputStream.destroyAudio();
+
+        // if it was playing before, restart it
+        if (was_playing) {
+          inputStream = new sourceAudio(audioCt, conf);
+        }
       }
+    } else if( conf.hasOwnProperty('possible_channel') ) { // supported config info
+
+        var channels = conf.possible_channel;
+        var sel = document.getElementById('config-channels');
+        for(var i = 0; i < channels.length; i++) {
+            var opt = document.createElement('option');
+            opt.innerHTML = channels[i];
+            opt.value = channels[i];
+            sel.appendChild(opt);
+        }
+
+        var rates = conf.possible_rates;
+        var sel = document.getElementById('config-rate');
+        for(var i = 0; i < rates.length; i++) {
+            var opt = document.createElement('option');
+            opt.innerHTML = rates[i];
+            opt.value = rates[i];
+            sel.appendChild(opt);
+        }
+
     }
+
     return;
+
+
   }
   b = e;
   // console.log(e.data);
@@ -393,6 +422,7 @@ function onWSAudioMessage(e) {
     inputStream.loadData(e.data);
   }
 }
+
 var inputConfigRate = $('#config-rate');
 var inputConfigBuffer = $('#config-buffer');
 var inputConfigChannels = $('#config-channels');

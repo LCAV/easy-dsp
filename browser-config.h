@@ -24,6 +24,8 @@
 typedef uint16_t easy_dsp_hdr_t;
 #define EASY_DSP_HDR_AUDIO                  (0xA3B4)
 #define EASY_DSP_HDR_CONFIG                 (0x1C2D)
+#define EASY_DSP_HDR_CHANNELS               (0xFFFF)
+#define EASY_DSP_HDR_RATES                  (0xFFFE)
 
 // Define a union to access config in different ways
 typedef union

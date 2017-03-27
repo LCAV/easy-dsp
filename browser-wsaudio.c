@@ -11,6 +11,7 @@
 
 #include "browser-config.h"
 
+
 void sig_handler(int signo)
 {
   if (signo == SIGPIPE) {
@@ -21,6 +22,7 @@ void sig_handler(int signo)
 void* main_ws(void* nothing);
 config_t audio_cfg;
 void* send_config(libwebsock_client_state *state);
+void* send_possible_config(libwebsock_client_state *state);
 
 struct ws_client {
   libwebsock_client_state* c;
@@ -29,6 +31,12 @@ struct ws_client {
 
 struct ws_client* ws_clients;
 pthread_mutex_t ws_client_lock;
+
+// possible alsa configurations
+unsigned int* channelConfigs;
+unsigned int numChannelConfigs;
+unsigned int* possibleRates;
+unsigned int numPossibleRates;
 
 int main(void)
 {
@@ -165,6 +173,42 @@ int main(void)
       pthread_mutex_unlock(&ws_client_lock);
 
     }
+    else if (magic_byte == EASY_DSP_HDR_CHANNELS)
+    {
+      // receive size
+      int configSize;
+      t = recv(s, &configSize, sizeof(int), MSG_WAITALL);
+      numChannelConfigs = configSize / sizeof(unsigned int);
+      // receive data
+      channelConfigs = malloc(sizeof(unsigned int)*numChannelConfigs);
+      t = recv(s, channelConfigs, configSize, MSG_WAITALL);
+
+      printf("Possible number of channels:");
+      int i;
+      for (i = 0; i < numChannelConfigs; i++) {
+        printf(" %u", channelConfigs[i]);
+      }
+      putchar('\n');
+
+    }
+    else if (magic_byte == EASY_DSP_HDR_RATES)
+    {
+      // receive size
+      int configSize;
+      t = recv(s, &configSize, sizeof(int), MSG_WAITALL);
+      numPossibleRates = configSize / sizeof(unsigned int);
+      // receive data
+      possibleRates = malloc(sizeof(unsigned int)*numPossibleRates);
+      t = recv(s, possibleRates, configSize, MSG_WAITALL);
+
+      printf("Possible rates:");
+      int i;
+      for (i = 0; i < numPossibleRates; i++) {
+        printf(" %u", possibleRates[i]);
+      }
+      putchar('\n');
+
+    }
 
   }
 
@@ -199,6 +243,7 @@ onopen(libwebsock_client_state *state)
 {
   // printf("open\n");
   send_config(state);
+  send_possible_config(state);
   struct ws_client* new_client = malloc(sizeof(struct ws_client));
   new_client->next = ws_clients;
   new_client->c = state;
@@ -214,6 +259,47 @@ send_config(libwebsock_client_state *state)
   char* c = conf;
   sprintf(conf, "{\"buffer_frames\":%d,\"rate\":%d,\"channels\":%d,\"volume\":%d}", 
       audio_cfg.config.buffer_frames, audio_cfg.config.rate, audio_cfg.config.channels, audio_cfg.config.volume); 
+  libwebsock_send_text(state, c);
+
+  return NULL;
+}
+
+void*
+send_possible_config(libwebsock_client_state *state)
+{
+  char conf[100];
+  char* c = conf;
+
+  // place channel info into string
+  char s_channel[20] = {0};
+  int n = 0;
+  for (int i = 0; i < numChannelConfigs; i++) {
+    if (i == 0)
+        n += sprintf (&s_channel[n], "[%u,", channelConfigs[i]);
+    else if (i == numChannelConfigs - 1)
+        n += sprintf (&s_channel[n], "%u]", channelConfigs[i]);
+    else
+        n += sprintf (&s_channel[n], "%u,", channelConfigs[i]);
+  } 
+  printf ("\nPossible number of channels: %s\n", s_channel);
+
+  // place rate info into string
+  char s_rates[20] = {0};
+  n = 0;
+  for (int i = 0; i < numPossibleRates; i++) {
+    if (i == 0)
+        n += sprintf (&s_rates[n], "[%u,", possibleRates[i]);
+    else if (i == numPossibleRates - 1)
+        n += sprintf (&s_rates[n], "%u]", possibleRates[i]);
+    else
+        n += sprintf (&s_rates[n], "%u,", possibleRates[i]);
+  } 
+  printf ("\nPossible rates: %s\n", s_rates);
+
+  // format as JSON
+  sprintf(conf, "{\"possible_channel\":%s,\"possible_rates\":%s}", 
+      s_channel, s_rates); 
+  printf("\n%s\n", conf);
   libwebsock_send_text(state, c);
 
   return NULL;

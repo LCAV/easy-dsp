@@ -40,6 +40,9 @@ channels = 6
 buffer_frames = 4096
 volume = 80
 
+valid_rates = None
+valid_num_channels = None
+
 # Callbacks functions
 handle_data = 0
 when_new_config = 0
@@ -124,27 +127,41 @@ class StreamClient(WebSocketClient):
         global bi_recordings
         global bi_buffer
         global r_calls
-        if not m.is_binary: # new configuration
-            global rate
-            global channels
-            global buffer_frames
-            global volume
 
-            bi_audio_start = None
-            bi_audio_number = 0
+        if not m.is_binary: # configuration data
 
             m = json.loads(m.data)
-            rate = m['rate']
-            channels = m['channels']
-            buffer_frames = m['buffer_frames']
-            volume = m['volume']
 
-            bi_buffer = np.zeros((buffer_frames, channels), dtype=np.int16)
-            for recording in bi_recordings:
-                recording['buffer'] = np.empty([0, channels], dtype=np.int16)
+            try:
 
-            if when_new_config != 0:
-                r_calls.put((when_new_config, (buffer_frames, rate, channels, volume)))
+                global rate
+                global channels
+                global buffer_frames
+                global volume
+
+                bi_audio_start = None
+                bi_audio_number = 0
+
+                rate = m['rate']
+                channels = m['channels']
+                buffer_frames = m['buffer_frames']
+                volume = m['volume']
+
+                bi_buffer = np.zeros((buffer_frames, channels), dtype=np.int16)
+                for recording in bi_recordings:
+                    recording['buffer'] = np.empty([0, channels], dtype=np.int16)
+
+                if when_new_config != 0:
+                    r_calls.put((when_new_config, (buffer_frames, rate, channels, volume)))
+
+            except:
+
+                global valid_num_channels
+                global valid_rates
+
+                valid_num_channels = m['possible_channel']
+                valid_rates = m['possible_rates']
+
         else: # new audio data
             # We convert the binary stream into a 2D Numpy array of 16-bits integers
             data = bytearray()
