@@ -1,17 +1,6 @@
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <websock/websock.h>
-#include <pthread.h>
-#include <string.h>
-#include <jansson.h>
-#include <unistd.h>
+#include "browser-wsconfig.h"
 
-#include "browser-config.h"
-
-int
-onmessage(libwebsock_client_state *state, libwebsock_message *msg)
+int onmessage(libwebsock_client_state *state, libwebsock_message *msg)
 {
   fprintf(stderr, "Received message from client: %d\n", state->sockfd);
   fprintf(stderr, "Message opcode: %d\n", msg->opcode);
@@ -39,51 +28,28 @@ onmessage(libwebsock_client_state *state, libwebsock_message *msg)
   printf("New config: %d %d %d %d\n", 
       audio_cfg.config.buffer_frames, audio_cfg.config.rate, audio_cfg.config.channels, audio_cfg.config.volume);
 
-  int s, len;
-  struct sockaddr_un remote;
-  const char *SOCKNAME = EASY_DSP_CONTROL_SOCKET;
+  fprintf(stdout, "Sent to setter.\n");
 
-  if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-      perror("socket");
-      exit(1);
-  }
-
-  printf("Trying to connect...\n");
-
-  remote.sun_family = AF_UNIX;
-  strcpy(remote.sun_path, SOCKNAME);
-  len = strlen(remote.sun_path) + sizeof(remote.sun_family);
-  if (connect(s, (struct sockaddr *)&remote, len) == -1) {
-      perror("connect");
-      exit(1);
-  }
-
-  printf("Connected.\n");
-
-  write(s, &audio_cfg, sizeof(config_t));
-  printf("Config sent\n");
-
-  close(s);
+  set_config(&audio_cfg);
 
   return 0;
 }
 
-int
-onopen(libwebsock_client_state *state)
+int onopen(libwebsock_client_state *state)
 {
   fprintf(stderr, "onopen: %d\n", state->sockfd);
   return 0;
 }
 
-int
-onclose(libwebsock_client_state *state)
+int onclose(libwebsock_client_state *state)
 {
   fprintf(stderr, "onclose: %d\n", state->sockfd);
   return 0;
 }
 
-int main(void)
+void wsconfig_main(void)
 {
+
   libwebsock_context *ctx = NULL;
   ctx = libwebsock_init();
   if(ctx == NULL) {
@@ -96,5 +62,5 @@ int main(void)
   ctx->onopen = onopen;
   ctx->onclose = onclose;
   libwebsock_wait(ctx);
-  return 0;
+  return;
 }

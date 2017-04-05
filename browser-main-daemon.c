@@ -16,6 +16,7 @@
 #include <stdint.h>
 
 #include "browser-config.h"
+#include "browser-wsconfig.h"
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof *(a))
 
@@ -42,10 +43,10 @@ pthread_mutex_t audio_client_lock;
 
 // alsa parameters
 snd_pcm_t *capture_handle;
-int* buffer_frames;
+unsigned int* buffer_frames;
 unsigned int* rate;
-int* volume;
-int* channels;
+unsigned int* volume;
+unsigned int* channels;
 
 // possible alsa configurations
 unsigned int* channelConfigs;
@@ -81,6 +82,10 @@ int main (int argc, char *argv[])
   pthread_t connections_audio_thread;
   pthread_t connections_control_thread;
 
+  if( pthread_create(&connections_control_thread, NULL, handle_connections_control, NULL) < 0) {
+      perror("could not create thread to handle connections control");
+      return 1;
+  }
 
   if( pthread_create(&connections_audio_thread, NULL, handle_connections_audio, NULL) < 0) {
       perror("could not create thread to handle connections audio");
@@ -93,16 +98,11 @@ int main (int argc, char *argv[])
   else
     audio_thread_active_flag = 1;  // Let the world know we are active
 
-  if( pthread_create(&connections_control_thread, NULL, handle_connections_control, NULL) < 0) {
-      perror("could not create thread to handle connections control");
-      return 1;
+  while (true) {
+      // Sleep for a long time to not take CPU cycles. ANY constant could work
+      // here.
+      sleep(10);
   }
-
-    while (true) {
-        // Sleep for a long time to not take CPU cycles. ANY constant could work
-        // here.
-        sleep(10);
-    }
 
   exit (0);
 }
@@ -382,94 +382,62 @@ void* handle_audio(void* nothing)
   return NULL;
 }
 
+
+
+
 void *handle_connections_control(void* nothing) 
 {
-  const char *SOCKNAMEC = EASY_DSP_CONTROL_SOCKET;
-  unlink(SOCKNAMEC);
-  int sfd, s2;
-  ssize_t len;
-  struct sockaddr_un addr, remote;
-  config_t audio_cfg;
-
-  sfd = socket(AF_UNIX, SOCK_STREAM, 0);            /* Create socket */
-  if (sfd == -1) {
-    fprintf (stderr, "cannot create the socket control\n");
-    return NULL;
-  }
-
-  memset(&addr, 0, sizeof(struct sockaddr_un));     /* Clear structure */
-  addr.sun_family = AF_UNIX;                            /* UNIX domain address */
-  strncpy(addr.sun_path, SOCKNAMEC, sizeof(addr.sun_path) - 1);
-
-  if (bind(sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1) {
-    fprintf (stderr, "cannot bind the socket control\n");
-    return NULL;
-  }
-
-  listen(sfd, 3);
-  fprintf (stdout, "Bind successful control\n");
-
-  while (1) {
-    fprintf(stdout, "Waiting for a connection...\n");
-    socklen_t t = sizeof(remote);
-    if ((s2 = accept(sfd, (struct sockaddr *)&remote, &t)) == -1) {
-      fprintf (stderr, "cannot accept the connection control\n");
-      continue;
-    }
-
-    fprintf(stdout, "New client control\n");
-
-    // Get the config
-    len = recv(s2, &audio_cfg, sizeof(config_t), MSG_WAITALL);
-    if (len != sizeof(config_t))
-    {
-      // If there is an error, just ignore it
-      fprintf(stderr, "Error when receiving new config.\n");
-      continue;
-    }
-
-    // Let the audio thread know that new config has been received
-    new_config_received_flag = 1;
-
-    // Wait for the audio thread to stop
-    while (audio_thread_active_flag)
-      ;
-
-    // Save the new config
-    *buffer_frames = audio_cfg.config.buffer_frames;
-    *rate = audio_cfg.config.rate;
-    *channels = audio_cfg.config.channels;
-    *volume = audio_cfg.config.volume;
-
-    // Send the new config to clients
-    struct client* client;
-    for (client = clients; client != NULL; client = (*client).next) {
-
-      // First write the config magic byte
-      easy_dsp_hdr_t magic_byte = EASY_DSP_HDR_CONFIG;
-      write((*client).addr, &magic_byte, sizeof(magic_byte));
-
-      // then send the config
-      write((*client).addr, &audio_cfg, sizeof(config_t));
-
-    }
-
-    fprintf(stdout, "New configuration: %d %d %d %d", *buffer_frames, *rate, *channels, *volume);
-
-    // Wait for a new configuration
-    new_config_received_flag = 0;
-
-    if( pthread_create(audio_thread, NULL, handle_audio, NULL) < 0) {
-        perror("could not create thread to handle audio ALSA");
-        return NULL;
-    }
-    else
-      audio_thread_active_flag = 1;
-
-  }
-
-  return NULL;
+  wsconfig_main();
+  while(1);
 }
+
+
+void set_config (config_t* new_audio_cfg) {
+
+
+  // Let the audio thread know that new config has been received
+  new_config_received_flag = 1;
+
+  // Wait for the audio thread to stop
+  while (audio_thread_active_flag);
+  fprintf(stdout, "Audio thread momentarilly stopped for setting new parameters.\n");
+
+  // Save the new config
+  *buffer_frames = new_audio_cfg->config.buffer_frames;
+  *rate = new_audio_cfg->config.rate;
+  *channels = new_audio_cfg->config.channels;
+  *volume = new_audio_cfg->config.volume;
+
+  // Send the new config to clients
+  struct client* client;
+  for (client = clients; client != NULL; client = (*client).next) {
+
+    // First write the config magic byte
+    easy_dsp_hdr_t magic_byte = EASY_DSP_HDR_CONFIG;
+    write((*client).addr, &magic_byte, sizeof(magic_byte));
+
+    // then send the config
+    write((*client).addr, new_audio_cfg, sizeof(config_t));
+
+  }
+
+  fprintf(stdout, "New configuration: %d %d %d %d\n", *buffer_frames, *rate, *channels, *volume);
+
+  // Wait for a new configuration
+  new_config_received_flag = 0;
+
+  if( pthread_create(audio_thread, NULL, handle_audio, NULL) < 0) {
+      perror("could not create thread to handle audio ALSA");
+      return NULL;
+  }
+  else
+    audio_thread_active_flag = 1;
+
+  return;
+
+
+}
+
 
 void* handle_connections_audio(void* nothing) {
   const char *SOCKNAME = EASY_DSP_AUDIO_SOCKET;

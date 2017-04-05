@@ -33,12 +33,14 @@ typedef union
   uint8_t bytes[4*sizeof(uint32_t)];
   uint32_t words[4];
   struct {
-    int buffer_frames;
-    int rate;
-    int channels;
-    int volume;
+    unsigned int buffer_frames;
+    unsigned int rate;
+    unsigned int channels;
+    unsigned int volume;
   } config;
 }
 config_t;
+
+void set_config(config_t*);
 
 #endif /* _BROWSER_CONFIG_H_ */

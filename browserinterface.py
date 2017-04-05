@@ -132,7 +132,7 @@ class StreamClient(WebSocketClient):
 
             m = json.loads(m.data)
 
-            try:
+            if 'rate' in m:
 
                 global rate
                 global channels
@@ -154,7 +154,7 @@ class StreamClient(WebSocketClient):
                 if when_new_config != 0:
                     r_calls.put((when_new_config, (buffer_frames, rate, channels, volume)))
 
-            except:
+            elif 'possible_channel' in m:
 
                 global valid_num_channels
                 global valid_rates
