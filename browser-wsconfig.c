@@ -1,7 +1,6 @@
 #include "browser-wsconfig.h"
 
-int onmessage(libwebsock_client_state *state, libwebsock_message *msg)
-{
+int onmessage(libwebsock_client_state *state, libwebsock_message *msg) {
   fprintf(stderr, "Received message from client: %d\n", state->sockfd);
   fprintf(stderr, "Message opcode: %d\n", msg->opcode);
   fprintf(stderr, "Payload Length: %llu\n", msg->payload_len);
@@ -28,28 +27,22 @@ int onmessage(libwebsock_client_state *state, libwebsock_message *msg)
   printf("New config: %d %d %d %d\n", 
       audio_cfg.config.buffer_frames, audio_cfg.config.rate, audio_cfg.config.channels, audio_cfg.config.volume);
 
-  fprintf(stdout, "Sent to setter.\n");
-
   set_config(&audio_cfg);
 
   return 0;
 }
 
-int onopen(libwebsock_client_state *state)
-{
+int onopen(libwebsock_client_state *state) {
   fprintf(stderr, "onopen: %d\n", state->sockfd);
   return 0;
 }
 
-int onclose(libwebsock_client_state *state)
-{
+int onclose(libwebsock_client_state *state) {
   fprintf(stderr, "onclose: %d\n", state->sockfd);
   return 0;
 }
 
-void wsconfig_main(void)
-{
-
+void wsconfig_main(void) {
   libwebsock_context *ctx = NULL;
   ctx = libwebsock_init();
   if(ctx == NULL) {

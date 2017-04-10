@@ -44,3 +44,4 @@ config_t;
 void set_config(config_t*);
 
 #endif /* _BROWSER_CONFIG_H_ */
+
