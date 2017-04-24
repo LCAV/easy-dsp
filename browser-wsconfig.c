@@ -24,8 +24,8 @@ int onmessage(libwebsock_client_state *state, libwebsock_message *msg) {
   audio_cfg.config.channels = json_integer_value(channels);
   audio_cfg.config.volume = json_integer_value(volume);
 
-  printf("New config: %d %d %d %d\n", 
-      audio_cfg.config.buffer_frames, audio_cfg.config.rate, audio_cfg.config.channels, audio_cfg.config.volume);
+  printf("New config: %d %d %d %d\n", audio_cfg.config.buffer_frames, 
+    audio_cfg.config.rate, audio_cfg.config.channels, audio_cfg.config.volume);
 
   set_config(&audio_cfg);
 

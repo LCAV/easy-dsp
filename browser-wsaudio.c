@@ -17,7 +17,6 @@ unsigned int buffer_size;
 
 
 void send_audio(char* buffer) {
-
   // Send the audio buffer to all clients
   struct ws_client* previous = NULL;
   pthread_mutex_lock(&ws_client_lock);
@@ -35,11 +34,11 @@ void send_audio(char* buffer) {
     }
   }
   pthread_mutex_unlock(&ws_client_lock);
-
 }
 
 void send_new_audio_config(void) {
-  fprintf(stdout, "wsaudio: Sending new configuration buffer_frames=%d rate=%d channels=%d volume=%d.\n", buffer_frames, rate, channels, volume);
+  fprintf(stdout, "wsaudio: Sending new configuration buffer_frames=%d \
+    rate=%d channels=%d volume=%d.\n", buffer_frames, rate, channels, volume);
 
   buffer_size = (buffer_frames) * (channels) * EASY_DSP_AUDIO_FORMAT_BYTES;
   
@@ -73,18 +72,17 @@ int onopen_audio(libwebsock_client_state *state) {
   return 0;
 }
 
-void* send_config(libwebsock_client_state *state)
-{
+void* send_config(libwebsock_client_state *state) {
   char conf[100];
   char* c = conf;
-  sprintf(conf, "{\"buffer_frames\":%d,\"rate\":%d,\"channels\":%d,\"volume\":%d}", buffer_frames, rate, channels, volume); 
+  sprintf(conf, "{\"buffer_frames\":%d,\"rate\":%d,\"channels\":%d, \
+    \"volume\":%d}", buffer_frames, rate, channels, volume); 
   libwebsock_send_text(state, c);
 
   return NULL;
 }
 
-void* send_possible_config(libwebsock_client_state *state)
-{
+void* send_possible_config(libwebsock_client_state *state) {
   char conf[100];
   char* c = conf;
 
@@ -123,8 +121,7 @@ void* send_possible_config(libwebsock_client_state *state)
   return NULL;
 }
 
-int onclose_audio(libwebsock_client_state *state)
-{
+int onclose_audio(libwebsock_client_state *state) {
   pthread_mutex_lock(&ws_client_lock);
   struct ws_client* c;
   struct ws_client* previous = NULL;
@@ -161,6 +158,6 @@ void wsaudio_main(void) {
   ctx->onclose = onclose_audio;
   libwebsock_wait(ctx);
 
-  return NULL;
+  return;
 }
 

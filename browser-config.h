@@ -28,8 +28,7 @@ typedef uint16_t easy_dsp_hdr_t;
 #define EASY_DSP_HDR_RATES                  (0xFFFE)
 
 // Define a union to access config in different ways
-typedef union
-{
+typedef union {
   uint8_t bytes[4*sizeof(uint32_t)];
   uint32_t words[4];
   struct {
