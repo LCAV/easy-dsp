@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <alsa/asoundlib.h>
-#include <sys/socket.h>
 #include <sys/un.h>
 #include <pthread.h>
 #include <signal.h>
