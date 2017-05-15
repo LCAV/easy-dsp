@@ -1,7 +1,6 @@
 #ifndef _BROWSER_WSCONFIG_H_
 #define _BROWSER_WSCONFIG_H_
 
-#include <sys/socket.h>
 #include <sys/un.h>
 #include <stdio.h>
 #include <stdlib.h>

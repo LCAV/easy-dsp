@@ -11,9 +11,21 @@
 #define EASY_DSP_VOLUME                     (80)
 #define EASY_DSP_NUM_CHANNELS               (6)
 #define EASY_DSP_AUDIO_FREQ_HZ              (48000)
-#define EASY_DSP_AUDIO_FORMAT_BITS          (16) // NOT changeable!
+#define EASY_DSP_AUDIO_FORMAT_BITS          (16) // cannot be changed!
 #define EASY_DSP_AUDIO_FORMAT_BYTES         (EASY_DSP_AUDIO_FORMAT_BITS / 8)
 #define EASY_DSP_BUFFER_SIZE_BYTES          (4096)
+
+// configuration parameters
+extern unsigned int buffer_frames;
+extern unsigned int rate;
+extern unsigned int volume;
+extern unsigned int channels;
+
+// possible alsa configurations
+extern unsigned int* channelConfigs;
+extern unsigned int numChannelConfigs;
+extern unsigned int* possibleRates;
+extern unsigned int numPossibleRates;
 
 // Define a union to access config in different ways
 typedef union {

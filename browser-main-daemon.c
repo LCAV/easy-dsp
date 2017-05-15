@@ -14,7 +14,6 @@
 #include <unistd.h>
 #include <stdint.h>
 
-#include "global.h"
 #include "browser-config.h"
 #include "browser-wsconfig.h"
 #include "browser-wsaudio.h"
@@ -48,7 +47,7 @@ snd_pcm_t *capture_handle;
 int audio_thread_active_flag = 0;
 int new_config_received_flag = 0;
 
-// configuration parameters
+// initialize configuration parameters
 unsigned int buffer_frames = EASY_DSP_BUFFER_SIZE_BYTES;
 unsigned int rate = EASY_DSP_AUDIO_FREQ_HZ;
 unsigned int volume = EASY_DSP_VOLUME;
@@ -62,6 +61,7 @@ unsigned int numPossibleRates= 0;
 
 
 int main(void) {
+
   audio_thread = malloc(sizeof(*audio_thread));
   clients = NULL;
 
@@ -188,6 +188,70 @@ void query_available_config(void) {
   putchar('\n');
 
   snd_pcm_close(capture_handle);
+
+  // // TODO : query possible accesses and formats
+  // static const snd_pcm_access_t accesses[] = {
+  //   SND_PCM_ACCESS_MMAP_INTERLEAVED,
+  //   SND_PCM_ACCESS_MMAP_NONINTERLEAVED,
+  //   SND_PCM_ACCESS_MMAP_COMPLEX,
+  //   SND_PCM_ACCESS_RW_INTERLEAVED,
+  //   SND_PCM_ACCESS_RW_NONINTERLEAVED,
+  // };
+
+  // static const snd_pcm_format_t formats[] = {
+  //   SND_PCM_FORMAT_S8,
+  //   SND_PCM_FORMAT_U8,
+  //   SND_PCM_FORMAT_S16_LE,
+  //   SND_PCM_FORMAT_S16_BE,
+  //   SND_PCM_FORMAT_U16_LE,
+  //   SND_PCM_FORMAT_U16_BE,
+  //   SND_PCM_FORMAT_S24_LE,
+  //   SND_PCM_FORMAT_S24_BE,
+  //   SND_PCM_FORMAT_U24_LE,
+  //   SND_PCM_FORMAT_U24_BE,
+  //   SND_PCM_FORMAT_S32_LE,
+  //   SND_PCM_FORMAT_S32_BE,
+  //   SND_PCM_FORMAT_U32_LE,
+  //   SND_PCM_FORMAT_U32_BE,
+  //   SND_PCM_FORMAT_FLOAT_LE,
+  //   SND_PCM_FORMAT_FLOAT_BE,
+  //   SND_PCM_FORMAT_FLOAT64_LE,
+  //   SND_PCM_FORMAT_FLOAT64_BE,
+  //   SND_PCM_FORMAT_IEC958_SUBFRAME_LE,
+  //   SND_PCM_FORMAT_IEC958_SUBFRAME_BE,
+  //   SND_PCM_FORMAT_MU_LAW,
+  //   SND_PCM_FORMAT_A_LAW,
+  //   SND_PCM_FORMAT_IMA_ADPCM,
+  //   SND_PCM_FORMAT_MPEG,
+  //   SND_PCM_FORMAT_GSM,
+  //   SND_PCM_FORMAT_SPECIAL,
+  //   SND_PCM_FORMAT_S24_3LE,
+  //   SND_PCM_FORMAT_S24_3BE,
+  //   SND_PCM_FORMAT_U24_3LE,
+  //   SND_PCM_FORMAT_U24_3BE,
+  //   SND_PCM_FORMAT_S20_3LE,
+  //   SND_PCM_FORMAT_S20_3BE,
+  //   SND_PCM_FORMAT_U20_3LE,
+  //   SND_PCM_FORMAT_U20_3BE,
+  //   SND_PCM_FORMAT_S18_3LE,
+  //   SND_PCM_FORMAT_S18_3BE,
+  //   SND_PCM_FORMAT_U18_3LE,
+  //   SND_PCM_FORMAT_U18_3BE,
+  // };
+
+  // printf("Access types:");
+  // for (i = 0; i < ARRAY_SIZE(accesses); ++i) {
+  //     if (!snd_pcm_hw_params_test_access(pcm, hw_params, accesses[i]))
+  //         printf(" %s", snd_pcm_access_name(accesses[i]));
+  // }
+  // putchar('\n');
+
+  // printf("Formats:");
+  // for (i = 0; i < ARRAY_SIZE(formats); ++i) {
+  //     if (!snd_pcm_hw_params_test_format(pcm, hw_params, formats[i]))
+  //         printf(" %s", snd_pcm_format_name(formats[i]));
+  // }
+  // putchar('\n');
 
   return;
 }
@@ -352,6 +416,13 @@ void *handle_connections_control(void* nothing) {
 }
 
 
+void* handle_connections_audio(void* nothing) {
+  wsaudio_main();
+  while (1);
+  return NULL;
+}
+
+
 void set_config (config_t* new_audio_cfg) {
   // Let the audio thread know that new config has been received
   new_config_received_flag = 1;
@@ -383,13 +454,6 @@ void set_config (config_t* new_audio_cfg) {
     audio_thread_active_flag = 1;
 
   return;
-}
-
-
-void* handle_connections_audio(void* nothing) {
-  wsaudio_main();
-  while (1);
-  return NULL;
 }
 
 

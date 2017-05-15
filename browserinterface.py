@@ -163,12 +163,9 @@ class StreamClient(WebSocketClient):
                 valid_rates = m['possible_rates']
 
         else: # new audio data
-            # We convert the binary stream into a 2D Numpy array of 16-bits integers
-            data = bytearray()
-            data.extend(m.data)
 
             # replace data in the buffer
-            bi_buffer.data[:] = data[:]
+            bi_buffer.data[:] = m.data
 
             # We add the new data to the recordings
             for recording in bi_recordings:

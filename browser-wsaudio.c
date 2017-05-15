@@ -151,8 +151,8 @@ void wsaudio_main(void) {
     fprintf(stderr, "Error during libwebsock_init.\n");
     exit(1);
   }
-  libwebsock_bind(ctx, "0.0.0.0", "7321");
-  fprintf(stdout, "libwebsock listening on port 7321\n");
+  libwebsock_bind(ctx, EASY_DSP_WSAUDIO_IP_ADDR, EASY_DSP_WSAUDIO_SERVER_PORT);
+  fprintf(stdout, "libwebsock listening on port %s\n", EASY_DSP_WSAUDIO_SERVER_PORT);
   ctx->onmessage = onmessage_audio;
   ctx->onopen = onopen_audio;
   ctx->onclose = onclose_audio;

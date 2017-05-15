@@ -1,6 +1,7 @@
 #include "browser-wsconfig.h"
 
 int onmessage(libwebsock_client_state *state, libwebsock_message *msg) {
+
   fprintf(stderr, "Received message from client: %d\n", state->sockfd);
   fprintf(stderr, "Message opcode: %d\n", msg->opcode);
   fprintf(stderr, "Payload Length: %llu\n", msg->payload_len);
@@ -49,8 +50,8 @@ void wsconfig_main(void) {
     fprintf(stderr, "Error during libwebsock_init.\n");
     exit(1);
   }
-  libwebsock_bind(ctx, "0.0.0.0", "7322");
-  fprintf(stdout, "libwebsock listening on port 7322\n");
+  libwebsock_bind(ctx, EASY_DSP_WSCONFIG_IP_ADDR, EASY_DSP_WSCONFIG_SERVER_PORT);
+  fprintf(stdout, "libwebsock listening on port %s\n", EASY_DSP_WSCONFIG_SERVER_PORT);
   ctx->onmessage = onmessage;
   ctx->onopen = onopen;
   ctx->onclose = onclose;
