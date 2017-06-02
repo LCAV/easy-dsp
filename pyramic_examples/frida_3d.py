@@ -30,7 +30,7 @@ except:
     sampling_freq = 44100
     led_ring_address = '/dev/cu.usbmodem1421'
 
-array_type = 'pyramic_flat'
+array_type = 'pyramic_random_subset'
 
 """Select appropriate microphone array"""
 if array_type == 'pyramic_flat':
@@ -38,22 +38,34 @@ if array_type == 'pyramic_flat':
 elif array_type == 'pyramic_full':
     mic_array, channel_mapping = rt.pyramic_tetrahedron.get_pyramic(dim=3)
 elif array_type == 'pyramic_random_subset':
-    channel_mapping = np.random.permutation(48)[:12]
+    channel_mapping = np.random.permutation(num_channels)[::3]
     mic_array, _ = rt.pyramic_tetrahedron.get_pyramic(dim=3)
     mic_array = mic_array[:, channel_mapping]
+
+doa_args = {
+        'dim': mic_array.shape[0],
+        'num_src': num_src,
+        'n_grid': num_angles,
+        'max_four': 4,
+        'max_ini': 10,
+        'max_iter': 3,
+        'G_iter': 1,
+        'low_rank_cleaning': True,
+        'signal_type': 'visibility',
+        }
 
 
 """
 Select frequency range
 """
 n_bands = 20
-freq_range = [1000., 3500.]
+freq_range = [2000., 3500.]
 f_min = int(np.round(freq_range[0] / sampling_freq*nfft))
 f_max = int(np.round(freq_range[1] / sampling_freq*nfft))
 range_bins = np.arange(f_min, f_max+1)
 use_bin = True
 
-vrange = [0.1/2, 5./2]
+vrange = [0.05/2, 0.5/2]
 
 """Check for LED Ring"""
 try:
@@ -131,25 +143,9 @@ def make_colors(azimuths, powers):
 
 """Initialization block"""
 def init(buffer_frames, rate, channels, volume):
-    global doa
+    global doa, doa_args
 
-    doa_args = {
-            'L': mic_array,
-            'fs': rate,
-            'nfft': nfft,
-            'dim': mic_array.shape[0],
-            'num_src': num_src,
-            'n_grid': num_angles,
-            'max_four': 4,
-            'max_ini': 10,
-            'max_iter': 3,
-            'G_iter': 1,
-            'low_rank_cleaning': True,
-            'use_GtGinv': False,
-            'signal_type': 'visibility',
-            }
-
-    doa = rt.doa.FRIDA(**doa_args)
+    doa = rt.doa.FRIDA(mic_array, sampling_freq, nfft, **doa_args)
 
 """Callback"""
 def apply_doa(audio):
@@ -167,22 +163,25 @@ def apply_doa(audio):
     X_stft = rt.utils.compute_snapshot_spec(audio[:,channel_mapping], nfft, 
         n_snapshots, hop_size, transform=transform)
     toc = time.time()
-    #print('STFT computation time:', toc - tic, 'sec')
+    print('STFT computation time:', toc - tic, 'sec')
 
     # pick bands with most energy and perform DOA
     tic = time.time()
     if use_bin:
-        bands_pwr = np.mean(np.sum(np.abs(X_stft[:,range_bins,:])**2, axis=0), axis=1)
-        freq_bins = np.argsort(bands_pwr)[-n_bands:] + f_min
+        #bands_pwr = np.mean(np.sum(np.abs(X_stft[:,range_bins,:]), axis=0), axis=1)
+        #freq_bins = np.argsort(bands_pwr)[-n_bands:] + f_min
+        freq_bins = np.round(np.linspace(freq_range[0], freq_range[1], n_bands) / sampling_freq * nfft)
+        len(freq_bins)
         doa.locate_sources(X_stft, freq_bins=freq_bins)
     else:
         doa.locate_sources(X_stft, freq_range=freq_range)
     toc = time.time()
-    #print('DOA computation time:', toc - tic, 'sec')
+    print('DOA computation time:', toc - tic, 'sec')
 
     # send to browser for visualization
     # Now map the angles to some function
     # send to lights if available
+    print(doa.alpha_recon.mean(axis=1))
     if led_ring:
         make_colors(doa.azimuth_recon, doa.alpha_recon.mean(axis=1))
 

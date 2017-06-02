@@ -85,6 +85,8 @@ class FRIDA(DOA):
 
         self.G = None
 
+        self.GtG_dict = dict()
+
         # The type of measurement to use, can be 'visibility' (default) for the covariance
         # matrix, or 'raw' to use microphone signals directly
         self.signal_type = signal_type
@@ -180,6 +182,7 @@ class FRIDA(DOA):
                     use_lu=self.use_lu,
                     verbose=self.verbose,
                     symb=self.symb,
+                    GtG_dict=self.GtG_dict,
                 )
 
             if overestimate_num > 0:

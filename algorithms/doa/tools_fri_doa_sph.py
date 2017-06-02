@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 # import datetime
-# import time
+import time
 import numpy as np
 import scipy as sp
 from scipy import linalg
@@ -136,7 +136,7 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
                              stop_cri='max_iter', max_iter=20, num_rotation=1, G_iter=1,
                              signal_type='visibility', thresh_reliable=0.1,
                              use_lu=True, verbose=False, symb=False,
-                             use_GtGinv=False, **kwargs):
+                             use_GtGinv=False, GtG_dict=None, **kwargs):
     """
     INTERFACE for joint estimation of the Dirac deltas azimuths and co-latitudes
     :param a: the measured visibilities in a matrix form, where the second dimension
@@ -238,124 +238,21 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
         G_ri_lst = sph_mtx_fri2visibility_row_major(L, mtx_freq2visibility, aslist=True, symb=symb)
 
         for count_G in range(G_iter):
-            # +2 here so that we first obtain the denoised data with a LARGER annihilating filter
-            sz_coef = 2 + np.int(np.ceil(0.5 * (-1 + np.sqrt(1 + 8 * (K + 1)))))
-            # sz_coef = sph_determin_max_coef_sz(L)
-            K_alg = np.int((sz_coef + 1) * sz_coef * 0.5) - 2
 
-            if count_G == 0:
-                if ref_sol_available:
-                    xyz_ref_rotated = np.dot(rotate_mtx, xyz_ref)
-                    colatitudek_ref_rotated = np.arccos(xyz_ref_rotated[2, :])
-                    azimuthk_ref_rotated = np.arctan2(xyz_ref_rotated[1, :],
-                                                      xyz_ref_rotated[0, :])
-                    G_amp_ref_ri_lst = [
-                        sph_build_mtx_amp_ri(
-                            p_mic_x_rotated[:, band_count],
-                            p_mic_y_rotated[:, band_count],
-                            p_mic_z_rotated[:, band_count],
-                            azimuthk_ref_rotated,
-                            colatitudek_ref_rotated
-                        )
-                        for band_count in range(num_bands)
-                    ]
-
-                    # b_opt_ri_lst = \
-                    #     sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K_alg, L, L, noise_level,
-                    #                               max_ini, stop_cri, max_iter, use_lu=use_lu,
-                    #                               symb=symb, use_GtGinv=use_GtGinv,
-                    #                               G_amp_ref_ri_lst=G_amp_ref_ri_lst)[3]
-
-                    c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
-                    sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1 = \
-                        sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K_alg, L, L, noise_level,
-                                                  max_ini, stop_cri, max_iter,
-                                                  use_lu=use_lu, symb=symb,
-                                                  G_amp_ref_ri_lst=G_amp_ref_ri_lst)
-                    try:
-                        azimuthk_recon, colatitudek_recon = \
-                            sph_extract_innovation(
-                                a_ri, K,
-                                sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
-                                sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
-                                p_mic_x_rotated, p_mic_y_rotated, p_mic_z_rotated,
-                                G_amp_ref_ri_lst=G_amp_ref_ri_lst,
-                                colatitude_ref_rotated=colatitudek_ref_rotated,
-                                azimuth_ref_rotated=azimuthk_ref_rotated
-                            )
-                    except RuntimeError:
-                        continue
-                else:
-                    # b_opt_ri_lst = \
-                    #     sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K_alg, L, L, noise_level,
-                    #                               max_ini, stop_cri, max_iter, use_lu=use_lu,
-                    #                               symb=symb, use_GtGinv=use_GtGinv)[3]
-
-                    c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
-                    sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1 = \
-                        sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K_alg, L, L, noise_level,
-                                                  max_ini, stop_cri, max_iter,
-                                                  use_lu=use_lu, symb=symb)
-                    try:
-                        azimuthk_recon, colatitudek_recon = \
-                            sph_extract_innovation(
-                                a_ri, K,
-                                sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
-                                sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
-                                p_mic_x_rotated, p_mic_y_rotated, p_mic_z_rotated)
-                    except RuntimeError:
-                        continue
-
-                G_ri_lst = sph_update_G_ri(
-                    colatitudek_recon[K_ref:],
-                    azimuthk_recon[K_ref:],
-                    L, p_mic_x_rotated,
-                    p_mic_y_rotated,
-                    p_mic_z_rotated,
-                    num_bands, G_ri_lst, symb=symb)
-
-            # use the denoised data b to solve the problem once more but with the
-            # desired (smaller) filter size
-            if ref_sol_available:
-                c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
-                sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1 = \
-                    sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K, L, L, noise_level,
-                                              max_ini, stop_cri, max_iter, use_lu=use_lu,
-                                              # beta=b_opt_ri_lst,
-                                              symb=symb,
-                                              G_amp_ref_ri_lst=G_amp_ref_ri_lst)
-
-                try:
-                    azimuthk_recon, colatitudek_recon = \
-                        sph_extract_innovation(
-                            a_ri, K,
-                            sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
-                            sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
-                            p_mic_x_rotated, p_mic_y_rotated, p_mic_z_rotated,
-                            G_amp_ref_ri_lst=G_amp_ref_ri_lst,
-                            colatitude_ref_rotated=colatitudek_ref_rotated,
-                            azimuth_ref_rotated=azimuthk_ref_rotated
-                        )
-                except RuntimeError:
-                    continue
-            else:
-                c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
-                sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1 = \
-                    sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K, L, L, noise_level,
-                                              max_ini, stop_cri, max_iter, use_lu=use_lu,
-                                              # beta=b_opt_ri_lst,
-                                              symb=symb)
-
-                try:
-                    azimuthk_recon, colatitudek_recon = \
-                        sph_extract_innovation(
-                            a_ri, K,
-                            sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
-                            sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
-                            p_mic_x_rotated, p_mic_y_rotated, p_mic_z_rotated
-                        )
-                except RuntimeError:
-                    continue
+            c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
+            sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1 = \
+                sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K, L, L, noise_level,
+                                          max_ini, stop_cri, max_iter,
+                                          use_lu=use_lu, symb=symb, GtG_dict=GtG_dict)
+            try:
+                azimuthk_recon, colatitudek_recon = \
+                    sph_extract_innovation(
+                        a_ri, K,
+                        sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
+                        sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
+                        p_mic_x_rotated, p_mic_y_rotated, p_mic_z_rotated)
+            except RuntimeError:
+                continue
 
             xk_recon, yk_recon, zk_recon = sph2cart(1, colatitudek_recon, azimuthk_recon)
             xyz_rotate_back = linalg.solve(rotate_mtx,
@@ -397,7 +294,6 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
             if verbose:
                 print('objective function value: {0:.3e}'.format(error_loop))
 
-            print(error_loop)
             if error_loop < min_error_all:
                 min_error_all = error_loop
                 colatitudek_opt = colatitudek_recon
@@ -754,7 +650,7 @@ def sph_build_mtx_amp_cpx(p_mic_x, p_mic_y, p_mic_z, azimuth_k, colatitude_k):
 
 def sph_dirac_recon_alg_joint(G_ri_lst0, a_ri, K, L, M, noise_level, max_ini,
                               stop_cri, max_iter, use_lu=True, symb=False,
-                              use_GtGinv=False, **kwargs):
+                              use_GtGinv=False, GtG_dict=None, **kwargs):
     """
     ALGORITHM for joint estimation of Diracs on the sphere by enforcing the
     annihilation along the azimuth and the latitudes jointly.
@@ -825,11 +721,6 @@ def sph_dirac_recon_alg_joint(G_ri_lst0, a_ri, K, L, M, noise_level, max_ini,
 
     assert not np.iscomplexobj(a_ri)
 
-    # precompute a few things
-    Gt_a_lst = []
-    lu_GtG_lst = []
-    Tbeta_ri0_lst = []
-
     if 'beta' in kwargs:
         beta_ri_lst = kwargs['beta']
         compute_beta = False
@@ -837,6 +728,40 @@ def sph_dirac_recon_alg_joint(G_ri_lst0, a_ri, K, L, M, noise_level, max_ini,
         beta_ri_lst = []
         compute_beta = True
 
+    if GtG_dict is not None and 'Gt_a_lst' in GtG_dict and 'lu_GtG_lst' in GtG_dict:
+        # precompute a few things
+        Gt_a_lst = GtG_dict['Gt_a_lst']
+        lu_GtG_lst = GtG_dict['lu_GtG_lst']
+
+    else:
+        Gt_a_lst = []
+        lu_GtG_lst = []
+
+        for loop in range(num_bands):
+            G_loop = G_ri_lst[loop]
+            a_loop = a_ri[:, loop]
+
+            Gt_a_loop = np.dot(G_loop.T, a_loop)
+            Gt_a_lst.append(Gt_a_loop)
+
+            if use_GtGinv:
+                GtGinv_loop = linalg.solve(np.dot(G_loop.T, G_loop),
+                                           np.eye(sz_G1), check_finite=False)
+                # regardless of use_lu, we store GtGinv here
+                lu_GtG_lst.append(GtGinv_loop)
+            else:
+                GtG_loop = np.dot(G_loop.T, G_loop)
+
+                if use_lu:
+                    lu_GtG_lst.append(linalg.lu_factor(GtG_loop, check_finite=False))
+                else:
+                    lu_GtG_lst.append(GtG_loop)
+
+        if GtG_dict is not None:
+            GtG_dict['Gt_a_lst'] = Gt_a_lst
+            GtG_dict['lu_GtG_lst'] = lu_GtG_lst
+
+    Tbeta_ri0_lst = []
     for loop in range(num_bands):
         G_loop = G_ri_lst[loop]
         a_loop = a_ri[:, loop]
