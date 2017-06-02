@@ -285,4 +285,4 @@ def process_callbacks():
 
 def loop_callbacks():
     while True:
-        process_callback()
+        process_callbacks()
