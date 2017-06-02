@@ -7,9 +7,7 @@ from scipy import signal
 
 import browserinterface
 import algorithms as rt
-
-from spectral_grid_search import music_peak
-from pitch_estimation import estimate_fundamental
+from hsv_map import make_hsv_map
 
 """
 Read hardware config from file
@@ -38,9 +36,9 @@ nrate = sampling_freq / 2 # nyquist rate
 # fir_coeff = signal.firwin(numtaps, float(cutoff_hz)/nrate)
 
 # ideally pick a buffer size so that length of DFT (buffer_size*2) will be power of two
-nfft = 512
+nfft = 9600
 buffer_size = nfft
-num_channels = 2
+num_channels = 48
 transform = 'mkl' # 'numpy', 'mlk', 'fftw'
 
 """ Visualization parameters """
@@ -48,7 +46,7 @@ transform = 'mkl' # 'numpy', 'mlk', 'fftw'
 background = np.array([0.45, 0.2, 0.1])
 source = np.array([0.1, 0.8, 0.95])  # yellowish
 source = np.array([0.95, 0.8, 0.95])  # 
-cmap = rt.make_hsv_map(background, source)
+cmap = make_hsv_map(background, source)
 
 
 """Check for LED Ring"""
@@ -134,15 +132,13 @@ def handle_data(audio):
 
     # check for correct audio shape
     if audio.shape != (buffer_size, num_channels):
+        print(audio.shape)
         print("Did not receive expected audio!")
         return
     
     # STFT processing
     stft.analysis(audio[:,0])
     spectrum = np.floor(20. * np.log10( np.maximum( 1e-5, np.abs( stft.X ) ) ))
-
-    # run MUSIC
-    #spectrum = music_peak(audio[:,0], 10, 30, audio.shape[0], nfft)[:nfft//2+1]
 
     peak_loc = np.argmax(spectrum[bin_range[0]:bin_range[1]+1]) + bin_range[0]
 
@@ -183,6 +179,9 @@ def handle_data(audio):
     t += buffer_size / sampling_freq
 
 """Interface functions"""
+browserinterface.inform_browser = False
+browserinterface.bi_board_ip = '192.168.2.26'
+
 browserinterface.register_when_new_config(init)
 browserinterface.register_handle_data(handle_data)
 

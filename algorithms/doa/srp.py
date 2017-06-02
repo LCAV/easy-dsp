@@ -2,7 +2,7 @@
 # Date: July 15, 2016
 from __future__ import division, print_function
 
-from doa import *
+from .doa import *
 
 class SRP(DOA):
     """

@@ -44,7 +44,6 @@ class WAVES(MUSIC):
         self.iter = num_iter
         self.Z = None
 
-    # @profile
     def _process(self, X):
         """
         Perform WAVES for given frame in order to estimate steered response 
@@ -108,7 +107,6 @@ class WAVES(MUSIC):
 
             i += 1
 
-    # @profile
     def _construct_waves_matrix(self, C_hat, f0, beta):
         for j in range(len(self.freq_bins)):
             k = self.freq_bins[j]

@@ -4,7 +4,8 @@
 """Class for microphone array."""
 
 import numpy as np
-import sys, utils
+import sys
+from . import utils
 
 try:
     import matplotlib as mpl

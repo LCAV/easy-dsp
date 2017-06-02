@@ -3,14 +3,31 @@ Routines to perform grid search on the sphere
 '''
 from __future__ import division, print_function
 
-# from tools import great_circ_dist
-
 import numpy as np
 from scipy.spatial import ConvexHull, SphericalVoronoi
 
 from abc import ABCMeta, abstractmethod
 
-from detect_peaks import detect_peaks
+from .detect_peaks import detect_peaks
+
+def great_circ_dist(r, colatitude1, azimuth1, colatitude2, azimuth2):
+    """
+    calculate great circle distance for points located on a sphere
+    :param r: radius of the sphere
+    :param colatitude1: colatitude of point 1
+    :param azimuth1: azimuth of point 1
+    :param colatitude2: colatitude of point 2
+    :param azimuth2: azimuth of point 2
+    :return: great-circle distance
+    """
+    d_azimuth = np.abs(azimuth1 - azimuth2)
+    dist = r * np.arctan2(np.sqrt((np.sin(colatitude2) * np.sin(d_azimuth)) ** 2 +
+                                  (np.sin(colatitude1) * np.cos(colatitude2) -
+                                   np.cos(colatitude1) * np.sin(colatitude2) * np.cos(d_azimuth)) ** 2),
+                          np.cos(colatitude1) * np.cos(colatitude2) +
+                          np.sin(colatitude1) * np.sin(colatitude2) * np.cos(d_azimuth))
+    return dist
+
 
 class Grid:
     '''
@@ -100,14 +117,13 @@ class GridCircle(Grid):
         else:
             self.values = func(self.x, self.y)
 
-    # @profile
     def find_peaks(self, k=1):
 
         # make circular
         val_ext = np.append(self.values ,self.values[:10])
 
         # run peak finding
-        indexes = detect_peaks(val_ext) % self.n_points
+        indexes = detect_peaks(val_ext, show=False) % self.n_points
         candidates = np.unique(indexes)  # get rid of duplicates, if any
 
         # Select k largest
@@ -238,37 +254,37 @@ class GridSphere(Grid):
             self.values = func(self.x, self.y, self.z)
 
 
-    # def min_max_distance(self):
-    #     ''' Compute some statistics on the distribution of the points '''
+    def min_max_distance(self):
+        ''' Compute some statistics on the distribution of the points '''
 
-    #     min_dist = np.inf
-    #     max_dist = 0
+        min_dist = np.inf
+        max_dist = 0
 
-    #     dist = []
+        dist = []
 
-    #     for u in range(self.n_points):
+        for u in range(self.n_points):
 
-    #         phi1, theta1 = self.spherical[:,u]
+            phi1, theta1 = self.spherical[:,u]
 
-    #         for v in self.neighbors[u]:
+            for v in self.neighbors[u]:
 
-    #             phi2, theta2 = self.spherical[:,v]
+                phi2, theta2 = self.spherical[:,v]
 
-    #             d = great_circ_dist(1, theta1, phi1, theta2, phi2)
+                d = great_circ_dist(1, theta1, phi1, theta2, phi2)
 
-    #             dist.append(d)
+                dist.append(d)
 
-    #             if d < min_dist:
-    #                 min_dist = d
+                if d < min_dist:
+                    min_dist = d
                 
-    #             if d > max_dist:
-    #                 max_dist = d
+                if d > max_dist:
+                    max_dist = d
 
-    #     dist = np.array(dist)
-    #     mean = dist.mean()
-    #     median = np.median(dist)
+        dist = np.array(dist)
+        mean = dist.mean()
+        median = np.median(dist)
 
-    #     return min_dist, max_dist, mean, median
+        return min_dist, max_dist, mean, median
 
 
     def find_peaks(self, k=1):

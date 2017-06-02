@@ -1,10 +1,12 @@
 # Author: Eric Bezzam
 # Date: Feb 10, 2016
+from __future__ import division
 
 import numpy as np
 from scipy.signal import fftconvolve
 import warnings
-import transforms.dft as dft
+
+from .transforms import DFT
 
 try:
     import matplotlib as mpl
@@ -105,10 +107,10 @@ def gen_far_field_ir(doa, L, fs, c, frac_delay):
     return fb
 
 def compute_snapshot_spec(signals, N, J, hop, transform='numpy'):
-    nbin = N/2+1
+    nbin = N//2+1
     M = signals.shape[1]
     X = np.zeros([M,nbin,J],dtype=complex)
-    d = dft.DFT(N,M, transform=transform)
+    d = DFT(N,M, transform=transform)
     for j in range(J):
         x, _ = select_slice(signals, j*hop, N)
         X[:,:,j] = d.analysis(x).T / float(N)
@@ -490,7 +492,7 @@ class cov_estimator(object):
         self.hop = hop*self.nfft
         self.prev_samples = np.zeros((int(self.nfft-self.hop),self.num_sig))
 
-        self.d = dft.DFT(self.nfft,self.num_sig)
+        self.d = DFT(self.nfft,self.num_sig)
         self.Rhat = np.zeros((self.nbin,num_sig,num_sig),dtype=complex)
 
     def send_frame(self, frame):

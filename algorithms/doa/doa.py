@@ -85,15 +85,19 @@ class ModeVector(object):
         if self.precompute:
             return self.mode_vec[ref]
 
+        # we use this to test if an integer is passed
+        integer = (int, np.int, np.int16, np.int32, np.int64,
+                np.uint, np.uint16, np.uint32, np.uint64)
+
         # Otherwise compute values on the fly
-        if isinstance(ref[1], int) and isinstance(ref[2], int):
+        if isinstance(ref[1], integer) and isinstance(ref[2], integer):
             w = self.omega[ref[0]]
-        elif isinstance(ref[1], int) or isinstance(ref[2], int):
+        elif isinstance(ref[1], integer) or isinstance(ref[2], integer):
             w = self.omega[ref[0], None]
         else:
             w = self.omega[ref[0], None, None]
 
-        if isinstance(ref[0], int):
+        if isinstance(ref[0], integer):
             tref0 = 0
         else:
             tref0 = slice(None, None, None)
@@ -244,14 +248,14 @@ class DOA(object):
 
                     self.grid = GridSphere(spherical_points=grid_points)
 
-        # spatial spectrum / dirty image (FRI)
+        # spatial spectrum / dirty image (FRIDA)
         self.P = None
 
         # build lookup table to candidate locations from r, azimuth, colatitude 
         from .frida import FRIDA
 
         if not isinstance(self, FRIDA):
-            self.mode_vec = ModeVector(self.L, self.fs, self.nfft, self.c, self.grid, precompute=True)
+            self.mode_vec = ModeVector(self.L, self.fs, self.nfft, self.c, self.grid)
 
     def locate_sources(self, X, num_src=None, freq_range=[500.0, 4000.0],
                        freq_bins=None, freq_hz=None):
@@ -277,7 +281,6 @@ class DOA(object):
         defined by user, it will **not** take into consideration freq_range.
         :type freq_hz: list of floats
         """
-
         # check validity of inputs
         if num_src is not None and num_src != self.num_src:
             self.num_src = self._check_num_src(num_src)
@@ -293,14 +296,14 @@ class DOA(object):
 
         # frequency bins on which to apply DOA
         if freq_bins is not None:
-            self.freq_bins = freq_bins
+            self.freq_bins = np.array(freq_bins, dtype=np.int)
         elif freq_hz is not None:
             self.freq_bins = [int(np.round(f / self.fs * self.nfft))
                               for f in freq_bins]
         else:
             freq_range = [int(np.round(f / self.fs * self.nfft))
                           for f in freq_range]
-            self.freq_bins = np.arange(freq_range[0], freq_range[1])
+            self.freq_bins = np.arange(freq_range[0], freq_range[1], dtype=np.int)
 
         self.freq_bins = self.freq_bins[self.freq_bins < self.max_bin]
         self.freq_bins = self.freq_bins[self.freq_bins >= 0]
@@ -450,7 +453,7 @@ class DOA(object):
                   ncol=1, bbox_to_anchor=(0.9, -0.17),
                   handletextpad=.2, columnspacing=1.7, labelspacing=0.1)
 
-        # ax.set_xlabel(r'azimuth $\bm{\varphi}$', fontsize=11)
+        ax.set_xlabel(r'azimuth $\bm{\varphi}$', fontsize=11)
         ax.set_xticks(np.linspace(0, 2 * np.pi, num=12, endpoint=False))
         ax.xaxis.set_label_coords(0.5, -0.11)
         ax.set_yticks(np.linspace(0, 1, 2))

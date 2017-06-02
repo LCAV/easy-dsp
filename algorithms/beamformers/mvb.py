@@ -4,8 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import sys
-sys.path.append('..')
-from utils import cart2polar, polar2cart
+from .utils import cart2polar, polar2cart
 from transforms.dft import DFT
 
 def H(A):

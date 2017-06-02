@@ -1,7 +1,7 @@
 # Author: Eric Bezzam
 # Date: July 15, 2016
 
-from doa import *
+from .doa import *
 
 class MUSIC(DOA):
     """
@@ -36,68 +36,87 @@ class MUSIC(DOA):
     def __init__(self, L, fs, nfft, c=343.0, num_src=1, mode='far', r=None,
         azimuth=None, colatitude=None, **kwargs):
 
-        DOA.__init__(self, L=L, fs=fs, nfft=nfft, c=c, 
-            num_src=num_src, mode=mode, r=r, azimuth=azimuth, 
-            colatitude=colatitude, **kwargs)
+        DOA.__init__(self, L=L, fs=fs, nfft=nfft, c=c, num_src=num_src, 
+            mode=mode, r=r, azimuth=azimuth, colatitude=colatitude, **kwargs)
 
         self.Pssl = None
-        self.CC = np.zeros((self.M, self.M), dtype=np.complex64)
-        self.eigval = np.zeros(self.M, dtype=np.complex64)
-        self.eigvec = np.zeros((self.M,self.M), dtype=np.complex64)
-        self.noise_space = np.zeros((self.M,self.M-self.num_src),dtype=np.complex64)
-        self.music_test = np.zeros((self.M-self.num_src,self.grid.n_points),dtype=np.complex64)
-        
-    # @profile
+
     def _process(self, X):
         """
         Perform MUSIC for given frame in order to estimate steered response 
         spectrum.
         """
 
+        # compute steered response
         self.Pssl = np.zeros((self.num_freq,self.grid.n_points))
+        num_freq = self.num_freq
 
-        # compute response for each frequency
-        for i, k in enumerate(self.freq_bins):
+        C_hat = self._compute_correlation_matrices(X)
 
-            # estimate cross correlation
-            self.CC[:] = np.dot(X[:,k,:], np.conj(X[:,k,:]).T) 
+        for i in range(self.num_freq):
+            k = self.freq_bins[i]
 
-            # determine signal and noise subspace
-            self.eigval[:],self.eigvec[:] = np.linalg.eig(self.CC)
-            eigord = np.argsort(abs(self.eigval))
-            self.noise_space[:] = self.eigvec[:,eigord[:-self.num_src]]
+            # subspace decomposition
+            Es, En, ws, wn = self._subspace_decomposition(C_hat[i,:,:])
 
             # compute spatial spectrum
-            self.music_test[:] = np.dot(self.noise_space.conj().T, 
-                self.mode_vec[k,:,:])
-            self.Pssl[i,:] = 1/np.sum(np.multiply(self.music_test,self.music_test.conj()), axis=0).real
+            # cross = np.dot(En,np.conjugate(En).T)
+            cross = np.identity(self.M) - np.dot(Es, np.conjugate(Es).T) 
+            self.Pssl[i,:] = self._compute_spatial_spectrum(cross,k)
 
-        self.grid.set_values(np.sum(self.Pssl, axis=0)/self.num_freq)
+        self.grid.set_values(np.sum(self.Pssl, axis=0)/num_freq)
 
+    def plot_individual_spectrum(self):
+        """
+        Plot the steered response for each frequency.
+        """
 
-    def _compute_spatial_spectrum(self, space, k):
+        # check if matplotlib imported
+        if matplotlib_available is False:
+            warnings.warn('Could not import matplotlib.')
+            return
 
-        A = self.mode_vec[k,:,:]
-        
-        # using signal space
-        # A_pow = np.sum(A*A.conj(), axis=0).real
-        # music_test = np.dot(space.conj().T, A)
-        # music_pow = np.sum(music_test*music_test.conj(), axis=0).real
-        # music_pow -= A_pow
+        # only for 2D
+        if self.grid.dim == 3:
+            pass
+        else:
+            warnings.warn('Only for 2D.')
+            return
 
-        # using noise space
-        music_test = np.dot(space.conj().T, A)
-        music_pow = np.sum(music_test*music_test.conj(), axis=0).real
+        # plot
+        for k in range(self.num_freq):
 
-        return 1/music_pow
+            freq = float(self.freq_bins[k])/self.nfft*self.fs
+            azimuth = self.grid.azimuth * 180 / np.pi
 
+            plt.plot(azimuth, self.Pssl[k,0:len(azimuth)])
+
+            plt.ylabel('Magnitude')
+            plt.xlabel('Azimuth [degrees]')
+            plt.xlim(min(azimuth),max(azimuth))
+            plt.title('Steering Response Spectrum - ' + str(freq) + ' Hz')
+            plt.grid(True)
+
+    def _compute_spatial_spectrum(self,cross,k):
+
+        P = np.zeros(self.grid.n_points)
+
+        for n in range(self.grid.n_points):
+            Dc = np.array(self.mode_vec[k,:,n],ndmin=2).T
+            Dc_H = np.conjugate(np.array(self.mode_vec[k,:,n],ndmin=2))
+            denom = np.dot(np.dot(Dc_H,cross),Dc)
+            P[n] = 1/abs(denom)
+
+        return P
 
     def _compute_correlation_matrices(self, X):
         C_hat = np.zeros([self.num_freq,self.M,self.M], dtype=complex)
-        for i, k in enumerate(self.freq_bins):
-            C_hat[i,:,:] = np.dot(X[:,k,:],X[:,k,:].T.conj())
+        for i in range(self.num_freq):
+            k = self.freq_bins[i]
+            for s in range(self.num_snap):
+                C_hat[i,:,:] = C_hat[i,:,:] + np.outer(X[:,k,s], 
+                    np.conjugate(X[:,k,s]))
         return C_hat/self.num_snap
-
 
     def _subspace_decomposition(self, R):
 
@@ -120,5 +139,4 @@ class MUSIC(DOA):
         En = v[:,noise_space]
 
         return Es, En, ws, wn
-
 

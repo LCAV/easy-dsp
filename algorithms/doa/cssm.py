@@ -43,25 +43,15 @@ class CSSM(MUSIC):
             mode=mode, r=r, azimuth=azimuth, colatitude=colatitude, **kwargs)
 
         self.iter = num_iter
-        self.init_test = np.zeros((self.M,self.grid.n_points),dtype=np.complex64)
-        self.A0 = np.identity(self.M, dtype=np.complex64)
-        self.Aj = np.identity(self.M, dtype=np.complex64)
-        self.Tj = np.zeros((self.M,self.M), dtype=np.complex64)
 
-
-    # @profile
     def _process(self, X):
         """
         Perform CSSM for given frame in order to estimate steered response 
         spectrum.
         """
 
-        self.Pssl = np.zeros((self.num_freq,self.grid.n_points))
-
         # compute empirical cross correlation matrices
-        C_hat = np.zeros([self.num_freq,self.M,self.M], dtype=np.complex64)
-        for i, k in enumerate(self.freq_bins):
-            C_hat[i,:,:] = np.dot(X[:,k,:],X[:,k,:].T.conj())/self.num_snap
+        C_hat = self._compute_correlation_matrices(X)
 
         # compute initial estimates
         beta = []
@@ -70,16 +60,16 @@ class CSSM(MUSIC):
         # Find number of spatial spectrum peaks at each frequency band.
         # If there are less peaks than expected sources, leave the band out
         # Otherwise, store the location of the peaks.
-        for i, k in enumerate(self.freq_bins):
-            self.init_test[:] = np.dot(C_hat[i,:,:].conj().T, self.mode_vec[k,:,:])
-            self.grid.set_values(np.sum(self.init_test*self.init_test.conj(), axis=0).real)
+        for k in range(self.num_freq):
+
+            self.grid.set_values(1 / self._compute_spatial_spectrum(C_hat[k,:,:],
+                                 self.freq_bins[k]))
             idx = self.grid.find_peaks(k=self.num_src)
 
             if len(idx) < self.num_src:    # remove frequency
-                invalid.append(i)
+                invalid.append(k)
             else:
                 beta.append(idx)
-
 
         # Here we remove the bands that had too few peaks
         self.freq_bins = np.delete(self.freq_bins, invalid)
@@ -92,40 +82,42 @@ class CSSM(MUSIC):
 
         # iterate to find DOA, maximum number of iterations is 20
         i = 0
+
+        # while(i < self.iter or (len(self.src_idx) < self.num_src and i < 20)):
         while(i < self.iter):
 
-            # coherent sum into self.CC
-            self._coherent_sum(C_hat, f0, beta)
+            # coherent sum
+            R = self._coherent_sum(C_hat, f0, beta)
 
-            # determine signal and noise subspace
-            self.eigval[:],self.eigvec[:] = np.linalg.eig(self.CC)
-            eigord = np.argsort(abs(self.eigval))
-            self.noise_space[:] = self.eigvec[:,eigord[:-self.num_src]]
+            # subspace decomposition
+            Es, En, ws, wn = self._subspace_decomposition(R)
 
             # compute spatial spectrum
-            self.music_test[:] = np.dot(self.noise_space.conj().T, 
-                self.mode_vec[f0,:,:])
-            self.grid.set_values(1./np.sum(np.multiply(self.music_test,self.music_test.conj()), axis=0).real)
+            cross = np.dot(En,np.conjugate(En).T)
 
+            # cross = np.identity(self.M) - np.dot(Es, np.conjugate(Es).T)
+            self.grid.set_values(self._compute_spatial_spectrum(cross,f0))
             idx = self.grid.find_peaks(k=self.num_src)
             beta = np.tile(idx, (self.num_freq, 1))
 
             i += 1
 
-    # @profile
     def _coherent_sum(self, C_hat, f0, beta):
 
-        self.CC = np.zeros((self.M, self.M), dtype=np.complex64)
+        R = np.zeros((self.M,self.M))
 
         # coherently sum frequencies
-        for j, k in enumerate(self.freq_bins):
+        for j in range(len(self.freq_bins)):
+            k = self.freq_bins[j]
 
-            lbj = len(beta[j])
-            
-            #
-            self.A0[:,:lbj] = self.mode_vec[k,:,beta[j]].T
-            self.Aj[:,:lbj] = self.mode_vec[f0,:,beta[j]].T
+            Aj = self.mode_vec[k,:,beta[j]].T
+            A0 = self.mode_vec[f0,:,beta[j]].T
 
-            self.Tj[:] = np.dot(self.A0, np.linalg.inv(self.Aj))
+            B = np.concatenate((np.zeros([self.M-len(beta[j]), len(beta[j])]), 
+                np.identity(self.M-len(beta[j]))), axis=1).T
 
-            self.CC[:] = self.CC + np.dot(np.dot(self.Tj,C_hat[j,:,:]),np.conjugate(self.Tj).T)
+            Tj = np.dot(np.c_[A0, B], np.linalg.inv(np.c_[Aj, B]))
+
+            R = R + np.dot(np.dot(Tj,C_hat[j,:,:]),np.conjugate(Tj).T)
+
+        return R

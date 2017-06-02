@@ -5,15 +5,12 @@ from __future__ import division, print_function
 import numpy as np 
 import matplotlib.pyplot as plt
 
+from .utils import polar2cart, cart2polar
 import sys
-sys.path.append('..')
-from utils import cart2polar, polar2cart
 
 def H(A):
     """Returns the conjugate (Hermitian) transpose of a matrix."""
     return np.transpose(A).conj()
-
-
 
 class DAS(object):
 

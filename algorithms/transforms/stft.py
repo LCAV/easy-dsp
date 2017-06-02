@@ -5,9 +5,10 @@
 from __future__ import division
 
 import numpy as np
-from dft import DFT
 import warnings
 import windows
+
+from .dft import DFT
 
 try:
     import matplotlib as mpl
