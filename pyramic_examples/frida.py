@@ -37,6 +37,10 @@ if array_type == 'pyramic_flat':
     mic_array, channel_mapping = rt.pyramic_tetrahedron.get_pyramic(dim=2)
 elif array_type == 'pyramic_full':
     mic_array, channel_mapping = rt.pyramic_tetrahedron.get_pyramic(dim=3)
+elif array_type == 'pyramic_random_subset':
+    channel_mapping = np.random.permutation(48)[:12]
+    mic_array, _ = rt.pyramic_tetrahedron.get_pyramic(dim=3)
+    mic_array = mic_array[:, channel_mapping]
 
 
 """
@@ -133,6 +137,7 @@ def init(buffer_frames, rate, channels, volume):
             'L': mic_array,
             'fs': rate,
             'nfft': nfft,
+            'dim': mic_array.shape[0],
             'num_src': num_src,
             'n_grid': num_angles,
             'max_four': 4,
@@ -161,7 +166,7 @@ def apply_doa(audio):
     X_stft = rt.utils.compute_snapshot_spec(audio[:,channel_mapping], nfft, 
         n_snapshots, hop_size, transform=transform)
     toc = time.time()
-    print('STFT computation time:', toc - tic, 'sec')
+    #print('STFT computation time:', toc - tic, 'sec')
 
     # pick bands with most energy and perform DOA
     tic = time.time()
@@ -172,7 +177,7 @@ def apply_doa(audio):
     else:
         doa.locate_sources(X_stft, freq_range=freq_range)
     toc = time.time()
-    print('DOA computation time:', toc - tic, 'sec')
+    #print('DOA computation time:', toc - tic, 'sec')
 
     # send to browser for visualization
     # Now map the angles to some function

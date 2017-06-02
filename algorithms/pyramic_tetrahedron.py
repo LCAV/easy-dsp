@@ -110,7 +110,7 @@ def get_pyramic(dim=3):
         return R_pyramic.copy(), list(range(R_pyramic.shape[1]))
     elif dim == 2:
         I = list(range(8, 16)) + list(range(24, 32)) + list(range(40, 48))
-        return R_pyramic[:,I].copy(), I
+        return R_pyramic[:2,I].copy(), I
 
 if __name__ == "__main__":
 

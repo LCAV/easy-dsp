@@ -272,16 +272,19 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
                                                   max_ini, stop_cri, max_iter,
                                                   use_lu=use_lu, symb=symb,
                                                   G_amp_ref_ri_lst=G_amp_ref_ri_lst)
-                    azimuthk_recon, colatitudek_recon = \
-                        sph_extract_innovation(
-                            a_ri, K,
-                            sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
-                            sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
-                            p_mic_x_rotated, p_mic_y_rotated, p_mic_z_rotated,
-                            G_amp_ref_ri_lst=G_amp_ref_ri_lst,
-                            colatitude_ref_rotated=colatitudek_ref_rotated,
-                            azimuth_ref_rotated=azimuthk_ref_rotated
-                        )
+                    try:
+                        azimuthk_recon, colatitudek_recon = \
+                            sph_extract_innovation(
+                                a_ri, K,
+                                sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
+                                sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
+                                p_mic_x_rotated, p_mic_y_rotated, p_mic_z_rotated,
+                                G_amp_ref_ri_lst=G_amp_ref_ri_lst,
+                                colatitude_ref_rotated=colatitudek_ref_rotated,
+                                azimuth_ref_rotated=azimuthk_ref_rotated
+                            )
+                    except RuntimeError:
+                        continue
                 else:
                     # b_opt_ri_lst = \
                     #     sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K_alg, L, L, noise_level,
@@ -293,12 +296,15 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
                         sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K_alg, L, L, noise_level,
                                                   max_ini, stop_cri, max_iter,
                                                   use_lu=use_lu, symb=symb)
-                    azimuthk_recon, colatitudek_recon = \
-                        sph_extract_innovation(
-                            a_ri, K,
-                            sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
-                            sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
-                            p_mic_x_rotated, p_mic_y_rotated, p_mic_z_rotated)
+                    try:
+                        azimuthk_recon, colatitudek_recon = \
+                            sph_extract_innovation(
+                                a_ri, K,
+                                sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
+                                sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
+                                p_mic_x_rotated, p_mic_y_rotated, p_mic_z_rotated)
+                    except RuntimeError:
+                        continue
 
                 G_ri_lst = sph_update_G_ri(
                     colatitudek_recon[K_ref:],
@@ -365,7 +371,7 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
             # use the correctly identified colatitude and azimuth to reconstruct the correct amplitudes
             # implementation with list
             alphak_recon = []
-            error_loop = 0
+            error_loop = 0.
             for band_count in range(num_bands):
                 a_ri_band = a_ri[:, band_count]
 
@@ -391,6 +397,7 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
             if verbose:
                 print('objective function value: {0:.3e}'.format(error_loop))
 
+            print(error_loop)
             if error_loop < min_error_all:
                 min_error_all = error_loop
                 colatitudek_opt = colatitudek_recon
@@ -419,11 +426,17 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
                     num_bands, G_ri_lst, symb=symb)
 
     # convert to DOA
-    azimuthk_doa = np.mod(azimuthk_opt + np.pi, 2 * np.pi)
+    try:
+        azimuthk_doa = np.mod(azimuthk_opt + np.pi, 2 * np.pi)
+        colatitudek_doa = np.mod(np.pi - colatitudek_opt, 2 * np.pi)
+    except:
+        azimuthk_doa = np.zeros(K)
+        colatitudek_doa = np.zeros(K)
+        alphak_opt = np.zeros((K, num_bands))
+
     # TODO: confirm with Robin about this conversion!
     # TODO: update planar_select_reliable_recon accordingly
     # should be in [0, pi]
-    colatitudek_doa = np.mod(np.pi - colatitudek_opt, 2 * np.pi)
     return colatitudek_doa, azimuthk_doa, alphak_opt
     # return colatitudek_opt, azimuthk_opt, np.reshape(alphak_opt, (-1, num_bands), order='F')
 
@@ -1355,8 +1368,16 @@ def sph_sel_coef_subset_ri(num_coef_row, num_coef_col, K):
     :param K: number of Dirac. The number of non-zero coefficients is K + 1
     :return:
     """
-    sub_set_idx_row = np.sort(np.random.permutation(num_coef_row)[K + 1:])
-    sub_set_idx_col = np.sort(np.random.permutation(num_coef_col)[K + 1:])
+    if K == 1:
+        sub_set_idx_row = list(range(num_coef_row))
+        sub_set_idx_row.pop(0)
+        sub_set_idx_row.pop(0)
+        sub_set_idx_col = list(range(num_coef_col))
+        sub_set_idx_col.pop(1)
+        sub_set_idx_col.pop(1)
+    else:
+        sub_set_idx_row = np.sort(np.random.permutation(num_coef_row)[K + 1:])
+        sub_set_idx_col = np.sort(np.random.permutation(num_coef_col)[K + 1:])
 
     S_row = np.eye(num_coef_row)[sub_set_idx_row, :]
     S_col = np.eye(num_coef_col)[sub_set_idx_col, :]

@@ -12,7 +12,7 @@ from .tools_fri_doa_sph import sph_recon_2d_dirac_joint, sph_gen_dirty_img, plan
 
 class FRIDA(DOA):
     def __init__(self, L, fs, nfft, max_four=None, c=343.0, num_src=1,
-                 G_iter=None, max_ini=5, n_rot=10, max_iter=50, noise_level=1e-10,
+                 G_iter=None, max_ini=5, n_rot=1, max_iter=50, noise_level=1e-10,
                  low_rank_cleaning=False, stopping='max_iter',
                  stft_noise_floor=0., stft_noise_margin=1.5, signal_type='visibility',
                  use_lu=True, verbose=False, symb=True, **kwargs):
