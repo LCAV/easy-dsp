@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, print_function
 import datetime
 import time
 import numpy as np
@@ -33,6 +33,7 @@ def cov_mtx_est(y_mic):
     """
     # Q: total number of microphones
     # num_snapshot: number of snapshots used to estimate the covariance matrix
+    '''
     Q, num_snapshot = y_mic.shape
     cov_mtx = np.zeros((Q, Q), dtype=complex, order='F')
     for q in range(Q):
@@ -40,7 +41,9 @@ def cov_mtx_est(y_mic):
         for qp in range(Q):
             y_mic_inner = y_mic[qp, :]
             cov_mtx[qp, q] = np.dot(y_mic_outer, y_mic_inner.T.conj())
-    return cov_mtx / num_snapshot
+    '''
+    cov_mtx = np.dot(np.conj(y_mic), y_mic.T)
+    return cov_mtx / y_mic.shape[1]
 
 
 def extract_off_diag(mtx):
