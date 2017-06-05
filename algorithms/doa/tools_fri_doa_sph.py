@@ -68,6 +68,28 @@ def sph_extract_off_diag(mtx):
                                        (-1, 1), order='F')
                             for band in range(num_bands)])
 
+def microphone_delta(p_mic):
+    '''
+    Computes the delta vectors of all microphone pairs
+
+    :param px: microphones x location
+    :param py: microphones y location
+    :param pz: microphones z location
+    '''
+    Q = p_mic.shape[1]
+    delta = np.zeros((3, Q * (Q - 1), 1), order='F')
+
+    for q in range(Q):
+        s = q*(Q-1)      # start of array slice
+        e = (q+1)*(Q-1)  # end of array slice
+        # take difference with all other mics
+        if q > 0:
+            delta[:,s:s+q,0] = p_mic[:,q,None] - p_mic[:,:q]
+        if q < Q-1:
+            delta[:,s+q:e,0] = p_mic[:,q,None] - p_mic[:,q+1:]
+
+    return delta
+
 
 # ======= functions for the joint estimation of colatiudes and azimuth =======
 def sph_gen_dirty_img(a, p_mic_x, p_mic_y, p_mic_z,
@@ -132,7 +154,7 @@ def sph_gen_dirty_img(a, p_mic_x, p_mic_y, p_mic_z,
 
 def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
                              sound_speed, K, L, noise_level, max_ini=20,
-                             stop_cri='max_iter', max_iter=20, num_rotation=1, G_iter=1,
+                             stop_cri='max_iter', max_iter=20, G_iter=1,
                              signal_type='visibility', thresh_reliable=0.1,
                              use_lu=True, verbose=False, symb=False,
                              use_GtGinv=False, mapping=None, **kwargs):
@@ -150,8 +172,6 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
     :param noise_level: noise level in the measured visibilities
     :param max_ini: maximum number of random initialisation used
     :param stop_cri: either 'mse' or 'max_iter'
-    :param num_rotation: number of random rotation applied. if num_rotation == 1, then
-            no rotation is applied.
     :param G_iter: number of iterations used to update the linear mapping from the FRI
             sequence to the visibility measurements based on the reconstructed Dirac
             locations. If G_iter == 1, then no update.
@@ -177,59 +197,61 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
     if len(a.shape) == 2:
         assert a.shape[1] == num_bands
 
-    norm_factor = np.reshape(sound_speed / omega_bands, (1, -1), order='F')
-    # normalised antenna coordinates in a matrix form
-    # each column corresponds to the location in one subband,
-    # i.e., the second dimension corresponds to different subbands
-    p_mic_x_normalised = np.reshape(p_mic_x, (-1, 1), order='F') / norm_factor
-    p_mic_y_normalised = np.reshape(p_mic_y, (-1, 1), order='F') / norm_factor
-    p_mic_z_normalised = np.reshape(p_mic_z, (-1, 1), order='F') / norm_factor
-
     # we use the real-valued representation of the measurements
     a_ri = np.row_stack((a.real, a.imag))
 
-    min_error_all = float('inf')
-
     # linear transformation matrix that maps uniform samples of
     # sinusoids to visibilities
-    if mapping is None:
+    if mapping is None or 'G_ri_lst' not in mapping:
+
+        # Compute the normalized microphone locations
+        norm_factor = np.reshape(sound_speed / omega_bands, (1, -1), order='F')
+        # normalised antenna coordinates in a matrix form
+        # each column corresponds to the location in one subband,
+        # i.e., the second dimension corresponds to different subbands
+        p_mic_x_normalised = np.reshape(p_mic_x, (-1, 1), order='F') / norm_factor
+        p_mic_y_normalised = np.reshape(p_mic_y, (-1, 1), order='F') / norm_factor
+        p_mic_z_normalised = np.reshape(p_mic_z, (-1, 1), order='F') / norm_factor
+
+        # Compute the normalized microphone pairwise distances
+        delta_p_mic = microphone_delta(np.array([p_mic_x, p_mic_y, p_mic_z]))
+        delta_p_mic_normalised = delta_p_mic / norm_factor
+
+        # Compute the G mapping
         mtx_freq2visibility = \
             sph_mtx_freq2visibility(L, p_mic_x_normalised,
                                     p_mic_y_normalised, p_mic_z_normalised)
         G_ri_lst = sph_mtx_fri2visibility_row_major(L, mtx_freq2visibility, aslist=True, symb=symb)
-    elif 'G_ri_lst' not in mapping:
-        mtx_freq2visibility = \
-            sph_mtx_freq2visibility(L, p_mic_x_normalised,
-                                    p_mic_y_normalised, p_mic_z_normalised)
-        G_ri_lst = sph_mtx_fri2visibility_row_major(L, mtx_freq2visibility, aslist=True, symb=symb)
-        mapping['mtx_freq2visibility'] = mtx_freq2visibility
-        mapping['G_ri_lst'] = G_ri_lst
+
+        if mapping is not None:
+            mapping['mtx_freq2visibility'] = mtx_freq2visibility
+            mapping['G_ri_lst'] = G_ri_lst
+            mapping['p_mic'] = [p_mic_x_normalised, p_mic_y_normalised, p_mic_z_normalised]
+            mapping['delta_p_mic_normalised'] = delta_p_mic_normalised
     else:
         mtx_freq2visibility = mapping['mtx_freq2visibility']
         G_ri_lst = mapping['G_ri_lst']
+        p_mic_x_normalised, p_mic_y_normalised, p_mic_z_normalised = mapping['p_mic']
+        delta_p_mic_normalised = mapping['delta_p_mic_normalised']
 
-    for count_G in range(G_iter):
+    # use the denoised data b to solve the problem once more but with the
+    # desired (smaller) filter size
+    c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
+    sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1 = \
+        sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K, L, L, noise_level,
+                                  max_ini, stop_cri, max_iter, use_lu=use_lu,
+                                  mapping=mapping,
+                                  # beta=b_opt_ri_lst,
+                                  symb=symb)
 
-        # use the denoised data b to solve the problem once more but with the
-        # desired (smaller) filter size
-        c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
-        sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1 = \
-            sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K, L, L, noise_level,
-                                      max_ini, stop_cri, max_iter, use_lu=use_lu,
-                                      mapping=mapping,
-                                      # beta=b_opt_ri_lst,
-                                      symb=symb)
-
-        try:
-            azimuthk_recon, colatitudek_recon = \
-                sph_extract_innovation(
-                    a_ri, K,
-                    sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
-                    sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
-                    p_mic_x_normalised, p_mic_y_normalised, p_mic_z_normalised
-                )
-        except RuntimeError:
-            continue
+    try:
+        azimuthk_recon, colatitudek_recon = \
+            sph_extract_innovation(
+                a_ri, K,
+                sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
+                sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
+                p_mic_x_normalised, p_mic_y_normalised, p_mic_z_normalised, delta_p_mic_normalised,
+            )
 
         # use the correctly identified colatitude and azimuth to reconstruct the correct amplitudes
         # implementation with list
@@ -240,9 +262,12 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
 
             amp_mtx_ri_sorted_band = \
                 sph_build_mtx_amp_ri(
-                    p_mic_x_normalised[:, band_count],
-                    p_mic_y_normalised[:, band_count],
-                    p_mic_z_normalised[:, band_count],
+                    #p_mic_x_normalised[:, band_count],
+                    #p_mic_y_normalised[:, band_count],
+                    #p_mic_z_normalised[:, band_count],
+                    delta_p_mic_normalised[0,:,band_count],
+                    delta_p_mic_normalised[1,:,band_count],
+                    delta_p_mic_normalised[2,:,band_count],
                     azimuthk_recon, colatitudek_recon
                 )
 
@@ -257,31 +282,27 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
                                              alphak_recon_band)
                                       )
 
+        # convert to ndarray
+        alphak_recon = np.array(alphak_recon)
+
+        # convert from propagation vector to doa
+        azimuthk_doa = np.mod(azimuthk_recon + np.pi, 2 * np.pi)
+        colatitudek_doa = np.mod(np.pi - colatitudek_recon, 2 * np.pi)
+
+        # Implement a cache for sources
+        #if mapping is not None:
+
         if verbose:
             print('objective function value: {0:.3e}'.format(error_loop))
 
-        if error_loop < min_error_all:
-            min_error_all = error_loop
-            colatitudek_opt = colatitudek_recon
-            azimuthk_opt = azimuthk_recon
-            alphak_opt = np.reshape(np.concatenate(alphak_recon),
-                                    (-1, num_bands), order='F')
-
-        b_opt_ri_lst = [sph_build_beta(alphak_opt[:, band_count],
-                                       colatitudek_opt,
-                                       azimuthk_opt, L, symb=symb)[1]
-                        for band_count in range(num_bands)]
-
-    # convert to DOA
-    try:
-        azimuthk_doa = np.mod(azimuthk_opt + np.pi, 2 * np.pi)
-        colatitudek_doa = np.mod(np.pi - colatitudek_opt, 2 * np.pi)
     except:
+        # In case the reconstruction fails (FRI curves do not intersect)
+        # just assign zero amplitude
         azimuthk_doa = np.zeros(K)
         colatitudek_doa = np.zeros(K)
-        alphak_opt = np.zeros((K, num_bands))
-    return colatitudek_doa, azimuthk_doa, alphak_opt
-    # return colatitudek_opt, azimuthk_opt, np.reshape(alphak_opt, (-1, num_bands), order='F')
+        alphak_recon = np.zeros((K, num_bands))
+
+    return colatitudek_doa, azimuthk_doa, np.reshape(alphak_recon, (-1, num_bands), order='F')
 
 
 def sph_determin_max_coef_sz(L):
@@ -296,6 +317,7 @@ def sph_determin_max_coef_sz(L):
 
 def sph_extract_innovation(a_ri, K, c_row, c_col,
                            p_mic_x, p_mic_y, p_mic_z,
+                           delta_p_mic,
                            **kwargs):
     """
     retrieve Dirac parameters, i.e., Dirac locations and amplitudes from the 
@@ -347,9 +369,13 @@ def sph_extract_innovation(a_ri, K, c_row, c_col,
         for band_count in range(num_bands):
             amp_mtx_loop = np.column_stack((
                 G_amp_ref_ri_lst[band_count],
-                sph_build_mtx_amp_ri(p_mic_x[:, band_count],
-                                     p_mic_y[:, band_count],
-                                     p_mic_z[:, band_count],
+                sph_build_mtx_amp_ri(
+                                     #p_mic_x[:, band_count],
+                                     #p_mic_y[:, band_count],
+                                     #p_mic_z[:, band_count],
+                                     delta_p_mic[0,:,band_count],
+                                     delta_p_mic[1,:,band_count],
+                                     delta_p_mic[2,:,band_count],
                                      azimuth_k_grid, colatitude_k_grid)
             ))
 
@@ -363,9 +389,13 @@ def sph_extract_innovation(a_ri, K, c_row, c_col,
     else:
         for band_count in range(num_bands):
             amp_mtx_loop = \
-                sph_build_mtx_amp_ri(p_mic_x[:, band_count],
-                                     p_mic_y[:, band_count],
-                                     p_mic_z[:, band_count],
+                sph_build_mtx_amp_ri(
+                                     #p_mic_x[:, band_count],
+                                     #p_mic_y[:, band_count],
+                                     #p_mic_z[:, band_count],
+                                     delta_p_mic[0,:,band_count],
+                                     delta_p_mic[1,:,band_count],
+                                     delta_p_mic[2,:,band_count],
                                      azimuth_k_grid, colatitude_k_grid)
             alphak_recon_lst.append(
                 sp.optimize.nnls(
@@ -571,26 +601,7 @@ def sph_build_mtx_amp_cpx(p_mic_x, p_mic_y, p_mic_z, azimuth_k, colatitude_k):
     yk = np.reshape(yk, (1, -1), order='F')
     zk = np.reshape(zk, (1, -1), order='F')
 
-    num_mic = p_mic_x.shape[0]
-    num_mic_1 = num_mic - 1
-    K = azimuth_k.size
-
-    mtx = np.zeros((num_mic * num_mic_1, K), dtype=complex, order='C')
-
-    mtx_bg_idx0 = 0
-    for q in range(num_mic):
-        p_x_qqp = np.reshape(p_mic_x[q] -
-                             np.concatenate((p_mic_x[:q], p_mic_x[q + 1:])),
-                             (num_mic_1, 1), order='F')
-        p_y_qqp = np.reshape(p_mic_y[q] -
-                             np.concatenate((p_mic_y[:q], p_mic_y[q + 1:])),
-                             (num_mic_1, 1), order='F')
-        p_z_qqp = np.reshape(p_mic_z[q] -
-                             np.concatenate((p_mic_z[:q], p_mic_z[q + 1:])),
-                             (num_mic_1, 1), order='F')
-        mtx[mtx_bg_idx0:mtx_bg_idx0 + num_mic_1, :] = \
-            np.exp(-1j * (xk * p_x_qqp + yk * p_y_qqp + zk * p_z_qqp))
-        mtx_bg_idx0 += num_mic_1
+    mtx = np.exp(-1j * (p_mic_x[:,None] * xk + p_mic_y[:,None] * yk + p_mic_z[:,None] * zk))
 
     return mtx
 
@@ -1234,8 +1245,12 @@ def sph_sel_coef_subset_ri(num_coef_row, num_coef_col, K):
     :param K: number of Dirac. The number of non-zero coefficients is K + 1
     :return:
     """
+    # pick arbitrary but fixed locations for filter coefficients
+    rng_state = np.random.get_state()
+    np.random.seed(0)
     sub_set_idx_row = np.sort(np.random.permutation(num_coef_row)[K + 1:])
     sub_set_idx_col = np.sort(np.random.permutation(num_coef_col)[K + 1:])
+    np.random.set_state(rng_state)
 
     S_row = np.eye(num_coef_row)[sub_set_idx_row, :]
     S_col = np.eye(num_coef_col)[sub_set_idx_col, :]

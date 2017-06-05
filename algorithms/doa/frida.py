@@ -161,7 +161,6 @@ class FRIDA(DOA):
                 raise ValueError('Reconstruction from microphone signals not implemented in 3D.')
 
             # Call the FRI reconstruction routine
-            overestimate_num = 0
             colatitude, azimuth, amplitude = \
                 sph_recon_2d_dirac_joint(
                     signal,
@@ -170,69 +169,19 @@ class FRIDA(DOA):
                     p_mic_z=self.L[2, :],
                     omega_bands=2 * np.pi * self.freq_hz,
                     sound_speed=self.c,
-                    K=self.num_src + overestimate_num,
+                    K=self.num_src,
                     L=self.max_four,
                     max_iter=self.max_iter,
                     noise_level=self.noise_level,
                     max_ini=self.max_ini,
                     stop_cri=self.stop_cri,
                     G_iter=self.G_iter,
-                    num_rotation=self.n_rot,
                     signal_type=self.signal_type,
                     use_lu=self.use_lu,
                     verbose=self.verbose,
                     symb=self.symb,
                     mapping=self.mapping_dict,
                 )
-
-            if overestimate_num > 0:
-                colatitude, azimuth, amplitude = \
-                    planar_select_reliable_recon(signal,
-                                                 p_mic_x=self.L[0, :],
-                                                 p_mic_y=self.L[1, :],
-                                                 p_mic_z=self.L[2, :],
-                                                 omega_bands=2 * np.pi * self.freq_hz,
-                                                 colatitudek_doa=colatitude,
-                                                 azimuthk_doa=azimuth,
-                                                 sound_speed=self.c,
-                                                 num_removal=overestimate_num
-                                                 )
-
-            # for stage in range(self.num_src - 1):
-            #     colatitude, azimuth, amplitude = \
-            #         sph_recon_2d_dirac_joint(
-            #             signal,
-            #             p_mic_x=self.L[0, :],
-            #             p_mic_y=self.L[1, :],
-            #             p_mic_z=self.L[2, :],
-            #             omega_bands=2 * np.pi * self.freq_hz,
-            #             sound_speed=self.c,
-            #             K=4,
-            #             L=self.max_four,
-            #             max_iter=self.max_iter,
-            #             noise_level=self.noise_level,
-            #             max_ini=self.max_ini,
-            #             stop_cri=self.stop_cri,
-            #             G_iter=self.G_iter,
-            #             num_rotation=self.n_rot,
-            #             signal_type=self.signal_type,
-            #             use_lu=self.use_lu,
-            #             verbose=self.verbose,
-            #             symb=self.symb,
-            #             colatitudek_doa_ref=colatitude,
-            #             azimuthk_doa_ref=azimuth
-            #         )
-            #
-            #     colatitude, azimuth, amplitude = \
-            #         planar_select_reliable_recon(signal,
-            #                                      p_mic_x=self.L[0, :],
-            #                                      p_mic_y=self.L[1, :],
-            #                                      p_mic_z=self.L[2, :],
-            #                                      omega_bands=2 * np.pi * self.freq_hz,
-            #                                      colatitudek_doa=colatitude,
-            #                                      azimuthk_doa=azimuth,
-            #                                      sound_speed=self.c,
-            #                                      num_removal=3)
 
             # assign reconstructed values to attributes
             self.azimuth_recon = azimuth

@@ -47,13 +47,13 @@ elif array_type == 'pyramic_random_subset':
 Select frequency range
 """
 n_bands = 20
-freq_range = [1000., 3500.]
+freq_range = [2000., 3500.]
 f_min = int(np.round(freq_range[0] / sampling_freq*nfft))
 f_max = int(np.round(freq_range[1] / sampling_freq*nfft))
 range_bins = np.arange(f_min, f_max+1)
-use_bin = True
+use_bin = False
 
-vrange = [0.1/2, 5./2]
+vrange = [-3., 1.]
 
 """Check for LED Ring"""
 try:
@@ -179,12 +179,13 @@ def apply_doa(audio):
         doa.locate_sources(X_stft, freq_range=freq_range)
     toc = time.time()
     #print('DOA computation time:', toc - tic, 'sec')
+    print(np.log10(doa.alpha_recon.mean(axis=1)))
 
     # send to browser for visualization
     # Now map the angles to some function
     # send to lights if available
     if led_ring:
-        make_colors(doa.azimuth_recon, doa.alpha_recon.mean(axis=1))
+        make_colors(doa.azimuth_recon, doa.alpha_recon.max(axis=1))
 
 
 """Interface features"""
