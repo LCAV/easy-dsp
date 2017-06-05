@@ -236,7 +236,7 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
 
     # use the denoised data b to solve the problem once more but with the
     # desired (smaller) filter size
-    c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
+    c_row_opt, c_col_opt, min_error, ini, \
     sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1 = \
         sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K, L, L, noise_level,
                                   max_ini, stop_cri, max_iter, use_lu=use_lu,
@@ -878,15 +878,12 @@ def sph_dirac_recon_alg_joint(G_ri_lst0, a_ri, K, L, M, noise_level, max_ini,
 
             Rmtx_band_ri = np.dot(Q_H, Rmtx_band_ri)
 
-            # reconstruct b-s for all the sub-bands
-            error_loop, lu_lst, b_recon_ri_lst = \
-                sph_compute_b(G_ri_lst, lu_GtG_lst, beta_ri_lst,
-                              Rmtx_band_ri, num_bands, a_ri,
-                              use_lu=use_lu, use_GtGinv=use_GtGinv)
+            # compute fitting error
+            error_loop, lu_lst =  sph_eval_fitting_error(G_ri_lst, lu_GtG_lst, beta_ri_lst, Rmtx_band_ri, Q_H,
+                                       Tbeta_ri0_lst, num_bands, a_ri, c_ri, eval_b=False, use_lu=use_lu)
 
             if error_loop < min_error:
                 min_error = error_loop
-                b_opt_ri_lst = b_recon_ri_lst
                 c_row_opt = c_row
                 c_col_opt = c_col
 
@@ -896,7 +893,7 @@ def sph_dirac_recon_alg_joint(G_ri_lst0, a_ri, K, L, M, noise_level, max_ini,
         if compute_mse and min_error < noise_level:
             break
 
-    return c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
+    return c_row_opt, c_col_opt, min_error, ini, \
            sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1
 
 

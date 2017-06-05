@@ -30,7 +30,7 @@ except:
     sampling_freq = 44100
     led_ring_address = '/dev/cu.usbmodem1421'
 
-array_type = 'pyramic_subset'
+array_type = 'pyramic_full'
 
 """Select appropriate microphone array"""
 if array_type == 'pyramic_flat':
@@ -67,7 +67,7 @@ f_max = int(np.round(freq_range[1] / sampling_freq*nfft))
 range_bins = np.arange(f_min, f_max+1)
 freq_bins = np.round(np.linspace(freq_range[0], freq_range[1], n_bands) / sampling_freq * nfft)
 
-vrange = [-3., 0.]
+vrange = [-0.5, -0.5]
 
 """Check for LED Ring"""
 try:
