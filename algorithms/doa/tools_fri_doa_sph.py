@@ -190,142 +190,87 @@ def sph_recon_2d_dirac_joint(a, p_mic_x, p_mic_y, p_mic_z, omega_bands,
 
     min_error_all = float('inf')
 
-    num_rotation = 1  # hack, no rotation
-    for count_rotate in range(num_rotation):
-        # no rotation
-        rotate_angle1 = 0.
-        rotate_angle2 = 0.
-        rotate_angle3 = 0.
+    # linear transformation matrix that maps uniform samples of
+    # sinusoids to visibilities
+    if mapping is None:
+        mtx_freq2visibility = \
+            sph_mtx_freq2visibility(L, p_mic_x_normalised,
+                                    p_mic_y_normalised, p_mic_z_normalised)
+        G_ri_lst = sph_mtx_fri2visibility_row_major(L, mtx_freq2visibility, aslist=True, symb=symb)
+    elif 'G_ri_lst' not in mapping:
+        mtx_freq2visibility = \
+            sph_mtx_freq2visibility(L, p_mic_x_normalised,
+                                    p_mic_y_normalised, p_mic_z_normalised)
+        G_ri_lst = sph_mtx_fri2visibility_row_major(L, mtx_freq2visibility, aslist=True, symb=symb)
+        mapping['mtx_freq2visibility'] = mtx_freq2visibility
+        mapping['G_ri_lst'] = G_ri_lst
+    else:
+        mtx_freq2visibility = mapping['mtx_freq2visibility']
+        G_ri_lst = mapping['G_ri_lst']
 
-        # build rotation matrix
-        rotate_mtx1 = np.array([[np.cos(rotate_angle1), -np.sin(rotate_angle1), 0],
-                                [np.sin(rotate_angle1), np.cos(rotate_angle1), 0],
-                                [0, 0, 1]])
-        rotate_mtx2 = np.array([[np.cos(rotate_angle2), 0, np.sin(rotate_angle2)],
-                                [0, 1, 0],
-                                [-np.sin(rotate_angle2), 0, np.cos(rotate_angle2)]])
-        rotate_mtx3 = np.array([[np.cos(rotate_angle3), -np.sin(rotate_angle3), 0],
-                                [np.sin(rotate_angle3), np.cos(rotate_angle3), 0],
-                                [0, 0, 1]])
-        rotate_mtx = np.dot(rotate_mtx1, np.dot(rotate_mtx2, rotate_mtx3))
+    for count_G in range(G_iter):
 
-        # rotate antenna steering vector
-        p_mic_rotated = np.dot(rotate_mtx,
-                               np.vstack((p_mic_x_normalised.flatten('F'),
-                                          p_mic_y_normalised.flatten('F'),
-                                          p_mic_z_normalised.flatten('F')))
-                               )
-        p_mic_x_rotated = np.reshape(p_mic_rotated[0, :], p_mic_x_normalised.shape, order='F')
-        p_mic_y_rotated = np.reshape(p_mic_rotated[1, :], p_mic_y_normalised.shape, order='F')
-        p_mic_z_rotated = np.reshape(p_mic_rotated[2, :], p_mic_z_normalised.shape, order='F')
+        # use the denoised data b to solve the problem once more but with the
+        # desired (smaller) filter size
+        c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
+        sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1 = \
+            sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K, L, L, noise_level,
+                                      max_ini, stop_cri, max_iter, use_lu=use_lu,
+                                      mapping=mapping,
+                                      # beta=b_opt_ri_lst,
+                                      symb=symb)
 
-        # linear transformation matrix that maps uniform samples of
-        # sinusoids to visibilities
-        if mapping is None:
-            mtx_freq2visibility = \
-                sph_mtx_freq2visibility(L, p_mic_x_rotated,
-                                        p_mic_y_rotated, p_mic_z_rotated)
-            G_ri_lst = sph_mtx_fri2visibility_row_major(L, mtx_freq2visibility, aslist=True, symb=symb)
-        elif 'G_ri_lst' not in mapping:
-            mtx_freq2visibility = \
-                sph_mtx_freq2visibility(L, p_mic_x_rotated,
-                                        p_mic_y_rotated, p_mic_z_rotated)
-            G_ri_lst = sph_mtx_fri2visibility_row_major(L, mtx_freq2visibility, aslist=True, symb=symb)
-            mapping['mtx_freq2visibility'] = mtx_freq2visibility
-            mapping['G_ri_lst'] = G_ri_lst
-        else:
-            mtx_freq2visibility = mapping['mtx_freq2visibility']
-            G_ri_lst = mapping['G_ri_lst']
+        try:
+            azimuthk_recon, colatitudek_recon = \
+                sph_extract_innovation(
+                    a_ri, K,
+                    sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
+                    sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
+                    p_mic_x_normalised, p_mic_y_normalised, p_mic_z_normalised
+                )
+        except RuntimeError:
+            continue
 
-        for count_G in range(G_iter):
+        # use the correctly identified colatitude and azimuth to reconstruct the correct amplitudes
+        # implementation with list
+        alphak_recon = []
+        error_loop = 0
+        for band_count in range(num_bands):
+            a_ri_band = a_ri[:, band_count]
 
-            # use the denoised data b to solve the problem once more but with the
-            # desired (smaller) filter size
-            c_row_opt, c_col_opt, min_error, b_opt_ri_lst, ini, \
-            sz_coef_row0, sz_coef_row1, sz_coef_col0, sz_coef_col1 = \
-                sph_dirac_recon_alg_joint(G_ri_lst, a_ri, K, L, L, noise_level,
-                                          max_ini, stop_cri, max_iter, use_lu=use_lu,
-                                          mapping=mapping,
-                                          # beta=b_opt_ri_lst,
-                                          symb=symb)
+            amp_mtx_ri_sorted_band = \
+                sph_build_mtx_amp_ri(
+                    p_mic_x_normalised[:, band_count],
+                    p_mic_y_normalised[:, band_count],
+                    p_mic_z_normalised[:, band_count],
+                    azimuthk_recon, colatitudek_recon
+                )
 
-            try:
-                azimuthk_recon, colatitudek_recon = \
-                    sph_extract_innovation(
-                        a_ri, K,
-                        sph_reshape_coef(c_row_opt, sz_coef_row0, sz_coef_row1),
-                        sph_reshape_coef(c_col_opt, sz_coef_col0, sz_coef_col1),
-                        p_mic_x_rotated, p_mic_y_rotated, p_mic_z_rotated
-                    )
-            except RuntimeError:
-                continue
+            alphak_recon_band = sp.optimize.nnls(
+                np.dot(amp_mtx_ri_sorted_band.T, amp_mtx_ri_sorted_band),
+                np.dot(amp_mtx_ri_sorted_band.T, a_ri_band)
+            )[0]
 
-            xk_recon, yk_recon, zk_recon = sph2cart(1, colatitudek_recon, azimuthk_recon)
-            xyz_rotate_back = linalg.solve(rotate_mtx,
-                                           np.vstack((xk_recon.flatten('F'),
-                                                      yk_recon.flatten('F'),
-                                                      zk_recon.flatten('F')))
-                                           )
-            colatitudek_recon = np.arccos(xyz_rotate_back[2, :])
-            azimuthk_recon = np.mod(np.arctan2(xyz_rotate_back[1, :],
-                                               xyz_rotate_back[0, :]),
-                                    2 * np.pi)
+            alphak_recon.append(alphak_recon_band)
+            error_loop += linalg.norm(a_ri_band -
+                                      np.dot(amp_mtx_ri_sorted_band,
+                                             alphak_recon_band)
+                                      )
 
-            # use the correctly identified colatitude and azimuth to reconstruct the correct amplitudes
-            # implementation with list
-            alphak_recon = []
-            error_loop = 0
-            for band_count in range(num_bands):
-                a_ri_band = a_ri[:, band_count]
+        if verbose:
+            print('objective function value: {0:.3e}'.format(error_loop))
 
-                amp_mtx_ri_sorted_band = \
-                    sph_build_mtx_amp_ri(
-                        p_mic_x_normalised[:, band_count],
-                        p_mic_y_normalised[:, band_count],
-                        p_mic_z_normalised[:, band_count],
-                        azimuthk_recon, colatitudek_recon
-                    )
+        if error_loop < min_error_all:
+            min_error_all = error_loop
+            colatitudek_opt = colatitudek_recon
+            azimuthk_opt = azimuthk_recon
+            alphak_opt = np.reshape(np.concatenate(alphak_recon),
+                                    (-1, num_bands), order='F')
 
-                alphak_recon_band = sp.optimize.nnls(
-                    np.dot(amp_mtx_ri_sorted_band.T, amp_mtx_ri_sorted_band),
-                    np.dot(amp_mtx_ri_sorted_band.T, a_ri_band)
-                )[0]
-
-                alphak_recon.append(alphak_recon_band)
-                error_loop += linalg.norm(a_ri_band -
-                                          np.dot(amp_mtx_ri_sorted_band,
-                                                 alphak_recon_band)
-                                          )
-
-            if verbose:
-                print('objective function value: {0:.3e}'.format(error_loop))
-
-            if error_loop < min_error_all:
-                min_error_all = error_loop
-                colatitudek_opt = colatitudek_recon
-                azimuthk_opt = azimuthk_recon
-                alphak_opt = np.reshape(np.concatenate(alphak_recon),
-                                        (-1, num_bands), order='F')
-
-            xyz_opt_rotated = np.dot(rotate_mtx,
-                                     np.row_stack(sph2cart(1, colatitudek_opt, azimuthk_opt))
-                                     )
-            colatitude_opt_rotated = np.arccos(xyz_opt_rotated[2, :])
-            azimuth_opt_rotated = np.arctan2(xyz_opt_rotated[1, :], xyz_opt_rotated[0, :])
-
-            b_opt_ri_lst = [sph_build_beta(alphak_opt[:, band_count],
-                                           colatitude_opt_rotated,
-                                           azimuth_opt_rotated, L, symb=symb)[1]
-                            for band_count in range(num_bands)]
-
-            if update_G:
-                G_ri_lst = sph_update_G_ri(
-                    colatitude_opt_rotated[K_ref:],
-                    azimuth_opt_rotated[K_ref:],
-                    L, p_mic_x_rotated,
-                    p_mic_y_rotated,
-                    p_mic_z_rotated,
-                    num_bands, G_ri_lst, symb=symb)
+        b_opt_ri_lst = [sph_build_beta(alphak_opt[:, band_count],
+                                       colatitudek_opt,
+                                       azimuthk_opt, L, symb=symb)[1]
+                        for band_count in range(num_bands)]
 
     # convert to DOA
     try:
