@@ -15,7 +15,7 @@ class FRIDA(DOA):
                  G_iter=None, max_ini=5, n_rot=1, max_iter=50, noise_level=1e-10,
                  low_rank_cleaning=False, stopping='max_iter',
                  stft_noise_floor=0., stft_noise_margin=1.5, signal_type='visibility',
-                 use_lu=True, verbose=False, symb=True, **kwargs):
+                 use_lu=True, verbose=False, symb=True, use_cache=False, **kwargs):
         '''
         Parameters
         ----------
@@ -85,7 +85,7 @@ class FRIDA(DOA):
 
         self.G = None
 
-        self.mapping_dict = dict()
+        self.mapping_dict = dict(use_cache=use_cache)
 
         # The type of measurement to use, can be 'visibility' (default) for the covariance
         # matrix, or 'raw' to use microphone signals directly
@@ -151,14 +151,6 @@ class FRIDA(DOA):
             #print("Computation time in loop:", compute_time)
 
         elif self.dim == 3:
-
-            # extract off-diagonal entries
-            Xt = np.swapaxes(X, 1, 2)
-            Xt = Xt[:, :, self.freq_bins]
-            # signal = sph_extract_off_diag(sph_cov_mtx_est(Xt))
-
-            if self.signal_type == 'raw':
-                raise ValueError('Reconstruction from microphone signals not implemented in 3D.')
 
             # Call the FRI reconstruction routine
             colatitude, azimuth, amplitude = \

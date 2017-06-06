@@ -95,8 +95,7 @@ R_pyramic = np.array(
         line(corners[:,2], corners[:,1], pcb)
         ).T
 
-# Reference point is 1cm below zero'th mic
-R_pyramic[2,:] += 0.01 - R_pyramic[2,0]
+R_pyramic -= np.mean(R_pyramic, axis=1, keepdims=True)
 
 def get_pyramic(dim=3):
     '''
