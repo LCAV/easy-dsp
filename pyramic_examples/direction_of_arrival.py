@@ -12,7 +12,7 @@ finding algorithms. Possible algorithms can be selected here:
 
 """ Select algorithm """
 doa_algo = 'SRPPHAT'
-#doa_algo = 'MUSIC'
+doa_algo = 'MUSIC'
 doa_algo_config = dict(
         MUSIC=dict(vrange=[0.1/2, 0.8/2]),
         SRPPHAT=dict(vrange=[0.1/2, 0.4/2]),
@@ -21,17 +21,17 @@ doa_algo_config = dict(
 """
 Number of snapshots for DOA will be: ~2*buffer_size/nfft
 """
-buffer_size = 9600
+buffer_size = 14400
 num_channels=48
 nfft = 512
-num_angles = 60
+num_angles = 300
 transform = 'mkl'
 
 """
 Select frequency range
 """
 n_bands = 20
-freq_range = [1000., 3500.]
+freq_range = [2000., 3500.]
 use_bin = True  # use top <n_bands> frequencies (True) or use all frequencies within specified range (False)
 
 """
@@ -49,7 +49,7 @@ except:
     sampling_freq = 44100
     led_ring_address = '/dev/cu.usbmodem1421'
 
-array_type = 'pyramic_flat'
+array_type = 'pyramic_full'
 
 """Select appropriate microphone array"""
 if array_type == 'pyramic_flat':
@@ -123,6 +123,7 @@ def init(buffer_frames, rate, channels, volume):
     global doa
 
     doa_args = {
+            'dim': mic_array.shape[0],
             'L': mic_array,
             'fs': rate,
             'nfft': nfft,
@@ -169,10 +170,7 @@ def apply_doa(audio):
     else:
         doa.locate_sources(X_stft, freq_range=freq_range)
 
-    # send to browser for visualization
-    to_send = doa.grid.values.tolist()
-    to_send.append(to_send[0])
-    polar_chart.send_data([{ 'replace': to_send }])
+    print(doa.azimuth_recon / np.pi * 180.)
 
     # send to lights if available
     if led_ring:

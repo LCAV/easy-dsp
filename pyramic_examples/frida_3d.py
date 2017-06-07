@@ -84,21 +84,21 @@ led_rot_offset = 17  # mismatch of led ring and microphone array
 # a Bell curve for visualization
 sym_ind = np.concatenate((np.arange(0, 30), -np.arange(1,31)[::-1]))
 P = np.zeros((num_pixels, 3), dtype=np.float)
-old_azimuths = np.zeros(num_src)
-source_hue = [0.11, 0.5]
+source_hue = [0., 0.4]
 source_sat = [0.9, 0.8]
 background = np.array(colorsys.hsv_to_rgb(0.45, 0.2, 0.1))
 source = np.array(colorsys.hsv_to_rgb(0.11, 0.9, 1.))
-spatial_spectrum = np.zeros(num_pixels)
+
+col_interval = np.array([0, 0.6 * np.pi])
+hue_leaky = source_hue[0]
 
 map_val = np.zeros(num_pixels)
 ff = 0.6
 
-def make_colors(azimuths, powers):
-    global old_azimuths, map_val
+def make_colors(azimuth, colatitude, power):
+    global map_val , hue_leaky
 
     P[:,:] = 0
-    spatial_spectrum[:] = 0.1
 
     # background color
     for i in range(num_pixels):
@@ -107,37 +107,38 @@ def make_colors(azimuths, powers):
     # forget!
     map_val *= ff
 
-    # source colors
-    for azimuth, power, hue, sat in zip(azimuths, powers, source_hue, source_sat):
+    # compute bin location, led array is in the other direction
+    az_i = num_pixels - 1 - int(round(num_pixels * azimuth / (2 * np.pi))) % num_pixels
 
-        # compute bin location, led array is in the other direction
-        i = num_pixels - 1 - int(round(num_pixels * azimuth / (2 * np.pi))) % num_pixels
+    hue = np.minimum(col_interval[1], colatitude) / col_interval[1] * (source_hue[1] - source_hue[0]) + source_hue[0]
+    hue_leaky = 0.5 * hue_leaky + 0.5 * hue
 
-        # adjust range of power
-        value = (np.log10(power) - vrange[0]) / (vrange[1] - vrange[0])
+    # adjust range of power
+    value = (np.log10(power) - vrange[0]) / (vrange[1] - vrange[0])
 
-        # clamp the values
-        if value > 1:
-            value = 1
+    # clamp the values
+    if value > 1:
+        value = 1
 
-        if value < 0.0:
-            value = 0.0
+    if value < 0.0:
+        value = 0.0
 
-        # set the direction
-        if (value > 0.5):
-            map_val[i] = value
-            map_val[(i-1)%num_pixels] = 0.6 * value
-            map_val[(i+1)%num_pixels] = 0.6 * value
+    # set the direction
+    if (value > 0.5):
+        map_val[az_i] = value
+        map_val[(az_i-1)%num_pixels] = 0.6 * value
+        map_val[(az_i+1)%num_pixels] = 0.6 * value
 
-        else:
-            map_val[i] += (1 - ff) * value
-            map_val[(i-1)%num_pixels] += (1 - ff) * value * 0.6
-            map_val[(i+1)%num_pixels] += (1 - ff) * value * 0.6
+    else:
+        map_val[az_i] += (1 - ff) * value
+        map_val[(az_i-1)%num_pixels] += (1 - ff) * value * 0.6
+        map_val[(az_i+1)%num_pixels] += (1 - ff) * value * 0.6
 
-        spatial_spectrum[i] += value
+    source_col = np.array(colorsys.hsv_to_rgb(hue_leaky, 0.9, 1.))
 
     for i in range(num_pixels):
-        P[i,:] = map_val[i] * source + (1 - map_val[i]) * background
+        P[i,:] = map_val[i] * source_col + (1 - map_val[i]) * background
+        #P[i,:] = map_val[i] * source_col
 
     led_ring.send_colors(np.roll(P, led_rot_offset, axis=0))
 
@@ -175,7 +176,7 @@ def apply_doa(audio):
             doa.azimuth_recon[0] / np.pi * 180, doa.colatitude_recon[0] / np.pi * 180, stft_time, doa_time)
     print(line)
     if led_ring:
-        make_colors(doa.azimuth_recon, np.abs(doa.alpha_recon).max(axis=1))
+        make_colors(doa.azimuth_recon[0], doa.colatitude_recon[0], np.max(np.abs(doa.alpha_recon[0])))
 
 
 
