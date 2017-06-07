@@ -20,15 +20,9 @@ transform = 'mkl'
 """
 Read hardware config from file
 """
-try:
-    import json
-    with open('./hardware_config.json', 'r') as config_file:
-        config = json.load(config_file)
-        config_file.close()
-    led_ring_address = config['led_ring_address']
-except:
-    # default when no hw config file is present
-    led_ring_address = '/dev/cu.usbmodem1421'
+# default when no hw config file is present
+led_ring_address = '/dev/cu.usbmodem1411'  # left usb port
+#led_ring_address = '/dev/cu.usbmodem1421'  # right usb port
 
 """Select appropriate microphone array"""
 if array_type == 'pyramic_flat':
@@ -66,7 +60,7 @@ f_max = int(np.round(freq_range[1] / sampling_freq*nfft))
 range_bins = np.arange(f_min, f_max+1)
 freq_bins = np.round(np.linspace(freq_range[0], freq_range[1], n_bands) / sampling_freq * nfft)
 
-vrange = [-3., -0.5]
+vrange = [-1.5, 1.0]
 
 """Check for LED Ring"""
 try:
@@ -84,12 +78,12 @@ led_rot_offset = 17  # mismatch of led ring and microphone array
 # a Bell curve for visualization
 sym_ind = np.concatenate((np.arange(0, 30), -np.arange(1,31)[::-1]))
 P = np.zeros((num_pixels, 3), dtype=np.float)
-source_hue = [0., 0.4]
+source_hue = [0., 0.3]
 source_sat = [0.9, 0.8]
 background = np.array(colorsys.hsv_to_rgb(0.45, 0.2, 0.1))
 source = np.array(colorsys.hsv_to_rgb(0.11, 0.9, 1.))
 
-col_interval = np.array([0, 0.6 * np.pi])
+col_interval = np.array([0.3 * np.pi, 0.6 * np.pi])
 hue_leaky = source_hue[0]
 
 map_val = np.zeros(num_pixels)
@@ -110,7 +104,10 @@ def make_colors(azimuth, colatitude, power):
     # compute bin location, led array is in the other direction
     az_i = num_pixels - 1 - int(round(num_pixels * azimuth / (2 * np.pi))) % num_pixels
 
-    hue = np.minimum(col_interval[1], colatitude) / col_interval[1] * (source_hue[1] - source_hue[0]) + source_hue[0]
+    col = np.minimum(np.maximum(col_interval[0], colatitude), col_interval[1]) - col_interval[0]
+    col /= col_interval[1] - col_interval[0]
+
+    hue = col * (source_hue[1] - source_hue[0]) + source_hue[0]
     hue_leaky = 0.5 * hue_leaky + 0.5 * hue
 
     # adjust range of power
