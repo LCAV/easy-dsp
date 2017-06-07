@@ -188,7 +188,7 @@ apply_doa((np.random.randn(buffer_size, num_channels) * 100).astype(np.int16))
 
 """Interface features"""
 browserinterface.inform_browser = False
-browserinterface.bi_board_ip = '192.168.2.26'
+browserinterface.bi_board_ip = '192.168.0.101'
 browserinterface.register_when_new_config(init)
 browserinterface.register_handle_data(apply_doa)
 
