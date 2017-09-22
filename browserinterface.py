@@ -249,10 +249,13 @@ def inform_browser_query():
 
 # Connection to WSAudio
 def start_client():
-    ws = StreamClient('ws://' + bi_board_ip + ':7321/', protocols=['http-only', 'chat'])
-    ws.connect()
-
-    ws.run_forever()
+    try:
+        ws = StreamClient('ws://' + bi_board_ip + ':7321/', protocols=['http-only', 'chat'])
+        ws.connect()
+        ws.run_forever()
+    except KeyboardInterrupt:
+        print('Manual interuption.')
+        ws.close()
 
 def start_client_thread():
     clientThread = Thread(target = start_client)
