@@ -11,7 +11,8 @@ Number of snapshots for DOA will be: ~2*buffer_size/nfft
 """
 array_type = 'pyramic_full'
 sampling_freq = 48000
-buffer_size = 14400; num_channels = 48
+buffer_size = 9600; num_channels = 48
+local_n_buffers = 3
 nfft = 512
 num_angles = 60
 num_src = 1
@@ -34,8 +35,6 @@ elif array_type == 'pyramic_subset':
     mic_array, _ = rt.pyramic_tetrahedron.get_pyramic(dim=3)
     mic_array = mic_array[:, channel_mapping]
 
-print(mic_array.shape)
-
 doa_args = {
         'dim': mic_array.shape[0],
         'num_src': num_src,
@@ -53,7 +52,7 @@ doa_args = {
 """
 Select frequency range
 """
-n_bands = 17
+n_bands = 10
 freq_range = [2000., 4000.]
 f_min = int(np.round(freq_range[0] / sampling_freq*nfft))
 f_max = int(np.round(freq_range[1] / sampling_freq*nfft))
@@ -143,14 +142,30 @@ def make_colors(azimuth, colatitude, power):
 def init(buffer_frames, rate, channels, volume):
     global doa, doa_args, sampling_freq, nfft, mic_array
 
+local_buffer = np.zeros((local_n_buffers,buffer_size,num_channels))
+local_buffer_counter = 0
+
 """Callback"""
 def apply_doa(audio):
-    global doa, nfft, buffer_size, led_ring, channel_mapping
+    global doa, nfft, buffer_size, led_ring, channel_mapping, local_buffer, local_buffer_counter, local_n_buffers
 
     # check for correct audio shape
     if audio.shape != (buffer_size, num_channels):
         print("Did not receive expected audio!")
         return
+
+    # fill a local buffer
+    local_buffer[local_buffer_counter,:,:] = audio[:,:]
+    local_buffer_counter += 1
+    print(local_buffer_counter, local_n_buffers)
+    if local_buffer_counter < local_n_buffers:
+        print('nope')
+        return
+    else:
+        print('yes!')
+        local_buffer_counter = 0
+        #audio = local_buffer.reshape((local_n_buffers * buffer_size, num_channels))
+
 
     # compute frequency domain snapshots
     tic = time.time()
@@ -180,12 +195,13 @@ def apply_doa(audio):
 
 # run once to initialize everything
 doa = rt.doa.FRIDA(mic_array, sampling_freq, nfft, **doa_args)
-apply_doa((np.random.randn(buffer_size, num_channels) * 100).astype(np.int16))
+for i in range(local_n_buffers):
+    apply_doa((np.random.randn(buffer_size, num_channels) * 100).astype(np.int16))
 
 
 """Interface features"""
 browserinterface.inform_browser = False
-browserinterface.bi_board_ip = '192.168.0.101'
+browserinterface.bi_board_ip = '192.168.2.26'
 browserinterface.register_when_new_config(init)
 browserinterface.register_handle_data(apply_doa)
 
