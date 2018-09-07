@@ -22,7 +22,7 @@ except ImportError:
     pyfftw_available = False
 
 try:
-    import mkl_fft  # https://github.com/LCAV/mkl_fft
+    import mkl_fft  # https://github.com/IntelPython/mkl_fft
     mkl_available = True
 except ImportError:
     mkl_available = False
@@ -141,7 +141,7 @@ class DFT(object):
             self.a[:,] = x
             self.X[:,] = self.forward()
         elif self.transform == 'mkl':
-            self.X[:,] = mkl_fft.rfft(x,axis=0)
+            self.X[:,] = mkl_fft.rfft_numpy(x,axis=0)
         else:
             self.X[:,] = rfft(x,axis=0)
 
@@ -174,7 +174,7 @@ class DFT(object):
             self.b[:] = self.X
             self.x[:,] = self.backward()
         elif self.transform == 'mkl':
-            self.x[:,] = mkl_fft.irfft(self.X,axis=0)
+            self.x[:,] = mkl_fft.irfft_numpy(self.X,axis=0)
         else:
             self.x[:,] = irfft(self.X, axis=0)
         # apply window if needed
