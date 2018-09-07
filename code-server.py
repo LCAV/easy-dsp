@@ -1,4 +1,5 @@
 #!/usr/local/bin/python
+from __future__ import print_function
 from wsgiref.simple_server import make_server
 from ws4py.websocket import WebSocket
 from ws4py.server.wsgirefserver import WSGIServer, WebSocketWSGIRequestHandler
@@ -16,7 +17,7 @@ lineIdentifier = '#####INSERT: Here insert code';
 
 def runCode(message, client, q):
     data = message.data
-    print "runCode"
+    print("runCode")
     with open('base-program.py', 'r') as baseFile:
         baseCode = baseFile.read()
     lines = baseCode.split('\n')
@@ -26,21 +27,21 @@ def runCode(message, client, q):
         if l == lineIdentifier:
             client.send(json.dumps({'codeLine': lineNumber}))
             break
-    baseCode = baseCode.replace(lineIdentifier + '\n', data)
+    baseCode = baseCode.replace(lineIdentifier + '\n', data.decode())
     baseFile.close()
     filename = "code-program.py"
     file = open(filename, "w")
     file.write(baseCode)
     file.close()
-    chmod(filename, 0700)
+    chmod(filename, 0o700)
     # in fact this program will create a websocket server
     # we need to pass the port to the browser
     popen = subprocess.Popen(["python", "-u", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, bufsize=1)
     try:
         client.send('{"port": 9001}', False)
-    except socket.error, e:
+    except socket.error as e:
         return
-    except IOError, e:
+    except IOError as e:
         return
     q.put(popen)
     errorThread = Process(target = sendErr, args = (popen, client))
@@ -48,17 +49,17 @@ def runCode(message, client, q):
     for l in execute(popen):
         try:
             client.send(json.dumps({'line': l}), False)
-        except socket.error, e:
+        except socket.error as e:
             break
-        except AttributeError, e:
+        except AttributeError as e:
             break
-        except IOError, e:
+        except IOError as e:
             break
 
-    print "close"
+    print("close")
     if (popen.poll() == None):
         popen.kill()
-        print "killed"
+        print("killed")
     return_code = popen.wait()
     client.send(json.dumps({'status': 'ended', 'code': return_code}))
 
@@ -80,14 +81,14 @@ board_ip = ''
 
 class PythonDaemon(WebSocket):
     def opened(self):
-        print "New client"
+        print("New client")
         clients.append(self)
 
     def received_message(self, message):
         global board_ip
         try:
             data = json.loads(message.data)
-            print "New JSON"
+            print("New JSON")
             if 'script' in data:
                 # Send a message to every connected client so it knows
                 for c in clients:
@@ -100,15 +101,15 @@ class PythonDaemon(WebSocket):
                 # The browser inform us of the IP address of the board
                 board_ip = data['board']
             return
-        except ValueError, e:
+        except ValueError as e:
             doNothing = True
-        print "New message"
+        print("New message")
         if message.data != "STOP":
             self.q_popen = Queue()
             self.scriptThread = Process(target = runCode, args = (message, self, self.q_popen))
             self.scriptThread.start()
         else:
-            print "Kill Process"
+            print("Kill Process")
             self.q_popen.get().kill()
             # print self.scriptThread.terminate()
             # print self.__popen.kill()
@@ -124,10 +125,10 @@ server = make_server('', 7320, server_class=WSGIServer,
 
 def quit_everything(signal, frame):
     global server
-    print 'Exiting...'
+    print('Exiting...')
     server.server_close()
 signal.signal(signal.SIGINT, quit_everything)
 
 server.initialize_websockets_manager()
-print "Listening..."
+print('Listening...')
 server.serve_forever()
